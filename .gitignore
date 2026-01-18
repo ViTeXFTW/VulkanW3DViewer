@@ -35,7 +35,6 @@ Makefile
 
 # AI
 .claude/
-CLAUDE.md
 
 # Shader compiled files
 *.spv
@@ -43,3 +42,6 @@ CLAUDE.md
 # OS files
 .DS_Store
 Thumbs.db
+
+# Project Specific
+legacy/
