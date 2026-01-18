@@ -4,3 +4,6 @@
 [submodule "lib/Vulkan-Hpp"]
 	path = lib/Vulkan-Hpp
 	url = https://github.com/KhronosGroup/Vulkan-Hpp.git
+[submodule "lib/glm"]
+	path = lib/glm
+	url = https://github.com/g-truc/glm.git
