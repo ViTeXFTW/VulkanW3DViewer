@@ -5,6 +5,8 @@
 #include <set>
 #include <stdexcept>
 
+#include "vulkan_context.hpp"
+
 namespace w3d {
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallbackC(
