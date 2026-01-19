@@ -1,7 +1,8 @@
+#include "pipeline.hpp"
+
 #include <fstream>
 #include <stdexcept>
 
-#include "pipeline.hpp"
 #include "vulkan_context.hpp"
 
 namespace w3d {
