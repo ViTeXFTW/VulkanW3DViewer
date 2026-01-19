@@ -11,6 +11,7 @@
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
 #include "core/vulkan_context.hpp"
+#include "w3d/loader.hpp"
 
 class VulkanW3DViewer {
 public:
@@ -343,6 +344,21 @@ int main() {
     std::cerr << "Error: " << e.what() << "\n";
     return EXIT_FAILURE;
   }
+
+  auto file = w3d::Loader::load(
+      "C:\\PRIVATE\\CodeProjects\\VulkanW3DViewer\\legacy\\models\\Art\\W3D\\ABBtCmdHQ.W3D");
+  if (!file) {
+    std::cerr << "Failed to load W3D file\n";
+    return EXIT_FAILURE;
+  }
+
+  for (const auto &mesh : file->meshes) {
+    std::cout << "Mesh " << mesh.header.meshName << std::endl;
+    std::cout << " Vertices " << mesh.vertices.size() << std::endl;
+    std::cout << " Triangles " << mesh.triangles.size() << std::endl;
+  }
+
+  std::cout << w3d::Loader::describe(*file);
 
   return EXIT_SUCCESS;
 }
