@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+
 #include <GLFW/glfw3.h>
-#include <vector>
+
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace w3d {
 
@@ -12,9 +14,7 @@ struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
   std::optional<uint32_t> presentFamily;
 
-  bool isComplete() const {
-    return graphicsFamily.has_value() && presentFamily.has_value();
-  }
+  bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
 struct SwapchainSupportDetails {
@@ -28,10 +28,10 @@ public:
   VulkanContext() = default;
   ~VulkanContext();
 
-  VulkanContext(const VulkanContext&) = delete;
-  VulkanContext& operator=(const VulkanContext&) = delete;
+  VulkanContext(const VulkanContext &) = delete;
+  VulkanContext &operator=(const VulkanContext &) = delete;
 
-  void init(GLFWwindow* window, bool enableValidation = true);
+  void init(GLFWwindow *window, bool enableValidation = true);
   void cleanup();
 
   void recreateSwapchain(uint32_t width, uint32_t height);
@@ -46,8 +46,8 @@ public:
   vk::SwapchainKHR swapchain() const { return swapchain_; }
   vk::Format swapchainImageFormat() const { return swapchainImageFormat_; }
   vk::Extent2D swapchainExtent() const { return swapchainExtent_; }
-  const std::vector<vk::ImageView>& swapchainImageViews() const { return swapchainImageViews_; }
-  const std::vector<vk::Image>& swapchainImages() const { return swapchainImages_; }
+  const std::vector<vk::ImageView> &swapchainImageViews() const { return swapchainImageViews_; }
+  const std::vector<vk::Image> &swapchainImages() const { return swapchainImages_; }
   vk::ImageView depthImageView() const { return depthImageView_; }
   vk::Image depthImage() const { return depthImage_; }
   vk::Format depthFormat() const { return depthFormat_; }
@@ -64,7 +64,7 @@ public:
 
 private:
   void createInstance(bool enableValidation);
-  void createSurface(GLFWwindow* window);
+  void createSurface(GLFWwindow *window);
   void pickPhysicalDevice();
   void createLogicalDevice();
   void createSwapchain(uint32_t width, uint32_t height);
@@ -79,13 +79,13 @@ private:
   QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
   SwapchainSupportDetails querySwapchainSupport(vk::PhysicalDevice device);
   bool isDeviceSuitable(vk::PhysicalDevice device);
-  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& formats);
-  vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& modes);
-  vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height);
+  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &formats);
+  vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR> &modes);
+  vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities, uint32_t width,
+                                uint32_t height);
   vk::Format findDepthFormat();
-  vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates,
-                                  vk::ImageTiling tiling,
-                                  vk::FormatFeatureFlags features);
+  vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling,
+                                 vk::FormatFeatureFlags features);
 
   vk::Instance instance_;
   vk::DebugUtilsMessengerEXT debugMessenger_;
@@ -114,13 +114,9 @@ private:
 
   bool validationEnabled_ = false;
 
-  static constexpr std::array<const char*, 1> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-  };
+  static constexpr std::array<const char *, 1> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
-  static constexpr std::array<const char*, 1> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-  };
+  static constexpr std::array<const char *, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };
 
 } // namespace w3d
