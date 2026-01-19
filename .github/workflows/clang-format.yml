@@ -53,6 +53,6 @@ jobs:
             echo "No formatting changes needed"
           else
             git add -A
-            git commit -m "Apply clang-format to PR files"
+            git commit -m "refactor: Apply clang-format to PR files"
             git push
           fi
