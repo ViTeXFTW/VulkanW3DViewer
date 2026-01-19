@@ -1,9 +1,9 @@
+#include "vulkan_context.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-
-#include "vulkan_context.hpp"
 
 namespace w3d {
 
