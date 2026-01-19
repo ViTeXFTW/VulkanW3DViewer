@@ -2,7 +2,7 @@
 
 namespace w3d {
 
-Animation AnimationParser::parse(ChunkReader& reader, uint32_t chunkSize) {
+Animation AnimationParser::parse(ChunkReader &reader, uint32_t chunkSize) {
   Animation anim;
   size_t endPos = reader.position() + chunkSize;
 
@@ -12,26 +12,26 @@ Animation AnimationParser::parse(ChunkReader& reader, uint32_t chunkSize) {
     size_t chunkEnd = reader.position() + dataSize;
 
     switch (header.type) {
-      case ChunkType::ANIMATION_HEADER: {
-        anim.version = reader.read<uint32_t>();
-        anim.name = reader.readFixedString(W3D_NAME_LEN);
-        anim.hierarchyName = reader.readFixedString(W3D_NAME_LEN);
-        anim.numFrames = reader.read<uint32_t>();
-        anim.frameRate = reader.read<uint32_t>();
-        break;
-      }
+    case ChunkType::ANIMATION_HEADER: {
+      anim.version = reader.read<uint32_t>();
+      anim.name = reader.readFixedString(W3D_NAME_LEN);
+      anim.hierarchyName = reader.readFixedString(W3D_NAME_LEN);
+      anim.numFrames = reader.read<uint32_t>();
+      anim.frameRate = reader.read<uint32_t>();
+      break;
+    }
 
-      case ChunkType::ANIMATION_CHANNEL:
-        anim.channels.push_back(parseAnimChannel(reader, dataSize));
-        break;
+    case ChunkType::ANIMATION_CHANNEL:
+      anim.channels.push_back(parseAnimChannel(reader, dataSize));
+      break;
 
-      case ChunkType::BIT_CHANNEL:
-        anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
-        break;
+    case ChunkType::BIT_CHANNEL:
+      anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
+      break;
 
-      default:
-        reader.skip(dataSize);
-        break;
+    default:
+      reader.skip(dataSize);
+      break;
     }
 
     // Ensure we're at the right position for the next chunk
@@ -41,8 +41,7 @@ Animation AnimationParser::parse(ChunkReader& reader, uint32_t chunkSize) {
   return anim;
 }
 
-CompressedAnimation AnimationParser::parseCompressed(ChunkReader& reader,
-                                                     uint32_t chunkSize) {
+CompressedAnimation AnimationParser::parseCompressed(ChunkReader &reader, uint32_t chunkSize) {
   CompressedAnimation anim;
   size_t endPos = reader.position() + chunkSize;
 
@@ -52,27 +51,27 @@ CompressedAnimation AnimationParser::parseCompressed(ChunkReader& reader,
     size_t chunkEnd = reader.position() + dataSize;
 
     switch (header.type) {
-      case ChunkType::COMPRESSED_ANIMATION_HEADER: {
-        anim.version = reader.read<uint32_t>();
-        anim.name = reader.readFixedString(W3D_NAME_LEN);
-        anim.hierarchyName = reader.readFixedString(W3D_NAME_LEN);
-        anim.numFrames = reader.read<uint32_t>();
-        anim.frameRate = reader.read<uint16_t>();
-        anim.flavor = reader.read<uint16_t>();
-        break;
-      }
+    case ChunkType::COMPRESSED_ANIMATION_HEADER: {
+      anim.version = reader.read<uint32_t>();
+      anim.name = reader.readFixedString(W3D_NAME_LEN);
+      anim.hierarchyName = reader.readFixedString(W3D_NAME_LEN);
+      anim.numFrames = reader.read<uint32_t>();
+      anim.frameRate = reader.read<uint16_t>();
+      anim.flavor = reader.read<uint16_t>();
+      break;
+    }
 
-      case ChunkType::COMPRESSED_ANIMATION_CHANNEL:
-        anim.channels.push_back(parseCompressedChannel(reader, dataSize));
-        break;
+    case ChunkType::COMPRESSED_ANIMATION_CHANNEL:
+      anim.channels.push_back(parseCompressedChannel(reader, dataSize));
+      break;
 
-      case ChunkType::COMPRESSED_BIT_CHANNEL:
-        anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
-        break;
+    case ChunkType::COMPRESSED_BIT_CHANNEL:
+      anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
+      break;
 
-      default:
-        reader.skip(dataSize);
-        break;
+    default:
+      reader.skip(dataSize);
+      break;
     }
 
     // Ensure we're at the right position for the next chunk
@@ -82,8 +81,7 @@ CompressedAnimation AnimationParser::parseCompressed(ChunkReader& reader,
   return anim;
 }
 
-AnimChannel AnimationParser::parseAnimChannel(ChunkReader& reader,
-                                              uint32_t dataSize) {
+AnimChannel AnimationParser::parseAnimChannel(ChunkReader &reader, uint32_t dataSize) {
   AnimChannel channel;
   size_t startPos = reader.position();
 
@@ -92,7 +90,7 @@ AnimChannel AnimationParser::parseAnimChannel(ChunkReader& reader,
   channel.vectorLen = reader.read<uint16_t>();
   channel.flags = reader.read<uint16_t>();
   channel.pivot = reader.read<uint16_t>();
-  reader.skip(2);  // padding
+  reader.skip(2); // padding
 
   // Calculate number of data values
   uint32_t numFrames = channel.lastFrame - channel.firstFrame + 1;
@@ -113,8 +111,7 @@ AnimChannel AnimationParser::parseAnimChannel(ChunkReader& reader,
   return channel;
 }
 
-BitChannel AnimationParser::parseBitChannel(ChunkReader& reader,
-                                            uint32_t dataSize) {
+BitChannel AnimationParser::parseBitChannel(ChunkReader &reader, uint32_t dataSize) {
   BitChannel channel;
   size_t startPos = reader.position();
 
@@ -140,8 +137,8 @@ BitChannel AnimationParser::parseBitChannel(ChunkReader& reader,
   return channel;
 }
 
-CompressedAnimChannel AnimationParser::parseCompressedChannel(
-    ChunkReader& reader, uint32_t dataSize) {
+CompressedAnimChannel AnimationParser::parseCompressedChannel(ChunkReader &reader,
+                                                              uint32_t dataSize) {
   CompressedAnimChannel channel;
   size_t startPos = reader.position();
 
@@ -149,7 +146,7 @@ CompressedAnimChannel AnimationParser::parseCompressedChannel(
   channel.pivot = reader.read<uint16_t>();
   channel.vectorLen = reader.read<uint8_t>();
   channel.flags = reader.read<uint8_t>();
-  reader.skip(4);  // padding/reserved
+  reader.skip(4); // padding/reserved
 
   // Read time codes
   channel.timeCodes.reserve(channel.numTimeCodes);
@@ -178,4 +175,4 @@ CompressedAnimChannel AnimationParser::parseCompressedChannel(
   return channel;
 }
 
-}  // namespace w3d
+} // namespace w3d

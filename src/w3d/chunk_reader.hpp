@@ -16,7 +16,7 @@ namespace w3d {
 // Chunk header as read from file
 struct ChunkHeader {
   ChunkType type;
-  uint32_t size;  // Size of data (not including this 8-byte header)
+  uint32_t size; // Size of data (not including this 8-byte header)
 
   // Check if this is a container chunk (has sub-chunks)
   bool isContainer() const {
@@ -30,15 +30,14 @@ struct ChunkHeader {
 
 // Exception for parsing errors
 class ParseError : public std::runtime_error {
- public:
-  explicit ParseError(const std::string& msg) : std::runtime_error(msg) {}
+public:
+  explicit ParseError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
 // Binary reader for W3D data
 class ChunkReader {
- public:
-  explicit ChunkReader(std::span<const uint8_t> data)
-      : data_(data), pos_(0) {}
+public:
+  explicit ChunkReader(std::span<const uint8_t> data) : data_(data), pos_(0) {}
 
   // Current position in the data
   size_t position() const { return pos_; }
@@ -64,19 +63,17 @@ class ChunkReader {
   // Skip bytes
   void skip(size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Skip past end of data (pos=" + std::to_string(pos_) +
-                       ", skip=" + std::to_string(count) +
-                       ", size=" + std::to_string(data_.size()) + ")");
+      throw ParseError("Skip past end of data (pos=" + std::to_string(pos_) + ", skip=" +
+                       std::to_string(count) + ", size=" + std::to_string(data_.size()) + ")");
     }
     pos_ += count;
   }
 
   // Read raw bytes
-  void readBytes(void* dest, size_t count) {
+  void readBytes(void *dest, size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Read past end of data (pos=" + std::to_string(pos_) +
-                       ", read=" + std::to_string(count) +
-                       ", size=" + std::to_string(data_.size()) + ")");
+      throw ParseError("Read past end of data (pos=" + std::to_string(pos_) + ", read=" +
+                       std::to_string(count) + ", size=" + std::to_string(data_.size()) + ")");
     }
     std::memcpy(dest, data_.data() + pos_, count);
     pos_ += count;
@@ -120,7 +117,8 @@ class ChunkReader {
     result.reserve(maxLen);
     for (size_t i = 0; i < maxLen && !atEnd(); ++i) {
       char c = read<char>();
-      if (c == '\0') break;
+      if (c == '\0')
+        break;
       result.push_back(c);
     }
     return result;
@@ -131,7 +129,8 @@ class ChunkReader {
     std::string result;
     while (!atEnd()) {
       char c = read<char>();
-      if (c == '\0') break;
+      if (c == '\0')
+        break;
       result.push_back(c);
     }
     return result;
@@ -147,7 +146,8 @@ class ChunkReader {
 
   // Peek at chunk header without consuming
   std::optional<ChunkHeader> peekChunkHeader() {
-    if (remaining() < 8) return std::nullopt;
+    if (remaining() < 8)
+      return std::nullopt;
     size_t savedPos = pos_;
     auto header = readChunkHeader();
     pos_ = savedPos;
@@ -157,9 +157,8 @@ class ChunkReader {
   // Create a sub-reader for a chunk's data
   ChunkReader subReader(size_t length) {
     if (pos_ + length > data_.size()) {
-      throw ParseError("Sub-reader extends past end of data (pos=" +
-                       std::to_string(pos_) + ", length=" +
-                       std::to_string(length) +
+      throw ParseError("Sub-reader extends past end of data (pos=" + std::to_string(pos_) +
+                       ", length=" + std::to_string(length) +
                        ", size=" + std::to_string(data_.size()) + ")");
     }
     ChunkReader sub(data_.subspan(pos_, length));
@@ -168,7 +167,7 @@ class ChunkReader {
   }
 
   // Get current data pointer
-  const uint8_t* currentPtr() const { return data_.data() + pos_; }
+  const uint8_t *currentPtr() const { return data_.data() + pos_; }
 
   // Read Vector3
   Vector3 readVector3() {
@@ -203,7 +202,7 @@ class ChunkReader {
     c.r = read<uint8_t>();
     c.g = read<uint8_t>();
     c.b = read<uint8_t>();
-    skip(1);  // padding byte
+    skip(1); // padding byte
     return c;
   }
 
@@ -217,9 +216,9 @@ class ChunkReader {
     return c;
   }
 
- private:
+private:
   std::span<const uint8_t> data_;
   size_t pos_;
 };
 
-}  // namespace w3d
+} // namespace w3d

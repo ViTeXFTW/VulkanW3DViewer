@@ -52,7 +52,7 @@ struct Triangle {
 // Vertex influence for skinning
 struct VertexInfluence {
   uint16_t boneIndex = 0;
-  uint16_t boneIndex2 = 0;  // For multi-bone skinning
+  uint16_t boneIndex2 = 0; // For multi-bone skinning
   float weight = 1.0f;
   float weight2 = 0.0f;
 };
@@ -117,9 +117,9 @@ struct TextureStage {
 struct MaterialPass {
   std::vector<uint32_t> vertexMaterialIds;
   std::vector<uint32_t> shaderIds;
-  std::vector<RGBA> dcg;  // Diffuse color per-vertex
-  std::vector<RGBA> dig;  // Diffuse illumination per-vertex
-  std::vector<RGBA> scg;  // Specular color per-vertex
+  std::vector<RGBA> dcg; // Diffuse color per-vertex
+  std::vector<RGBA> dig; // Diffuse illumination per-vertex
+  std::vector<RGBA> scg; // Specular color per-vertex
   std::vector<TextureStage> textureStages;
 };
 
@@ -198,7 +198,7 @@ struct Mesh {
 // Pivot (bone) structure
 struct Pivot {
   std::string name;
-  uint32_t parentIndex = 0xFFFFFFFF;  // -1 = root
+  uint32_t parentIndex = 0xFFFFFFFF; // -1 = root
   Vector3 translation;
   Vector3 eulerAngles;
   Quaternion rotation;
@@ -310,4 +310,4 @@ struct W3DFile {
   std::vector<Box> boxes;
 };
 
-}  // namespace w3d
+} // namespace w3d

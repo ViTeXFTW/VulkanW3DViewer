@@ -8,13 +8,13 @@
 namespace w3d {
 
 class FileBrowser {
- public:
-  using FileSelectedCallback = std::function<void(const std::filesystem::path&)>;
+public:
+  using FileSelectedCallback = std::function<void(const std::filesystem::path &)>;
 
   FileBrowser();
 
   // Draw the file browser window
-  void draw(bool* open = nullptr);
+  void draw(bool *open = nullptr);
 
   // Set callback for when a file is selected
   void setFileSelectedCallback(FileSelectedCallback callback) {
@@ -22,15 +22,15 @@ class FileBrowser {
   }
 
   // Set the file extension filter (e.g., ".w3d")
-  void setFilter(const std::string& extension) { filterExtension_ = extension; }
+  void setFilter(const std::string &extension) { filterExtension_ = extension; }
 
   // Open the browser at a specific path
-  void openAt(const std::filesystem::path& path);
+  void openAt(const std::filesystem::path &path);
 
- private:
+private:
   void refreshDirectory();
   void navigateUp();
-  void navigateTo(const std::filesystem::path& path);
+  void navigateTo(const std::filesystem::path &path);
 
   struct FileEntry {
     std::string name;
@@ -47,4 +47,4 @@ class FileBrowser {
   char pathInputBuffer_[512] = {};
 };
 
-}  // namespace w3d
+} // namespace w3d

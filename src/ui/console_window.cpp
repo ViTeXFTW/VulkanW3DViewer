@@ -9,7 +9,7 @@
 
 namespace w3d {
 
-void ConsoleWindow::draw(bool* open) {
+void ConsoleWindow::draw(bool *open) {
   if (!ImGui::Begin("Console", open)) {
     ImGui::End();
     return;
@@ -30,27 +30,27 @@ void ConsoleWindow::draw(bool* open) {
 
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1));
 
-  for (const auto& entry : entries_) {
+  for (const auto &entry : entries_) {
     ImVec4 color;
-    const char* prefix = "";
+    const char *prefix = "";
 
     switch (entry.level) {
-      case LogEntry::Level::Info:
-        color = ImVec4(0.4f, 0.8f, 0.4f, 1.0f);
-        prefix = "[INFO] ";
-        break;
-      case LogEntry::Level::Warning:
-        color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f);
-        prefix = "[WARN] ";
-        break;
-      case LogEntry::Level::Error:
-        color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-        prefix = "[ERROR] ";
-        break;
-      case LogEntry::Level::Plain:
-      default:
-        color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-        break;
+    case LogEntry::Level::Info:
+      color = ImVec4(0.4f, 0.8f, 0.4f, 1.0f);
+      prefix = "[INFO] ";
+      break;
+    case LogEntry::Level::Warning:
+      color = ImVec4(1.0f, 0.8f, 0.0f, 1.0f);
+      prefix = "[WARN] ";
+      break;
+    case LogEntry::Level::Error:
+      color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+      prefix = "[ERROR] ";
+      break;
+    case LogEntry::Level::Plain:
+    default:
+      color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      break;
     }
 
     if (!entry.timestamp.empty()) {
@@ -83,7 +83,7 @@ void ConsoleWindow::clear() {
   entries_.clear();
 }
 
-void ConsoleWindow::addMessage(const std::string& message) {
+void ConsoleWindow::addMessage(const std::string &message) {
   LogEntry entry;
   entry.level = LogEntry::Level::Plain;
   entry.message = message;
@@ -105,7 +105,7 @@ static std::string getCurrentTimestamp() {
   return oss.str();
 }
 
-void ConsoleWindow::log(const std::string& message) {
+void ConsoleWindow::log(const std::string &message) {
   LogEntry entry;
   entry.level = LogEntry::Level::Plain;
   entry.timestamp = getCurrentTimestamp();
@@ -114,7 +114,7 @@ void ConsoleWindow::log(const std::string& message) {
   scrollToBottom_ = true;
 }
 
-void ConsoleWindow::info(const std::string& message) {
+void ConsoleWindow::info(const std::string &message) {
   LogEntry entry;
   entry.level = LogEntry::Level::Info;
   entry.timestamp = getCurrentTimestamp();
@@ -123,7 +123,7 @@ void ConsoleWindow::info(const std::string& message) {
   scrollToBottom_ = true;
 }
 
-void ConsoleWindow::warning(const std::string& message) {
+void ConsoleWindow::warning(const std::string &message) {
   LogEntry entry;
   entry.level = LogEntry::Level::Warning;
   entry.timestamp = getCurrentTimestamp();
@@ -132,7 +132,7 @@ void ConsoleWindow::warning(const std::string& message) {
   scrollToBottom_ = true;
 }
 
-void ConsoleWindow::error(const std::string& message) {
+void ConsoleWindow::error(const std::string &message) {
   LogEntry entry;
   entry.level = LogEntry::Level::Error;
   entry.timestamp = getCurrentTimestamp();
@@ -141,4 +141,4 @@ void ConsoleWindow::error(const std::string& message) {
   scrollToBottom_ = true;
 }
 
-}  // namespace w3d
+} // namespace w3d

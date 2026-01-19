@@ -1,7 +1,8 @@
 #pragma once
 
-#include <functional>
 #include <vulkan/vulkan.hpp>
+
+#include <functional>
 
 struct GLFWwindow;
 
@@ -10,15 +11,15 @@ namespace w3d {
 class VulkanContext;
 
 class ImGuiBackend {
- public:
+public:
   ImGuiBackend() = default;
   ~ImGuiBackend();
 
-  ImGuiBackend(const ImGuiBackend&) = delete;
-  ImGuiBackend& operator=(const ImGuiBackend&) = delete;
+  ImGuiBackend(const ImGuiBackend &) = delete;
+  ImGuiBackend &operator=(const ImGuiBackend &) = delete;
 
   // Initialize ImGui with Vulkan and GLFW
-  void init(GLFWwindow* window, VulkanContext& context);
+  void init(GLFWwindow *window, VulkanContext &context);
 
   // Cleanup resources
   void cleanup();
@@ -32,12 +33,12 @@ class ImGuiBackend {
   // Handle swapchain recreation
   void onSwapchainRecreate();
 
- private:
-  void createDescriptorPool(VulkanContext& context);
+private:
+  void createDescriptorPool(VulkanContext &context);
 
-  VulkanContext* context_ = nullptr;
+  VulkanContext *context_ = nullptr;
   vk::DescriptorPool descriptorPool_;
   bool initialized_ = false;
 };
 
-}  // namespace w3d
+} // namespace w3d

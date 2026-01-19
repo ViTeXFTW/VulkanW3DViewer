@@ -1,10 +1,10 @@
 #include "imgui_backend.hpp"
 
+#include "core/vulkan_context.hpp"
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
-
-#include "core/vulkan_context.hpp"
 
 namespace w3d {
 
@@ -12,7 +12,7 @@ ImGuiBackend::~ImGuiBackend() {
   cleanup();
 }
 
-void ImGuiBackend::init(GLFWwindow* window, VulkanContext& context) {
+void ImGuiBackend::init(GLFWwindow *window, VulkanContext &context) {
   context_ = &context;
 
   // Create descriptor pool for ImGui
@@ -21,7 +21,7 @@ void ImGuiBackend::init(GLFWwindow* window, VulkanContext& context) {
   // Setup ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
+  ImGuiIO &io = ImGui::GetIO();
 
   // Enable docking
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -60,7 +60,8 @@ void ImGuiBackend::init(GLFWwindow* window, VulkanContext& context) {
 }
 
 void ImGuiBackend::cleanup() {
-  if (!initialized_) return;
+  if (!initialized_)
+    return;
 
   if (context_) {
     context_->device().waitIdle();
@@ -94,21 +95,23 @@ void ImGuiBackend::onSwapchainRecreate() {
   // For now, no action needed as we recreate the full context
 }
 
-void ImGuiBackend::createDescriptorPool(VulkanContext& context) {
+void ImGuiBackend::createDescriptorPool(VulkanContext &context) {
   // Create a descriptor pool large enough for ImGui
-  std::array<vk::DescriptorPoolSize, 11> poolSizes = {{
-      {vk::DescriptorType::eSampler, 1000},
-      {vk::DescriptorType::eCombinedImageSampler, 1000},
-      {vk::DescriptorType::eSampledImage, 1000},
-      {vk::DescriptorType::eStorageImage, 1000},
-      {vk::DescriptorType::eUniformTexelBuffer, 1000},
-      {vk::DescriptorType::eStorageTexelBuffer, 1000},
-      {vk::DescriptorType::eUniformBuffer, 1000},
-      {vk::DescriptorType::eStorageBuffer, 1000},
-      {vk::DescriptorType::eUniformBufferDynamic, 1000},
-      {vk::DescriptorType::eStorageBufferDynamic, 1000},
-      {vk::DescriptorType::eInputAttachment, 1000},
-  }};
+  std::array<vk::DescriptorPoolSize, 11> poolSizes = {
+      {
+       {vk::DescriptorType::eSampler, 1000},
+       {vk::DescriptorType::eCombinedImageSampler, 1000},
+       {vk::DescriptorType::eSampledImage, 1000},
+       {vk::DescriptorType::eStorageImage, 1000},
+       {vk::DescriptorType::eUniformTexelBuffer, 1000},
+       {vk::DescriptorType::eStorageTexelBuffer, 1000},
+       {vk::DescriptorType::eUniformBuffer, 1000},
+       {vk::DescriptorType::eStorageBuffer, 1000},
+       {vk::DescriptorType::eUniformBufferDynamic, 1000},
+       {vk::DescriptorType::eStorageBufferDynamic, 1000},
+       {vk::DescriptorType::eInputAttachment, 1000},
+       }
+  };
 
   vk::DescriptorPoolCreateInfo poolInfo{};
   poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
@@ -119,4 +122,4 @@ void ImGuiBackend::createDescriptorPool(VulkanContext& context) {
   descriptorPool_ = context.device().createDescriptorPool(poolInfo);
 }
 
-}  // namespace w3d
+} // namespace w3d

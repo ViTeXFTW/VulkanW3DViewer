@@ -1,3 +1,12 @@
+#include "core/buffer.hpp"
+#include "core/pipeline.hpp"
+#include "core/vulkan_context.hpp"
+
+#include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <array>
 #include <chrono>
 #include <cstdlib>
@@ -6,21 +15,15 @@
 #include <sstream>
 #include <stdexcept>
 
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
-
-#include "core/buffer.hpp"
-#include "core/pipeline.hpp"
-#include "core/vulkan_context.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
 #include "w3d/loader.hpp"
 
+#include <imgui.h>
+
 class VulkanW3DViewer {
- public:
+public:
   void run() {
     initWindow();
     initVulkan();
@@ -29,8 +32,8 @@ class VulkanW3DViewer {
     cleanup();
   }
 
- private:
-  GLFWwindow* window_ = nullptr;
+private:
+  GLFWwindow *window_ = nullptr;
   w3d::VulkanContext context_;
   w3d::Pipeline pipeline_;
   w3d::DescriptorManager descriptorManager_;
@@ -66,48 +69,48 @@ class VulkanW3DViewer {
   // Cube vertices
   const std::vector<w3d::Vertex> cubeVertices_ = {
       // Front face (red)
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+      {{-0.5f, -0.5f, 0.5f},  {0.0f, 0.0f, 1.0f},  {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.5f},   {0.0f, 0.0f, 1.0f},  {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+      {{0.5f, 0.5f, 0.5f},    {0.0f, 0.0f, 1.0f},  {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
+      {{-0.5f, 0.5f, 0.5f},   {0.0f, 0.0f, 1.0f},  {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
       // Back face (green)
       {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+      {{-0.5f, 0.5f, -0.5f},  {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, 0.5f, -0.5f},   {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
+      {{0.5f, -0.5f, -0.5f},  {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
       // Top face (blue)
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f, -0.5f},  {0.0f, 1.0f, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.5f},   {0.0f, 1.0f, 0.0f},  {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+      {{0.5f, 0.5f, 0.5f},    {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+      {{0.5f, 0.5f, -0.5f},   {0.0f, 1.0f, 0.0f},  {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
       // Bottom face (yellow)
       {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
+      {{0.5f, -0.5f, -0.5f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.5f},   {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
+      {{-0.5f, -0.5f, 0.5f},  {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
       // Right face (magenta)
-      {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
+      {{0.5f, -0.5f, -0.5f},  {1.0f, 0.0f, 0.0f},  {1.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
+      {{0.5f, 0.5f, -0.5f},   {1.0f, 0.0f, 0.0f},  {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
+      {{0.5f, 0.5f, 0.5f},    {1.0f, 0.0f, 0.0f},  {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
+      {{0.5f, -0.5f, 0.5f},   {1.0f, 0.0f, 0.0f},  {0.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
       // Left face (cyan)
       {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, -0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
+      {{-0.5f, -0.5f, 0.5f},  {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.5f},   {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
+      {{-0.5f, 0.5f, -0.5f},  {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
   };
 
   const std::vector<uint32_t> cubeIndices_ = {
-      0,  1,  2,  2,  3,  0,   // Front
-      4,  5,  6,  6,  7,  4,   // Back
-      8,  9,  10, 10, 11, 8,   // Top
-      12, 13, 14, 14, 15, 12,  // Bottom
-      16, 17, 18, 18, 19, 16,  // Right
-      20, 21, 22, 22, 23, 20   // Left
+      0,  1,  2,  2,  3,  0,  // Front
+      4,  5,  6,  6,  7,  4,  // Back
+      8,  9,  10, 10, 11, 8,  // Top
+      12, 13, 14, 14, 15, 12, // Bottom
+      16, 17, 18, 18, 19, 16, // Right
+      20, 21, 22, 22, 23, 20  // Left
   };
 
-  static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/) {
-    auto* app = reinterpret_cast<VulkanW3DViewer*>(glfwGetWindowUserPointer(window));
+  static void framebufferResizeCallback(GLFWwindow *window, int /*width*/, int /*height*/) {
+    auto *app = reinterpret_cast<VulkanW3DViewer *>(glfwGetWindowUserPointer(window));
     app->framebufferResized_ = true;
   }
 
@@ -152,7 +155,7 @@ class VulkanW3DViewer {
 
     // Configure file browser
     fileBrowser_.setFilter(".w3d");
-    fileBrowser_.setFileSelectedCallback([this](const std::filesystem::path& path) {
+    fileBrowser_.setFileSelectedCallback([this](const std::filesystem::path &path) {
       loadW3DFile(path);
       showFileBrowser_ = false;
     });
@@ -162,7 +165,7 @@ class VulkanW3DViewer {
     console_.log("Use File > Open to load a W3D model");
   }
 
-  void loadW3DFile(const std::filesystem::path& path) {
+  void loadW3DFile(const std::filesystem::path &path) {
     console_.info("Loading: " + path.string());
 
     std::string error;
@@ -190,8 +193,8 @@ class VulkanW3DViewer {
   }
 
   void createCommandBuffers() {
-    vk::CommandBufferAllocateInfo allocInfo{context_.commandPool(), vk::CommandBufferLevel::ePrimary,
-                                            MAX_FRAMES_IN_FLIGHT};
+    vk::CommandBufferAllocateInfo allocInfo{context_.commandPool(),
+                                            vk::CommandBufferLevel::ePrimary, MAX_FRAMES_IN_FLIGHT};
 
     commandBuffers_ = context_.device().allocateCommandBuffers(allocInfo);
   }
@@ -218,23 +221,24 @@ class VulkanW3DViewer {
         std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     w3d::UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.model =
+        glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     ubo.model = glm::rotate(ubo.model, time * glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    ubo.view =
-        glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
 
     auto extent = context_.swapchainExtent();
-    ubo.proj = glm::perspective(glm::radians(45.0f),
-                                static_cast<float>(extent.width) / static_cast<float>(extent.height),
-                                0.1f, 100.0f);
-    ubo.proj[1][1] *= -1;  // Flip Y for Vulkan
+    ubo.proj = glm::perspective(
+        glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
+        0.1f, 100.0f);
+    ubo.proj[1][1] *= -1; // Flip Y for Vulkan
 
     uniformBuffers_.update(frameIndex, ubo);
   }
 
   void drawUI() {
     // Create dockspace over the entire window
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGuiViewport *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
     ImGui::SetNextWindowViewport(viewport->ID);
@@ -344,7 +348,9 @@ class VulkanW3DViewer {
 
     // Clear values for color and depth attachments
     std::array<vk::ClearValue, 2> clearValues{};
-    clearValues[0].color = vk::ClearColorValue{std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[0].color = vk::ClearColorValue{
+        std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}
+    };
     clearValues[1].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
 
     // Begin render pass
@@ -361,15 +367,15 @@ class VulkanW3DViewer {
     // Draw 3D content
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
 
-    vk::Viewport viewport{0.0f,
-                          0.0f,
-                          static_cast<float>(extent.width),
-                          static_cast<float>(extent.height),
-                          0.0f,
-                          1.0f};
+    vk::Viewport viewport{
+        0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height),
+        0.0f, 1.0f};
     cmd.setViewport(0, viewport);
 
-    vk::Rect2D scissor{{0, 0}, extent};
+    vk::Rect2D scissor{
+        {0, 0},
+        extent
+    };
     cmd.setScissor(0, scissor);
 
     vk::Buffer vertexBuffers[] = {vertexBuffer_.buffer()};
@@ -400,8 +406,8 @@ class VulkanW3DViewer {
 
     // Acquire next image
     uint32_t imageIndex;
-    auto acquireResult = device.acquireNextImageKHR(context_.swapchain(), UINT64_MAX,
-                                                    imageAvailableSemaphores_[currentFrame_], nullptr);
+    auto acquireResult = device.acquireNextImageKHR(
+        context_.swapchain(), UINT64_MAX, imageAvailableSemaphores_[currentFrame_], nullptr);
 
     if (acquireResult.result == vk::Result::eErrorOutOfDateKHR) {
       recreateSwapchain();
@@ -450,8 +456,8 @@ class VulkanW3DViewer {
 
     auto presentResult = context_.presentQueue().presentKHR(presentInfo);
 
-    if (presentResult == vk::Result::eErrorOutOfDateKHR || presentResult == vk::Result::eSuboptimalKHR ||
-        framebufferResized_) {
+    if (presentResult == vk::Result::eErrorOutOfDateKHR ||
+        presentResult == vk::Result::eSuboptimalKHR || framebufferResized_) {
       framebufferResized_ = false;
       recreateSwapchain();
     } else if (presentResult != vk::Result::eSuccess) {
@@ -513,7 +519,7 @@ int main() {
 
   try {
     app.run();
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << "\n";
     return EXIT_FAILURE;
   }

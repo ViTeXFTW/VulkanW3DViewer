@@ -13,31 +13,28 @@ FileBrowser::FileBrowser() {
   refreshDirectory();
 }
 
-void FileBrowser::draw(bool* open) {
+void FileBrowser::draw(bool *open) {
   if (!ImGui::Begin("File Browser", open)) {
     ImGui::End();
     return;
   }
 
   // Path navigation bar
-  std::strncpy(pathInputBuffer_, currentPath_.string().c_str(),
-               sizeof(pathInputBuffer_) - 1);
+  std::strncpy(pathInputBuffer_, currentPath_.string().c_str(), sizeof(pathInputBuffer_) - 1);
   pathInputBuffer_[sizeof(pathInputBuffer_) - 1] = '\0';
 
   ImGui::SetNextItemWidth(-60);
   if (ImGui::InputText("##Path", pathInputBuffer_, sizeof(pathInputBuffer_),
                        ImGuiInputTextFlags_EnterReturnsTrue)) {
     std::filesystem::path newPath(pathInputBuffer_);
-    if (std::filesystem::exists(newPath) &&
-        std::filesystem::is_directory(newPath)) {
+    if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath)) {
       navigateTo(newPath);
     }
   }
   ImGui::SameLine();
   if (ImGui::Button("Go")) {
     std::filesystem::path newPath(pathInputBuffer_);
-    if (std::filesystem::exists(newPath) &&
-        std::filesystem::is_directory(newPath)) {
+    if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath)) {
       navigateTo(newPath);
     }
   }
@@ -51,8 +48,7 @@ void FileBrowser::draw(bool* open) {
     refreshDirectory();
   }
   ImGui::SameLine();
-  ImGui::Text("Filter: %s",
-              filterExtension_.empty() ? "*" : filterExtension_.c_str());
+  ImGui::Text("Filter: %s", filterExtension_.empty() ? "*" : filterExtension_.c_str());
 
   ImGui::Separator();
 
@@ -61,16 +57,15 @@ void FileBrowser::draw(bool* open) {
                     ImGuiChildFlags_Borders);
 
   for (size_t i = 0; i < entries_.size(); ++i) {
-    const auto& entry = entries_[i];
+    const auto &entry = entries_[i];
 
     // Icon based on type
-    const char* icon = entry.isDirectory ? "[D] " : "[F] ";
+    const char *icon = entry.isDirectory ? "[D] " : "[F] ";
 
     std::string label = icon + entry.name;
 
     bool isSelected = (static_cast<int>(i) == selectedIndex_);
-    if (ImGui::Selectable(label.c_str(), isSelected,
-                          ImGuiSelectableFlags_AllowDoubleClick)) {
+    if (ImGui::Selectable(label.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
       selectedIndex_ = static_cast<int>(i);
 
       if (ImGui::IsMouseDoubleClicked(0)) {
@@ -100,7 +95,7 @@ void FileBrowser::draw(bool* open) {
   // Open button
   if (ImGui::Button("Open") && selectedIndex_ >= 0 &&
       selectedIndex_ < static_cast<int>(entries_.size())) {
-    const auto& entry = entries_[selectedIndex_];
+    const auto &entry = entries_[selectedIndex_];
     if (entry.isDirectory) {
       navigateTo(entry.path);
     } else if (fileSelectedCallback_) {
@@ -120,8 +115,7 @@ void FileBrowser::refreshDirectory() {
   selectedIndex_ = -1;
 
   try {
-    for (const auto& dirEntry :
-         std::filesystem::directory_iterator(currentPath_)) {
+    for (const auto &dirEntry : std::filesystem::directory_iterator(currentPath_)) {
       FileEntry entry;
       entry.name = dirEntry.path().filename().string();
       entry.path = dirEntry.path();
@@ -134,8 +128,7 @@ void FileBrowser::refreshDirectory() {
         // Case-insensitive comparison
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         std::string filterLower = filterExtension_;
-        std::transform(filterLower.begin(), filterLower.end(),
-                       filterLower.begin(), ::tolower);
+        std::transform(filterLower.begin(), filterLower.end(), filterLower.begin(), ::tolower);
         if (ext != filterLower) {
           continue;
         }
@@ -145,35 +138,33 @@ void FileBrowser::refreshDirectory() {
     }
 
     // Sort: directories first, then alphabetically
-    std::sort(entries_.begin(), entries_.end(),
-              [](const FileEntry& a, const FileEntry& b) {
-                if (a.isDirectory != b.isDirectory) {
-                  return a.isDirectory > b.isDirectory;
-                }
-                return a.name < b.name;
-              });
+    std::sort(entries_.begin(), entries_.end(), [](const FileEntry &a, const FileEntry &b) {
+      if (a.isDirectory != b.isDirectory) {
+        return a.isDirectory > b.isDirectory;
+      }
+      return a.name < b.name;
+    });
 
-  } catch (const std::filesystem::filesystem_error&) {
+  } catch (const std::filesystem::filesystem_error &) {
     // Permission denied or other error
   }
 }
 
 void FileBrowser::navigateUp() {
-  if (currentPath_.has_parent_path() &&
-      currentPath_ != currentPath_.root_path()) {
+  if (currentPath_.has_parent_path() && currentPath_ != currentPath_.root_path()) {
     currentPath_ = currentPath_.parent_path();
     refreshDirectory();
   }
 }
 
-void FileBrowser::navigateTo(const std::filesystem::path& path) {
+void FileBrowser::navigateTo(const std::filesystem::path &path) {
   if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
     currentPath_ = path;
     refreshDirectory();
   }
 }
 
-void FileBrowser::openAt(const std::filesystem::path& path) {
+void FileBrowser::openAt(const std::filesystem::path &path) {
   if (std::filesystem::exists(path)) {
     if (std::filesystem::is_directory(path)) {
       currentPath_ = path;
@@ -184,4 +175,4 @@ void FileBrowser::openAt(const std::filesystem::path& path) {
   }
 }
 
-}  // namespace w3d
+} // namespace w3d

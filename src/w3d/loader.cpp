@@ -11,8 +11,7 @@
 
 namespace w3d {
 
-std::optional<W3DFile> Loader::load(const std::filesystem::path& path,
-                                    std::string* outError) {
+std::optional<W3DFile> Loader::load(const std::filesystem::path &path, std::string *outError) {
   // Read file into memory
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file) {
@@ -26,7 +25,7 @@ std::optional<W3DFile> Loader::load(const std::filesystem::path& path,
   file.seekg(0, std::ios::beg);
 
   std::vector<uint8_t> buffer(size);
-  if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+  if (!file.read(reinterpret_cast<char *>(buffer.data()), size)) {
     if (outError) {
       *outError = "Failed to read file: " + path.string();
     }
@@ -36,8 +35,8 @@ std::optional<W3DFile> Loader::load(const std::filesystem::path& path,
   return loadFromMemory(buffer.data(), buffer.size(), outError);
 }
 
-std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
-                                              std::string* outError) {
+std::optional<W3DFile> Loader::loadFromMemory(const uint8_t *data, size_t size,
+                                              std::string *outError) {
   try {
     ChunkReader reader(std::span<const uint8_t>(data, size));
     W3DFile w3dFile;
@@ -55,8 +54,8 @@ std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
       if (dataSize > reader.remaining()) {
         if (outError) {
           std::ostringstream oss;
-          oss << "Chunk size (" << dataSize << ") exceeds remaining data ("
-              << reader.remaining() << ")";
+          oss << "Chunk size (" << dataSize << ") exceeds remaining data (" << reader.remaining()
+              << ")";
           *outError = oss.str();
         }
         return std::nullopt;
@@ -64,45 +63,42 @@ std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
 
       try {
         switch (header.type) {
-          case ChunkType::MESH:
-            w3dFile.meshes.push_back(MeshParser::parse(reader, dataSize));
-            break;
+        case ChunkType::MESH:
+          w3dFile.meshes.push_back(MeshParser::parse(reader, dataSize));
+          break;
 
-          case ChunkType::HIERARCHY:
-            w3dFile.hierarchies.push_back(
-                HierarchyParser::parse(reader, dataSize));
-            break;
+        case ChunkType::HIERARCHY:
+          w3dFile.hierarchies.push_back(HierarchyParser::parse(reader, dataSize));
+          break;
 
-          case ChunkType::ANIMATION:
-            w3dFile.animations.push_back(
-                AnimationParser::parse(reader, dataSize));
-            break;
+        case ChunkType::ANIMATION:
+          w3dFile.animations.push_back(AnimationParser::parse(reader, dataSize));
+          break;
 
-          case ChunkType::COMPRESSED_ANIMATION:
-            w3dFile.compressedAnimations.push_back(
-                AnimationParser::parseCompressed(reader, dataSize));
-            break;
+        case ChunkType::COMPRESSED_ANIMATION:
+          w3dFile.compressedAnimations.push_back(
+              AnimationParser::parseCompressed(reader, dataSize));
+          break;
 
-          case ChunkType::HLOD:
-            w3dFile.hlods.push_back(HLodParser::parse(reader, dataSize));
-            break;
+        case ChunkType::HLOD:
+          w3dFile.hlods.push_back(HLodParser::parse(reader, dataSize));
+          break;
 
-          case ChunkType::BOX:
-            w3dFile.boxes.push_back(HLodParser::parseBox(reader, dataSize));
-            break;
+        case ChunkType::BOX:
+          w3dFile.boxes.push_back(HLodParser::parseBox(reader, dataSize));
+          break;
 
-          default:
-            // Skip unknown top-level chunks
-            reader.skip(dataSize);
-            break;
+        default:
+          // Skip unknown top-level chunks
+          reader.skip(dataSize);
+          break;
         }
-      } catch (const ParseError& e) {
+      } catch (const ParseError &e) {
         if (outError) {
           std::ostringstream oss;
-          oss << "Parse error in chunk " << ChunkTypeName(header.type)
-              << " (0x" << std::hex << static_cast<uint32_t>(header.type)
-              << std::dec << ") at offset " << (reader.position() - dataSize)
-              << ": " << e.what();
+          oss << "Parse error in chunk " << ChunkTypeName(header.type) << " (0x" << std::hex
+              << static_cast<uint32_t>(header.type) << std::dec << ") at offset "
+              << (reader.position() - dataSize) << ": " << e.what();
           *outError = oss.str();
         }
         return std::nullopt;
@@ -111,12 +107,12 @@ std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
 
     return w3dFile;
 
-  } catch (const ParseError& e) {
+  } catch (const ParseError &e) {
     if (outError) {
       *outError = std::string("Parse error: ") + e.what();
     }
     return std::nullopt;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     if (outError) {
       *outError = std::string("Error: ") + e.what();
     }
@@ -124,7 +120,7 @@ std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
   }
 }
 
-std::string Loader::describe(const W3DFile& file) {
+std::string Loader::describe(const W3DFile &file) {
   std::ostringstream oss;
 
   oss << "W3D File Contents:\n";
@@ -133,7 +129,7 @@ std::string Loader::describe(const W3DFile& file) {
   // Meshes
   if (!file.meshes.empty()) {
     oss << "Meshes (" << file.meshes.size() << "):\n";
-    for (const auto& mesh : file.meshes) {
+    for (const auto &mesh : file.meshes) {
       oss << "  - " << mesh.header.meshName;
       if (!mesh.header.containerName.empty()) {
         oss << " (container: " << mesh.header.containerName << ")";
@@ -148,7 +144,8 @@ std::string Loader::describe(const W3DFile& file) {
       if (!mesh.textures.empty()) {
         oss << "    Texture names: ";
         for (size_t i = 0; i < mesh.textures.size(); ++i) {
-          if (i > 0) oss << ", ";
+          if (i > 0)
+            oss << ", ";
           oss << mesh.textures[i].name;
         }
         oss << "\n";
@@ -156,14 +153,13 @@ std::string Loader::describe(const W3DFile& file) {
 
       // Skinning info
       if (!mesh.vertexInfluences.empty()) {
-        oss << "    Skinned: yes (" << mesh.vertexInfluences.size()
-            << " influences)\n";
+        oss << "    Skinned: yes (" << mesh.vertexInfluences.size() << " influences)\n";
       }
 
       // Bounding info
-      oss << "    Bounds: [" << mesh.header.min.x << "," << mesh.header.min.y
-          << "," << mesh.header.min.z << "] to [" << mesh.header.max.x << ","
-          << mesh.header.max.y << "," << mesh.header.max.z << "]\n";
+      oss << "    Bounds: [" << mesh.header.min.x << "," << mesh.header.min.y << ","
+          << mesh.header.min.z << "] to [" << mesh.header.max.x << "," << mesh.header.max.y << ","
+          << mesh.header.max.z << "]\n";
     }
     oss << "\n";
   }
@@ -171,7 +167,7 @@ std::string Loader::describe(const W3DFile& file) {
   // Hierarchies
   if (!file.hierarchies.empty()) {
     oss << "Hierarchies (" << file.hierarchies.size() << "):\n";
-    for (const auto& hier : file.hierarchies) {
+    for (const auto &hier : file.hierarchies) {
       oss << "  - " << hier.name << " (" << hier.pivots.size() << " bones)\n";
 
       // List some bone names
@@ -179,7 +175,8 @@ std::string Loader::describe(const W3DFile& file) {
         oss << "    Bones: ";
         size_t count = std::min(hier.pivots.size(), size_t(5));
         for (size_t i = 0; i < count; ++i) {
-          if (i > 0) oss << ", ";
+          if (i > 0)
+            oss << ", ";
           oss << hier.pivots[i].name;
         }
         if (hier.pivots.size() > 5) {
@@ -194,11 +191,9 @@ std::string Loader::describe(const W3DFile& file) {
   // Animations
   if (!file.animations.empty()) {
     oss << "Animations (" << file.animations.size() << "):\n";
-    for (const auto& anim : file.animations) {
-      oss << "  - " << anim.name << " (hierarchy: " << anim.hierarchyName
-          << ")\n";
-      oss << "    Frames: " << anim.numFrames << " @ " << anim.frameRate
-          << " fps\n";
+    for (const auto &anim : file.animations) {
+      oss << "  - " << anim.name << " (hierarchy: " << anim.hierarchyName << ")\n";
+      oss << "    Frames: " << anim.numFrames << " @ " << anim.frameRate << " fps\n";
       oss << "    Channels: " << anim.channels.size()
           << ", Bit channels: " << anim.bitChannels.size() << "\n";
     }
@@ -207,13 +202,10 @@ std::string Loader::describe(const W3DFile& file) {
 
   // Compressed animations
   if (!file.compressedAnimations.empty()) {
-    oss << "Compressed Animations (" << file.compressedAnimations.size()
-        << "):\n";
-    for (const auto& anim : file.compressedAnimations) {
-      oss << "  - " << anim.name << " (hierarchy: " << anim.hierarchyName
-          << ")\n";
-      oss << "    Frames: " << anim.numFrames << " @ " << anim.frameRate
-          << " fps\n";
+    oss << "Compressed Animations (" << file.compressedAnimations.size() << "):\n";
+    for (const auto &anim : file.compressedAnimations) {
+      oss << "  - " << anim.name << " (hierarchy: " << anim.hierarchyName << ")\n";
+      oss << "    Frames: " << anim.numFrames << " @ " << anim.frameRate << " fps\n";
       oss << "    Channels: " << anim.channels.size()
           << ", Bit channels: " << anim.bitChannels.size() << "\n";
     }
@@ -223,13 +215,12 @@ std::string Loader::describe(const W3DFile& file) {
   // HLods
   if (!file.hlods.empty()) {
     oss << "HLods (" << file.hlods.size() << "):\n";
-    for (const auto& hlod : file.hlods) {
-      oss << "  - " << hlod.name << " (hierarchy: " << hlod.hierarchyName
-          << ")\n";
+    for (const auto &hlod : file.hlods) {
+      oss << "  - " << hlod.name << " (hierarchy: " << hlod.hierarchyName << ")\n";
       oss << "    LOD levels: " << hlod.lodArrays.size() << "\n";
 
       for (size_t i = 0; i < hlod.lodArrays.size(); ++i) {
-        const auto& lod = hlod.lodArrays[i];
+        const auto &lod = hlod.lodArrays[i];
         oss << "      LOD " << i << ": " << lod.subObjects.size()
             << " sub-objects (max screen size: " << lod.maxScreenSize << ")\n";
       }
@@ -247,12 +238,10 @@ std::string Loader::describe(const W3DFile& file) {
   // Boxes
   if (!file.boxes.empty()) {
     oss << "Boxes (" << file.boxes.size() << "):\n";
-    for (const auto& box : file.boxes) {
+    for (const auto &box : file.boxes) {
       oss << "  - " << box.name << "\n";
-      oss << "    Center: [" << box.center.x << "," << box.center.y << ","
-          << box.center.z << "]\n";
-      oss << "    Extent: [" << box.extent.x << "," << box.extent.y << ","
-          << box.extent.z << "]\n";
+      oss << "    Center: [" << box.center.x << "," << box.center.y << "," << box.center.z << "]\n";
+      oss << "    Extent: [" << box.extent.x << "," << box.extent.y << "," << box.extent.z << "]\n";
     }
     oss << "\n";
   }
@@ -260,4 +249,4 @@ std::string Loader::describe(const W3DFile& file) {
   return oss.str();
 }
 
-}  // namespace w3d
+} // namespace w3d

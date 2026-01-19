@@ -6,13 +6,13 @@
 namespace w3d {
 
 class HierarchyParser {
- public:
+public:
   // Parse a hierarchy from a chunk reader positioned at W3D_CHUNK_HIERARCHY
   // data
-  static Hierarchy parse(ChunkReader& reader, uint32_t chunkSize);
+  static Hierarchy parse(ChunkReader &reader, uint32_t chunkSize);
 
- private:
-  static Pivot parsePivot(ChunkReader& reader);
+private:
+  static Pivot parsePivot(ChunkReader &reader);
 };
 
-}  // namespace w3d
+} // namespace w3d
