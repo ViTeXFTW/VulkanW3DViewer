@@ -62,36 +62,50 @@ std::optional<W3DFile> Loader::loadFromMemory(const uint8_t* data, size_t size,
         return std::nullopt;
       }
 
-      switch (header.type) {
-        case ChunkType::MESH:
-          w3dFile.meshes.push_back(MeshParser::parse(reader, dataSize));
-          break;
+      try {
+        switch (header.type) {
+          case ChunkType::MESH:
+            w3dFile.meshes.push_back(MeshParser::parse(reader, dataSize));
+            break;
 
-        case ChunkType::HIERARCHY:
-          w3dFile.hierarchies.push_back(HierarchyParser::parse(reader, dataSize));
-          break;
+          case ChunkType::HIERARCHY:
+            w3dFile.hierarchies.push_back(
+                HierarchyParser::parse(reader, dataSize));
+            break;
 
-        case ChunkType::ANIMATION:
-          w3dFile.animations.push_back(AnimationParser::parse(reader, dataSize));
-          break;
+          case ChunkType::ANIMATION:
+            w3dFile.animations.push_back(
+                AnimationParser::parse(reader, dataSize));
+            break;
 
-        case ChunkType::COMPRESSED_ANIMATION:
-          w3dFile.compressedAnimations.push_back(
-              AnimationParser::parseCompressed(reader, dataSize));
-          break;
+          case ChunkType::COMPRESSED_ANIMATION:
+            w3dFile.compressedAnimations.push_back(
+                AnimationParser::parseCompressed(reader, dataSize));
+            break;
 
-        case ChunkType::HLOD:
-          w3dFile.hlods.push_back(HLodParser::parse(reader, dataSize));
-          break;
+          case ChunkType::HLOD:
+            w3dFile.hlods.push_back(HLodParser::parse(reader, dataSize));
+            break;
 
-        case ChunkType::BOX:
-          w3dFile.boxes.push_back(HLodParser::parseBox(reader, dataSize));
-          break;
+          case ChunkType::BOX:
+            w3dFile.boxes.push_back(HLodParser::parseBox(reader, dataSize));
+            break;
 
-        default:
-          // Skip unknown top-level chunks
-          reader.skip(dataSize);
-          break;
+          default:
+            // Skip unknown top-level chunks
+            reader.skip(dataSize);
+            break;
+        }
+      } catch (const ParseError& e) {
+        if (outError) {
+          std::ostringstream oss;
+          oss << "Parse error in chunk " << ChunkTypeName(header.type)
+              << " (0x" << std::hex << static_cast<uint32_t>(header.type)
+              << std::dec << ") at offset " << (reader.position() - dataSize)
+              << ": " << e.what();
+          *outError = oss.str();
+        }
+        return std::nullopt;
       }
     }
 

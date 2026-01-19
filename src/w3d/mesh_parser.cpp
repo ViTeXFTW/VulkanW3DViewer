@@ -97,7 +97,7 @@ Mesh MeshParser::parse(ChunkReader& reader, uint32_t chunkSize) {
       }
 
       case ChunkType::SHADERS: {
-        size_t count = dataSize / 12;  // ShaderStruct is 12 bytes
+        size_t count = dataSize / 16;  // W3dShaderStruct is 16 bytes
         mesh.shaders.reserve(count);
         for (size_t i = 0; i < count; ++i) {
           mesh.shaders.push_back(parseShader(reader));
@@ -117,7 +117,7 @@ Mesh MeshParser::parse(ChunkReader& reader, uint32_t chunkSize) {
             subReader.skip(subHeader.dataSize());
           }
         }
-        continue;  // Skip the seek at the end
+        break;
       }
 
       case ChunkType::TEXTURES: {
@@ -132,16 +132,16 @@ Mesh MeshParser::parse(ChunkReader& reader, uint32_t chunkSize) {
             subReader.skip(subHeader.dataSize());
           }
         }
-        continue;  // Skip the seek at the end
+        break;
       }
 
       case ChunkType::MATERIAL_PASS:
         mesh.materialPasses.push_back(parseMaterialPass(reader, dataSize));
-        continue;  // Skip the seek at the end
+        break;
 
       case ChunkType::AABTREE:
         mesh.aabTree = parseAABTree(reader, dataSize);
-        continue;  // Skip the seek at the end
+        break;
 
       case ChunkType::PRELIT_UNLIT:
       case ChunkType::PRELIT_VERTEX:
@@ -218,7 +218,10 @@ ShaderDef MeshParser::parseShader(ChunkReader& reader) {
   shader.detailColorFunc = reader.read<uint8_t>();
   shader.detailAlphaFunc = reader.read<uint8_t>();
   shader.shaderPreset = reader.read<uint8_t>();
-  // Note: Some versions have more bytes, but we read the essential 12
+  shader.alphaTest = reader.read<uint8_t>();
+  shader.postDetailColorFunc = reader.read<uint8_t>();
+  shader.postDetailAlphaFunc = reader.read<uint8_t>();
+  shader.padding = reader.read<uint8_t>();
   return shader;
 }
 
@@ -343,6 +346,7 @@ MaterialPass MeshParser::parseMaterialPass(ChunkReader& reader,
   while (reader.position() < endPos) {
     auto header = reader.readChunkHeader();
     uint32_t dataSize = header.dataSize();
+    size_t chunkEnd = reader.position() + dataSize;
 
     switch (header.type) {
       case ChunkType::VERTEX_MATERIAL_IDS: {
@@ -386,12 +390,15 @@ MaterialPass MeshParser::parseMaterialPass(ChunkReader& reader,
 
       case ChunkType::TEXTURE_STAGE:
         pass.textureStages.push_back(parseTextureStage(reader, dataSize));
-        continue;  // Skip the seek
+        break;
 
       default:
         reader.skip(dataSize);
         break;
     }
+
+    // Ensure we're at the right position for the next chunk
+    reader.seek(chunkEnd);
   }
 
   return pass;

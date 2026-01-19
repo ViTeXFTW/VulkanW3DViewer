@@ -309,4 +309,71 @@ constexpr uint16_t VersionMinor(uint32_t version) {
   return static_cast<uint16_t>(version & 0xFFFF);
 }
 
+// Helper to get chunk type name for debugging
+inline const char* ChunkTypeName(ChunkType type) {
+  switch (type) {
+    case ChunkType::MESH: return "MESH";
+    case ChunkType::VERTICES: return "VERTICES";
+    case ChunkType::VERTEX_NORMALS: return "VERTEX_NORMALS";
+    case ChunkType::MESH_USER_TEXT: return "MESH_USER_TEXT";
+    case ChunkType::VERTEX_INFLUENCES: return "VERTEX_INFLUENCES";
+    case ChunkType::MESH_HEADER3: return "MESH_HEADER3";
+    case ChunkType::TRIANGLES: return "TRIANGLES";
+    case ChunkType::VERTEX_SHADE_INDICES: return "VERTEX_SHADE_INDICES";
+    case ChunkType::PRELIT_UNLIT: return "PRELIT_UNLIT";
+    case ChunkType::PRELIT_VERTEX: return "PRELIT_VERTEX";
+    case ChunkType::PRELIT_LIGHTMAP_MULTI_PASS: return "PRELIT_LIGHTMAP_MULTI_PASS";
+    case ChunkType::PRELIT_LIGHTMAP_MULTI_TEXTURE: return "PRELIT_LIGHTMAP_MULTI_TEXTURE";
+    case ChunkType::MATERIAL_INFO: return "MATERIAL_INFO";
+    case ChunkType::SHADERS: return "SHADERS";
+    case ChunkType::VERTEX_MATERIALS: return "VERTEX_MATERIALS";
+    case ChunkType::VERTEX_MATERIAL: return "VERTEX_MATERIAL";
+    case ChunkType::VERTEX_MATERIAL_NAME: return "VERTEX_MATERIAL_NAME";
+    case ChunkType::VERTEX_MATERIAL_INFO: return "VERTEX_MATERIAL_INFO";
+    case ChunkType::VERTEX_MAPPER_ARGS0: return "VERTEX_MAPPER_ARGS0";
+    case ChunkType::VERTEX_MAPPER_ARGS1: return "VERTEX_MAPPER_ARGS1";
+    case ChunkType::TEXTURES: return "TEXTURES";
+    case ChunkType::TEXTURE: return "TEXTURE";
+    case ChunkType::TEXTURE_NAME: return "TEXTURE_NAME";
+    case ChunkType::TEXTURE_INFO: return "TEXTURE_INFO";
+    case ChunkType::MATERIAL_PASS: return "MATERIAL_PASS";
+    case ChunkType::VERTEX_MATERIAL_IDS: return "VERTEX_MATERIAL_IDS";
+    case ChunkType::SHADER_IDS: return "SHADER_IDS";
+    case ChunkType::DCG: return "DCG";
+    case ChunkType::DIG: return "DIG";
+    case ChunkType::SCG: return "SCG";
+    case ChunkType::TEXTURE_STAGE: return "TEXTURE_STAGE";
+    case ChunkType::TEXTURE_IDS: return "TEXTURE_IDS";
+    case ChunkType::STAGE_TEXCOORDS: return "STAGE_TEXCOORDS";
+    case ChunkType::PER_FACE_TEXCOORD_IDS: return "PER_FACE_TEXCOORD_IDS";
+    case ChunkType::AABTREE: return "AABTREE";
+    case ChunkType::AABTREE_HEADER: return "AABTREE_HEADER";
+    case ChunkType::AABTREE_POLYINDICES: return "AABTREE_POLYINDICES";
+    case ChunkType::AABTREE_NODES: return "AABTREE_NODES";
+    case ChunkType::TEXCOORDS: return "TEXCOORDS";
+    case ChunkType::VERTEX_COLORS: return "VERTEX_COLORS";
+    case ChunkType::HIERARCHY: return "HIERARCHY";
+    case ChunkType::HIERARCHY_HEADER: return "HIERARCHY_HEADER";
+    case ChunkType::PIVOTS: return "PIVOTS";
+    case ChunkType::PIVOT_FIXUPS: return "PIVOT_FIXUPS";
+    case ChunkType::ANIMATION: return "ANIMATION";
+    case ChunkType::ANIMATION_HEADER: return "ANIMATION_HEADER";
+    case ChunkType::ANIMATION_CHANNEL: return "ANIMATION_CHANNEL";
+    case ChunkType::BIT_CHANNEL: return "BIT_CHANNEL";
+    case ChunkType::COMPRESSED_ANIMATION: return "COMPRESSED_ANIMATION";
+    case ChunkType::COMPRESSED_ANIMATION_HEADER: return "COMPRESSED_ANIMATION_HEADER";
+    case ChunkType::COMPRESSED_ANIMATION_CHANNEL: return "COMPRESSED_ANIMATION_CHANNEL";
+    case ChunkType::COMPRESSED_BIT_CHANNEL: return "COMPRESSED_BIT_CHANNEL";
+    case ChunkType::HLOD: return "HLOD";
+    case ChunkType::HLOD_HEADER: return "HLOD_HEADER";
+    case ChunkType::HLOD_LOD_ARRAY: return "HLOD_LOD_ARRAY";
+    case ChunkType::HLOD_SUB_OBJECT_ARRAY_HEADER: return "HLOD_SUB_OBJECT_ARRAY_HEADER";
+    case ChunkType::HLOD_SUB_OBJECT: return "HLOD_SUB_OBJECT";
+    case ChunkType::HLOD_AGGREGATE_ARRAY: return "HLOD_AGGREGATE_ARRAY";
+    case ChunkType::HLOD_PROXY_ARRAY: return "HLOD_PROXY_ARRAY";
+    case ChunkType::BOX: return "BOX";
+    default: return "UNKNOWN";
+  }
+}
+
 }  // namespace w3d

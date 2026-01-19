@@ -55,7 +55,8 @@ class ChunkReader {
   // Seek to a position
   void seek(size_t pos) {
     if (pos > data_.size()) {
-      throw ParseError("Seek past end of data");
+      throw ParseError("Seek past end of data (pos=" + std::to_string(pos) +
+                       ", size=" + std::to_string(data_.size()) + ")");
     }
     pos_ = pos;
   }
@@ -63,7 +64,9 @@ class ChunkReader {
   // Skip bytes
   void skip(size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Skip past end of data");
+      throw ParseError("Skip past end of data (pos=" + std::to_string(pos_) +
+                       ", skip=" + std::to_string(count) +
+                       ", size=" + std::to_string(data_.size()) + ")");
     }
     pos_ += count;
   }
@@ -71,7 +74,9 @@ class ChunkReader {
   // Read raw bytes
   void readBytes(void* dest, size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Read past end of data");
+      throw ParseError("Read past end of data (pos=" + std::to_string(pos_) +
+                       ", read=" + std::to_string(count) +
+                       ", size=" + std::to_string(data_.size()) + ")");
     }
     std::memcpy(dest, data_.data() + pos_, count);
     pos_ += count;
@@ -152,7 +157,10 @@ class ChunkReader {
   // Create a sub-reader for a chunk's data
   ChunkReader subReader(size_t length) {
     if (pos_ + length > data_.size()) {
-      throw ParseError("Sub-reader extends past end of data");
+      throw ParseError("Sub-reader extends past end of data (pos=" +
+                       std::to_string(pos_) + ", length=" +
+                       std::to_string(length) +
+                       ", size=" + std::to_string(data_.size()) + ")");
     }
     ChunkReader sub(data_.subspan(pos_, length));
     pos_ += length;

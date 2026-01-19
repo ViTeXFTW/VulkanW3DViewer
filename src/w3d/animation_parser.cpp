@@ -9,6 +9,7 @@ Animation AnimationParser::parse(ChunkReader& reader, uint32_t chunkSize) {
   while (reader.position() < endPos) {
     auto header = reader.readChunkHeader();
     uint32_t dataSize = header.dataSize();
+    size_t chunkEnd = reader.position() + dataSize;
 
     switch (header.type) {
       case ChunkType::ANIMATION_HEADER: {
@@ -22,16 +23,19 @@ Animation AnimationParser::parse(ChunkReader& reader, uint32_t chunkSize) {
 
       case ChunkType::ANIMATION_CHANNEL:
         anim.channels.push_back(parseAnimChannel(reader, dataSize));
-        continue;  // Skip seek
+        break;
 
       case ChunkType::BIT_CHANNEL:
         anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
-        continue;  // Skip seek
+        break;
 
       default:
         reader.skip(dataSize);
         break;
     }
+
+    // Ensure we're at the right position for the next chunk
+    reader.seek(chunkEnd);
   }
 
   return anim;
@@ -45,6 +49,7 @@ CompressedAnimation AnimationParser::parseCompressed(ChunkReader& reader,
   while (reader.position() < endPos) {
     auto header = reader.readChunkHeader();
     uint32_t dataSize = header.dataSize();
+    size_t chunkEnd = reader.position() + dataSize;
 
     switch (header.type) {
       case ChunkType::COMPRESSED_ANIMATION_HEADER: {
@@ -59,16 +64,19 @@ CompressedAnimation AnimationParser::parseCompressed(ChunkReader& reader,
 
       case ChunkType::COMPRESSED_ANIMATION_CHANNEL:
         anim.channels.push_back(parseCompressedChannel(reader, dataSize));
-        continue;  // Skip seek
+        break;
 
       case ChunkType::COMPRESSED_BIT_CHANNEL:
         anim.bitChannels.push_back(parseBitChannel(reader, dataSize));
-        continue;  // Skip seek
+        break;
 
       default:
         reader.skip(dataSize);
         break;
     }
+
+    // Ensure we're at the right position for the next chunk
+    reader.seek(chunkEnd);
   }
 
   return anim;
