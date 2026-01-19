@@ -12,7 +12,7 @@
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
 
-class VulkanApp {
+class VulkanW3DViewer {
 public:
   void run() {
     initWindow();
@@ -86,7 +86,7 @@ private:
   };
 
   static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/) {
-    auto app = reinterpret_cast<VulkanApp*>(glfwGetWindowUserPointer(window));
+    auto app = reinterpret_cast<VulkanW3DViewer*>(glfwGetWindowUserPointer(window));
     app->framebufferResized_ = true;
   }
 
@@ -361,7 +361,7 @@ private:
 };
 
 int main() {
-  VulkanApp app;
+  VulkanW3DViewer app;
 
   try {
     app.run();
