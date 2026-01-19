@@ -33,18 +33,32 @@ add_subdirectory(lib/glfw)
 # Add GLM submodule
 add_subdirectory(lib/glm)
 
+# ImGui sources
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+)
+
 # Collect source files
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
 
 # Create executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
     ${Vulkan_INCLUDE_DIRS}
 )
 
