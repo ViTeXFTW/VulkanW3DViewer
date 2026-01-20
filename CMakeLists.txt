@@ -19,100 +19,105 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
     )
 endif()
 
-# Find Vulkan
-find_package(Vulkan REQUIRED)
-
-# GLFW options - disable unnecessary builds
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-# Add GLFW submodule
-add_subdirectory(lib/glfw)
-
-# Add GLM submodule
-add_subdirectory(lib/glm)
-
-# ImGui sources
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
-set(IMGUI_SOURCES
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-)
-
-# Collect source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
-
-# Create executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
-
-# Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
-    ${Vulkan_INCLUDE_DIRS}
-)
-
-# Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    Vulkan::Vulkan
-    glfw
-    glm::glm
-)
-
-# Compiler-specific flags
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
-else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-# Find glslc shader compiler
-find_program(GLSLC glslc HINTS "$ENV{VULKAN_SDK}/Bin")
-if(NOT GLSLC)
-    message(FATAL_ERROR "glslc not found! Make sure Vulkan SDK is installed.")
-endif()
-
-# Shader compilation function
-function(compile_shaders target)
-    file(GLOB SHADER_SOURCES "${CMAKE_SOURCE_DIR}/shaders/*.vert" "${CMAKE_SOURCE_DIR}/shaders/*.frag")
-    foreach(SHADER ${SHADER_SOURCES})
-        get_filename_component(SHADER_NAME ${SHADER} NAME)
-        set(SPIRV_OUTPUT "${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
-        add_custom_command(
-            OUTPUT ${SPIRV_OUTPUT}
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
-            COMMAND ${GLSLC} ${SHADER} -o ${SPIRV_OUTPUT}
-            DEPENDS ${SHADER}
-            COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
-        )
-        list(APPEND SPIRV_OUTPUTS ${SPIRV_OUTPUT})
-    endforeach()
-    add_custom_target(${target}_shaders DEPENDS ${SPIRV_OUTPUTS})
-    add_dependencies(${target} ${target}_shaders)
-endfunction()
-
-# Compile shaders
-compile_shaders(${PROJECT_NAME})
-
-# Copy compiled shaders to output directory
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_BINARY_DIR}/shaders
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
-)
-
 # Testing with Google Test
 option(BUILD_TESTING "Build tests" OFF)
+
+# Only build main application if not in tests-only mode
+if(NOT BUILD_TESTING)
+    # Find Vulkan
+    find_package(Vulkan REQUIRED)
+
+    # GLFW options - disable unnecessary builds
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+    # Add GLFW submodule
+    add_subdirectory(lib/glfw)
+
+    # Add GLM submodule
+    add_subdirectory(lib/glm)
+
+    # ImGui sources
+    set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
+    set(IMGUI_SOURCES
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+    )
+
+    # Collect source files
+    file(GLOB_RECURSE SOURCES "src/*.cpp")
+    file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
+
+    # Create executable
+    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
+
+    # Include directories
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
+        ${Vulkan_INCLUDE_DIRS}
+    )
+
+    # Link libraries
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        Vulkan::Vulkan
+        glfw
+        glm::glm
+    )
+
+    # Compiler-specific flags
+    if(MSVC)
+        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    # Find glslc shader compiler
+    find_program(GLSLC glslc HINTS "$ENV{VULKAN_SDK}/Bin")
+    if(NOT GLSLC)
+        message(FATAL_ERROR "glslc not found! Make sure Vulkan SDK is installed.")
+    endif()
+
+    # Shader compilation function
+    function(compile_shaders target)
+        file(GLOB SHADER_SOURCES "${CMAKE_SOURCE_DIR}/shaders/*.vert" "${CMAKE_SOURCE_DIR}/shaders/*.frag")
+        foreach(SHADER ${SHADER_SOURCES})
+            get_filename_component(SHADER_NAME ${SHADER} NAME)
+            set(SPIRV_OUTPUT "${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
+            add_custom_command(
+                OUTPUT ${SPIRV_OUTPUT}
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
+                COMMAND ${GLSLC} ${SHADER} -o ${SPIRV_OUTPUT}
+                DEPENDS ${SHADER}
+                COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
+            )
+            list(APPEND SPIRV_OUTPUTS ${SPIRV_OUTPUT})
+        endforeach()
+        add_custom_target(${target}_shaders DEPENDS ${SPIRV_OUTPUTS})
+        add_dependencies(${target} ${target}_shaders)
+    endfunction()
+
+    # Compile shaders
+    compile_shaders(${PROJECT_NAME})
+
+    # Copy compiled shaders to output directory
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_BINARY_DIR}/shaders
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
+    )
+endif()
+
+# Testing with Google Test
 if(BUILD_TESTING)
   enable_testing()
   add_subdirectory(lib/googletest)
