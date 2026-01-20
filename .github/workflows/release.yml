@@ -75,8 +75,8 @@ jobs:
       - name: Package binary
         run: |
           mkdir VulkanW3DViewer-windows
-          Copy-Item build/release/Release/VulkanW3DViewer.exe VulkanW3DViewer-windows/
-          Copy-Item -Recurse build/release/Release/shaders VulkanW3DViewer-windows/
+          Copy-Item build/release/VulkanW3DViewer.exe VulkanW3DViewer-windows/
+          Copy-Item -Recurse build/release/shaders VulkanW3DViewer-windows/
           Compress-Archive -Path VulkanW3DViewer-windows -DestinationPath VulkanW3DViewer-windows-v${{ needs.prepare-release.outputs.version }}.zip
       
       - name: Upload artifact
