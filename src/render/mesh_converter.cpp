@@ -1,5 +1,7 @@
 #include "mesh_converter.hpp"
 
+#include "skeleton.hpp"
+
 namespace w3d {
 
 ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
@@ -52,18 +54,86 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
   return result;
 }
 
+std::unordered_map<std::string, int32_t> MeshConverter::buildMeshToBoneMap(const W3DFile &file) {
+  std::unordered_map<std::string, int32_t> meshToBone;
+
+  for (const auto &hlod : file.hlods) {
+    // Process all LOD arrays
+    for (const auto &lodArray : hlod.lodArrays) {
+      for (const auto &subObj : lodArray.subObjects) {
+        meshToBone[subObj.name] = static_cast<int32_t>(subObj.boneIndex);
+      }
+    }
+    // Also process aggregates
+    for (const auto &subObj : hlod.aggregates) {
+      meshToBone[subObj.name] = static_cast<int32_t>(subObj.boneIndex);
+    }
+  }
+
+  return meshToBone;
+}
+
 std::vector<ConvertedMesh> MeshConverter::convertAll(const W3DFile &file) {
+  return convertAllWithPose(file, nullptr);
+}
+
+std::vector<ConvertedMesh> MeshConverter::convertAllWithPose(const W3DFile &file,
+                                                             const SkeletonPose *pose) {
   std::vector<ConvertedMesh> result;
   result.reserve(file.meshes.size());
+
+  // Build mesh name to bone index mapping from HLod data
+  auto meshToBone = buildMeshToBoneMap(file);
 
   for (const auto &mesh : file.meshes) {
     auto converted = convert(mesh);
     if (!converted.vertices.empty() && !converted.indices.empty()) {
+      // Try to find bone index for this mesh
+      // First try full name (containerName.meshName)
+      std::string fullName = mesh.header.containerName + "." + mesh.header.meshName;
+      auto it = meshToBone.find(fullName);
+      if (it != meshToBone.end()) {
+        converted.boneIndex = it->second;
+      } else {
+        // Try just mesh name
+        it = meshToBone.find(mesh.header.meshName);
+        if (it != meshToBone.end()) {
+          converted.boneIndex = it->second;
+        }
+      }
+
+      // Apply bone transform if skeleton pose is provided
+      if (pose && converted.boneIndex >= 0 &&
+          static_cast<size_t>(converted.boneIndex) < pose->boneCount()) {
+        glm::mat4 boneTransform = pose->boneTransform(static_cast<size_t>(converted.boneIndex));
+        applyBoneTransform(converted, boneTransform);
+      }
+
       result.push_back(std::move(converted));
     }
   }
 
   return result;
+}
+
+void MeshConverter::applyBoneTransform(ConvertedMesh &mesh, const glm::mat4 &transform) {
+  // Reset bounds since we're transforming vertices
+  mesh.bounds = BoundingBox{};
+
+  // Transform each vertex position and normal
+  glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(transform)));
+
+  for (auto &v : mesh.vertices) {
+    // Transform position
+    glm::vec4 pos = transform * glm::vec4(v.position, 1.0f);
+    v.position = glm::vec3(pos);
+
+    // Transform normal (using normal matrix to handle non-uniform scaling)
+    v.normal = glm::normalize(normalMatrix * v.normal);
+
+    // Update bounds
+    mesh.bounds.expand(v.position);
+  }
 }
 
 BoundingBox MeshConverter::combinedBounds(const std::vector<ConvertedMesh> &meshes) {

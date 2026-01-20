@@ -11,9 +11,14 @@ RenderableMesh::~RenderableMesh() {
 }
 
 void RenderableMesh::load(VulkanContext &context, const W3DFile &file) {
+  loadWithPose(context, file, nullptr);
+}
+
+void RenderableMesh::loadWithPose(VulkanContext &context, const W3DFile &file,
+                                  const SkeletonPose *pose) {
   destroy(); // Clean up any existing data
 
-  auto converted = MeshConverter::convertAll(file);
+  auto converted = MeshConverter::convertAllWithPose(file, pose);
   bounds_ = MeshConverter::combinedBounds(converted);
 
   meshes_.reserve(converted.size());
@@ -24,6 +29,7 @@ void RenderableMesh::load(VulkanContext &context, const W3DFile &file) {
 
     MeshGPUData gpu;
     gpu.name = cm.name;
+    gpu.boneIndex = cm.boneIndex;
     gpu.vertexBuffer.create(context, cm.vertices);
     gpu.indexBuffer.create(context, cm.indices);
     meshes_.push_back(std::move(gpu));
