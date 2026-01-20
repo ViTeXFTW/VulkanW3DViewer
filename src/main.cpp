@@ -1,6 +1,8 @@
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
 #include "core/vulkan_context.hpp"
+#include "render/camera.hpp"
+#include "render/renderable_mesh.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -62,6 +64,10 @@ private:
   std::optional<w3d::W3DFile> loadedFile_;
   std::string loadedFilePath_;
 
+  // Mesh rendering
+  w3d::RenderableMesh renderableMesh_;
+  w3d::Camera camera_;
+
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -114,6 +120,11 @@ private:
     app->framebufferResized_ = true;
   }
 
+  static void scrollCallback(GLFWwindow *window, double /*xoffset*/, double yoffset) {
+    auto *app = reinterpret_cast<VulkanW3DViewer *>(glfwGetWindowUserPointer(window));
+    app->camera_.onScroll(static_cast<float>(yoffset));
+  }
+
   void initWindow() {
     if (!glfwInit()) {
       throw std::runtime_error("Failed to initialize GLFW");
@@ -129,6 +140,7 @@ private:
 
     glfwSetWindowUserPointer(window_, this);
     glfwSetFramebufferSizeCallback(window_, framebufferResizeCallback);
+    glfwSetScrollCallback(window_, scrollCallback);
   }
 
   void initVulkan() {
@@ -190,6 +202,17 @@ private:
     while (std::getline(stream, line)) {
       console_.addMessage(line);
     }
+
+    // Upload meshes to GPU
+    context_.device().waitIdle();
+    renderableMesh_.load(context_, *loadedFile_);
+
+    // Auto-center camera on mesh
+    if (renderableMesh_.hasData()) {
+      const auto &bounds = renderableMesh_.bounds();
+      camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+      console_.info("Uploaded " + std::to_string(renderableMesh_.meshCount()) + " meshes to GPU");
+    }
   }
 
   void createCommandBuffers() {
@@ -215,22 +238,31 @@ private:
   }
 
   void updateUniformBuffer(uint32_t frameIndex) {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time =
-        std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
     w3d::UniformBufferObject ubo{};
-    ubo.model =
-        glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    ubo.model = glm::rotate(ubo.model, time * glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::vec3(0.0f, 1.0f, 0.0f));
+
+    if (renderableMesh_.hasData()) {
+      // Use camera for loaded mesh
+      ubo.model = glm::mat4(1.0f);
+      ubo.view = camera_.viewMatrix();
+    } else {
+      // Animated rotation for demo cube
+      static auto startTime = std::chrono::high_resolution_clock::now();
+      auto currentTime = std::chrono::high_resolution_clock::now();
+      float time =
+          std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime)
+              .count();
+
+      ubo.model =
+          glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+      ubo.model = glm::rotate(ubo.model, time * glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+      ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                             glm::vec3(0.0f, 1.0f, 0.0f));
+    }
 
     auto extent = context_.swapchainExtent();
     ubo.proj = glm::perspective(
         glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
-        0.1f, 100.0f);
+        0.01f, 10000.0f);
     ubo.proj[1][1] *= -1; // Flip Y for Vulkan
 
     uniformBuffers_.update(frameIndex, ubo);
@@ -285,7 +317,7 @@ private:
       if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About")) {
           console_.info("W3D Viewer - Vulkan-based W3D model viewer");
-          console_.info("Phase 2: W3D Parser Implementation");
+          console_.info("Phase 3: Static Mesh Rendering");
         }
         ImGui::EndMenu();
       }
@@ -319,23 +351,42 @@ private:
     // Display loaded file info
     if (loadedFile_) {
       ImGui::Text("Loaded: %s", loadedFilePath_.c_str());
-      ImGui::Text("Meshes: %zu", loadedFile_->meshes.size());
+      ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
+                  renderableMesh_.meshCount());
       ImGui::Text("Hierarchies: %zu", loadedFile_->hierarchies.size());
       ImGui::Text("Animations: %zu",
                   loadedFile_->animations.size() + loadedFile_->compressedAnimations.size());
+
+      // Camera controls
+      ImGui::Separator();
+      ImGui::Text("Camera Controls");
+      ImGui::Text("Left-drag to orbit, scroll to zoom");
+
+      float yaw = glm::degrees(camera_.yaw());
+      float pitch = glm::degrees(camera_.pitch());
+      float dist = camera_.distance();
+
+      if (ImGui::SliderFloat("Yaw", &yaw, -180.0f, 180.0f)) {
+        camera_.setYaw(glm::radians(yaw));
+      }
+      if (ImGui::SliderFloat("Pitch", &pitch, -85.0f, 85.0f)) {
+        camera_.setPitch(glm::radians(pitch));
+      }
+      if (ImGui::SliderFloat("Distance", &dist, 0.1f, 1000.0f, "%.1f",
+                             ImGuiSliderFlags_Logarithmic)) {
+        camera_.setDistance(dist);
+      }
+
+      if (ImGui::Button("Reset Camera")) {
+        const auto &bounds = renderableMesh_.bounds();
+        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+      }
     } else {
       ImGui::Text("No model loaded");
       ImGui::Text("Use File > Open to load a W3D model");
+      ImGui::Separator();
+      ImGui::Text("Showing demo cube");
     }
-
-    ImGui::Separator();
-
-    // Viewport area info
-    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-    ImGui::Text("Viewport: %.0fx%.0f", viewportSize.x, viewportSize.y);
-
-    // Placeholder for 3D viewport (will be implemented in Phase 3)
-    ImGui::Text("3D rendering will be implemented in Phase 3");
 
     ImGui::End();
   }
@@ -378,15 +429,19 @@ private:
     };
     cmd.setScissor(0, scissor);
 
-    vk::Buffer vertexBuffers[] = {vertexBuffer_.buffer()};
-    vk::DeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(indexBuffer_.buffer(), 0, vk::IndexType::eUint32);
-
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
                            descriptorManager_.descriptorSet(currentFrame_), {});
 
-    cmd.drawIndexed(indexBuffer_.indexCount(), 1, 0, 0, 0);
+    // Draw loaded mesh or fallback cube
+    if (renderableMesh_.hasData()) {
+      renderableMesh_.draw(cmd);
+    } else {
+      vk::Buffer vertexBuffers[] = {vertexBuffer_.buffer()};
+      vk::DeviceSize offsets[] = {0};
+      cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+      cmd.bindIndexBuffer(indexBuffer_.buffer(), 0, vk::IndexType::eUint32);
+      cmd.drawIndexed(indexBuffer_.indexCount(), 1, 0, 0, 0);
+    }
 
     // Draw ImGui
     imguiBackend_.render(cmd);
@@ -483,6 +538,10 @@ private:
   void mainLoop() {
     while (!glfwWindowShouldClose(window_)) {
       glfwPollEvents();
+
+      // Update camera
+      camera_.update(window_);
+
       drawFrame();
     }
 
@@ -500,6 +559,7 @@ private:
       device.destroyFence(inFlightFences_[i]);
     }
 
+    renderableMesh_.destroy();
     descriptorManager_.destroy();
     uniformBuffers_.destroy();
     indexBuffer_.destroy();
