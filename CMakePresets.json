@@ -55,7 +55,8 @@
             "name": "test",
             "configurePreset": "test",
             "output": {
-                "outputOnFailure": true
+                "outputOnFailure": true,
+                "verbosity": "verbose"
             }
         }
     ]
