@@ -38,10 +38,15 @@ jobs:
           sudo apt-get install -y vulkan-sdk
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'
-        uses: humbletim/install-vulkan-sdk@v1.1.1
-        with:
-          version: latest
-          cache: true
+        shell: pwsh
+        run: |
+          $ver = (Invoke-WebRequest -Uri "https://vulkan.lunarg.com/sdk/latest.json" -UseBasicParsing | ConvertFrom-Json).windows
+          echo "Installing Vulkan SDK version $ver"
+          $installer = "$env:TEMP\VulkanSDK-Installer.exe"
+          Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$ver/windows/VulkanSDK-$ver-Installer.exe" -OutFile $installer
+          Start-Process -FilePath $installer -ArgumentList "--accept-licenses --default-answer --confirm-command install" -NoNewWindow -Wait
+          echo "VULKAN_SDK=C:\VulkanSDK\$ver" >> $env:GITHUB_ENV
+          echo "C:\VulkanSDK\$ver\Bin" >> $env:GITHUB_PATH
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
