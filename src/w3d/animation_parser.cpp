@@ -144,7 +144,7 @@ CompressedAnimChannel AnimationParser::parseCompressedChannel(ChunkReader &reade
 
   channel.numTimeCodes = reader.read<uint32_t>();
   channel.pivot = reader.read<uint16_t>();
-  channel.vectorLen = reader.read<uint8_t>();
+  channel.vectorLen = reader.read<uint16_t>();
   channel.flags = reader.read<uint8_t>();
   reader.skip(4); // padding/reserved
 
