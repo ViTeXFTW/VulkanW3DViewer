@@ -11,10 +11,10 @@ public:
   Camera() = default;
 
   // Set the target point and initial distance
-  void setTarget(const glm::vec3& target, float distance);
+  void setTarget(const glm::vec3 &target, float distance);
 
   // Update camera based on mouse input (call each frame)
-  void update(GLFWwindow* window);
+  void update(GLFWwindow *window);
 
   // Handle scroll input for zoom (call from scroll callback)
   void onScroll(float yOffset);
@@ -34,7 +34,7 @@ public:
   float distance() const { return distance_; }
   float yaw() const { return yaw_; }
   float pitch() const { return pitch_; }
-  const glm::vec3& target() const { return target_; }
+  const glm::vec3 &target() const { return target_; }
 
 private:
   glm::vec3 target_{0.0f, 0.0f, 0.0f};

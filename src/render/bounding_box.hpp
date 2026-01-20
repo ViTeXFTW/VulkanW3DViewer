@@ -11,12 +11,12 @@ struct BoundingBox {
   glm::vec3 min{std::numeric_limits<float>::max()};
   glm::vec3 max{std::numeric_limits<float>::lowest()};
 
-  void expand(const glm::vec3& point) {
+  void expand(const glm::vec3 &point) {
     min = glm::min(min, point);
     max = glm::max(max, point);
   }
 
-  void expand(const BoundingBox& other) {
+  void expand(const BoundingBox &other) {
     if (other.valid()) {
       min = glm::min(min, other.min);
       max = glm::max(max, other.max);

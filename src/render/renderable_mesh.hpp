@@ -1,12 +1,13 @@
 #pragma once
 
-#include "bounding_box.hpp"
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
-#include "w3d/types.hpp"
 
 #include <string>
 #include <vector>
+
+#include "bounding_box.hpp"
+#include "w3d/types.hpp"
 
 namespace w3d {
 
@@ -25,11 +26,11 @@ public:
   RenderableMesh() = default;
   ~RenderableMesh();
 
-  RenderableMesh(const RenderableMesh&) = delete;
-  RenderableMesh& operator=(const RenderableMesh&) = delete;
+  RenderableMesh(const RenderableMesh &) = delete;
+  RenderableMesh &operator=(const RenderableMesh &) = delete;
 
   // Load meshes from W3D file
-  void load(VulkanContext& context, const W3DFile& file);
+  void load(VulkanContext &context, const W3DFile &file);
 
   // Free GPU resources
   void destroy();
@@ -38,13 +39,13 @@ public:
   bool hasData() const { return !meshes_.empty(); }
 
   // Get bounds for camera positioning
-  const BoundingBox& bounds() const { return bounds_; }
+  const BoundingBox &bounds() const { return bounds_; }
 
   // Get mesh count
   size_t meshCount() const { return meshes_.size(); }
 
   // Access individual mesh GPU data
-  const MeshGPUData& mesh(size_t index) const { return meshes_[index]; }
+  const MeshGPUData &mesh(size_t index) const { return meshes_[index]; }
 
   // Record draw commands for all meshes
   void draw(vk::CommandBuffer cmd) const;

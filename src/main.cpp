@@ -1,8 +1,6 @@
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
 #include "core/vulkan_context.hpp"
-#include "render/camera.hpp"
-#include "render/renderable_mesh.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -17,6 +15,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "render/camera.hpp"
+#include "render/renderable_mesh.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"

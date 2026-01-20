@@ -1,6 +1,7 @@
 #include "renderable_mesh.hpp"
 
 #include "core/vulkan_context.hpp"
+
 #include "mesh_converter.hpp"
 
 namespace w3d {
@@ -9,14 +10,14 @@ RenderableMesh::~RenderableMesh() {
   destroy();
 }
 
-void RenderableMesh::load(VulkanContext& context, const W3DFile& file) {
+void RenderableMesh::load(VulkanContext &context, const W3DFile &file) {
   destroy(); // Clean up any existing data
 
   auto converted = MeshConverter::convertAll(file);
   bounds_ = MeshConverter::combinedBounds(converted);
 
   meshes_.reserve(converted.size());
-  for (auto& cm : converted) {
+  for (auto &cm : converted) {
     if (cm.vertices.empty() || cm.indices.empty()) {
       continue;
     }
@@ -30,7 +31,7 @@ void RenderableMesh::load(VulkanContext& context, const W3DFile& file) {
 }
 
 void RenderableMesh::draw(vk::CommandBuffer cmd) const {
-  for (const auto& mesh : meshes_) {
+  for (const auto &mesh : meshes_) {
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
@@ -40,7 +41,7 @@ void RenderableMesh::draw(vk::CommandBuffer cmd) const {
 }
 
 void RenderableMesh::destroy() {
-  for (auto& mesh : meshes_) {
+  for (auto &mesh : meshes_) {
     mesh.vertexBuffer.destroy();
     mesh.indexBuffer.destroy();
   }

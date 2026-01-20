@@ -1,20 +1,22 @@
 #include "camera.hpp"
 
 #include <GLFW/glfw3.h>
+
 #include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
 
 #include <algorithm>
 #include <cmath>
 
+#include <imgui.h>
+
 namespace w3d {
 
-void Camera::setTarget(const glm::vec3& target, float distance) {
+void Camera::setTarget(const glm::vec3 &target, float distance) {
   target_ = target;
   distance_ = std::clamp(distance, kMinDistance, kMaxDistance);
 }
 
-void Camera::update(GLFWwindow* window) {
+void Camera::update(GLFWwindow *window) {
   // Don't process input if ImGui wants the mouse
   if (ImGui::GetIO().WantCaptureMouse) {
     dragging_ = false;
