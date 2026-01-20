@@ -14,8 +14,8 @@ cmake --build --preset debug
 cmake --build --preset release
 
 # Run (after building)
-./build/debug/VulkanApp.exe    # Windows debug
-./build/release/VulkanApp.exe  # Windows release
+./build/debug/VulkanW3DViewer.exe    # Windows debug
+./build/release/VulkanW3DViewer.exe  # Windows release
 ```
 
 ## Project Overview
@@ -38,8 +38,24 @@ src/
     vulkan_context.hpp/cpp    # Device, swapchain, queues, depth buffer
     buffer.hpp/cpp            # GPU buffer management with staging
     pipeline.hpp/cpp          # Graphics pipeline, descriptors
-  w3d/                        # (Phase 2) W3D file parsing
-  render/                     # (Phase 3+) Mesh rendering, camera, animation
+  w3d/
+    loader.hpp/cpp            # W3D file loading interface
+    chunk_reader.hpp          # Binary chunk parsing utilities
+    chunk_types.hpp           # W3D chunk type enumerations
+    types.hpp                 # W3D data structures (Mesh, Hierarchy, Animation, etc.)
+    mesh_parser.hpp/cpp       # Mesh chunk parsing
+    hierarchy_parser.hpp/cpp  # Skeleton/bone parsing
+    animation_parser.hpp/cpp  # Animation keyframe parsing
+    hlod_parser.hpp/cpp       # Hierarchical LOD parsing
+  render/
+    bounding_box.hpp          # AABB utilities
+    camera.hpp/cpp            # Orbital camera with mouse controls
+    mesh_converter.hpp/cpp    # W3D mesh to GPU vertex conversion
+    renderable_mesh.hpp/cpp   # GPU buffer management for meshes
+  ui/
+    imgui_backend.hpp/cpp     # ImGui Vulkan integration
+    console_window.hpp/cpp    # Debug console UI
+    file_browser.hpp/cpp      # File browser for loading W3D files
 shaders/
   basic.vert/frag             # Basic lit shader with vertex colors
 ```
@@ -49,11 +65,11 @@ shaders/
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1 | Done | Vulkan foundation - device, swapchain, pipeline, cube rendering |
-| 2 | Pending | W3D file parsing - chunk reader, mesh/hierarchy/animation structs |
-| 3 | Pending | Static mesh rendering - GPU upload, textures, viewer controls |
+| 2 | Done | W3D file parsing - chunk reader, mesh/hierarchy/animation structs |
+| 3 | Done | Static mesh rendering - GPU upload, viewer controls (no textures yet) |
 | 4 | Pending | Hierarchy/pose - bone matrices, rest pose display |
 | 5 | Pending | HLod assembly - model assembly, LOD switching |
-| 6 | Pending | Materials - W3D shader states, multi-pass |
+| 6 | Pending | Materials - W3D shader states, textures, multi-pass |
 
 ## Code Style
 
