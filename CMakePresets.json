@@ -26,6 +26,14 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
+        },
+        {
+            "name": "test",
+            "displayName": "Debug with Tests",
+            "inherits": "debug",
+            "cacheVariables": {
+                "BUILD_TESTING": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -36,6 +44,20 @@
         {
             "name": "release",
             "configurePreset": "release"
+        },
+        {
+            "name": "test",
+            "configurePreset": "test"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "test",
+            "configurePreset": "test",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "verbose"
+            }
         }
     ]
 }
