@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
-#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
@@ -17,6 +16,8 @@
 
 #include "render/camera.hpp"
 #include "render/renderable_mesh.hpp"
+#include "render/skeleton.hpp"
+#include "render/skeleton_renderer.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
@@ -39,8 +40,6 @@ private:
   w3d::VulkanContext context_;
   w3d::Pipeline pipeline_;
   w3d::DescriptorManager descriptorManager_;
-  w3d::VertexBuffer<w3d::Vertex> vertexBuffer_;
-  w3d::IndexBuffer indexBuffer_;
   w3d::UniformBuffer<w3d::UniformBufferObject> uniformBuffers_;
 
   std::vector<vk::CommandBuffer> commandBuffers_;
@@ -68,52 +67,15 @@ private:
   w3d::RenderableMesh renderableMesh_;
   w3d::Camera camera_;
 
+  // Skeleton rendering
+  w3d::SkeletonRenderer skeletonRenderer_;
+  w3d::SkeletonPose skeletonPose_;
+  bool showSkeleton_ = true;
+  bool showMesh_ = true;
+
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
-  // Cube vertices
-  const std::vector<w3d::Vertex> cubeVertices_ = {
-      // Front face (red)
-      {{-0.5f, -0.5f, 0.5f},  {0.0f, 0.0f, 1.0f},  {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.5f},   {0.0f, 0.0f, 1.0f},  {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.5f},    {0.0f, 0.0f, 1.0f},  {1.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-      {{-0.5f, 0.5f, 0.5f},   {0.0f, 0.0f, 1.0f},  {0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-      // Back face (green)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      {{-0.5f, 0.5f, -0.5f},  {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, 0.5f, -0.5f},   {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, -0.5f},  {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-      // Top face (blue)
-      {{-0.5f, 0.5f, -0.5f},  {0.0f, 1.0f, 0.0f},  {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.5f},   {0.0f, 1.0f, 0.0f},  {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, 0.5f},    {0.0f, 1.0f, 0.0f},  {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, -0.5f},   {0.0f, 1.0f, 0.0f},  {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
-      // Bottom face (yellow)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, -0.5f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.5f},   {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
-      {{-0.5f, -0.5f, 0.5f},  {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
-      // Right face (magenta)
-      {{0.5f, -0.5f, -0.5f},  {1.0f, 0.0f, 0.0f},  {1.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, -0.5f},   {1.0f, 0.0f, 0.0f},  {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f, 0.5f},    {1.0f, 0.0f, 0.0f},  {0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, -0.5f, 0.5f},   {1.0f, 0.0f, 0.0f},  {0.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-      // Left face (cyan)
-      {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, -0.5f, 0.5f},  {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.5f},   {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f, -0.5f},  {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
-  };
-
-  const std::vector<uint32_t> cubeIndices_ = {
-      0,  1,  2,  2,  3,  0,  // Front
-      4,  5,  6,  6,  7,  4,  // Back
-      8,  9,  10, 10, 11, 8,  // Top
-      12, 13, 14, 14, 15, 12, // Bottom
-      16, 17, 18, 18, 19, 16, // Right
-      20, 21, 22, 22, 23, 20  // Left
-  };
 
   static void framebufferResizeCallback(GLFWwindow *window, int /*width*/, int /*height*/) {
     auto *app = reinterpret_cast<VulkanW3DViewer *>(glfwGetWindowUserPointer(window));
@@ -146,9 +108,8 @@ private:
   void initVulkan() {
     context_.init(window_, true);
     pipeline_.create(context_, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
+    skeletonRenderer_.create(context_);
 
-    vertexBuffer_.create(context_, cubeVertices_);
-    indexBuffer_.create(context_, cubeIndices_);
     uniformBuffers_.create(context_, MAX_FRAMES_IN_FLIGHT);
 
     descriptorManager_.create(context_, pipeline_.descriptorSetLayout(), MAX_FRAMES_IN_FLIGHT);
@@ -203,15 +164,34 @@ private:
       console_.addMessage(line);
     }
 
-    // Upload meshes to GPU
+    // Compute skeleton pose first (needed for mesh positioning)
     context_.device().waitIdle();
-    renderableMesh_.load(context_, *loadedFile_);
+    if (!loadedFile_->hierarchies.empty()) {
+      skeletonPose_.computeRestPose(loadedFile_->hierarchies[0]);
+      skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+      console_.info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) + " bones");
+    }
 
-    // Auto-center camera on mesh
+    // Upload meshes to GPU with bone transforms applied
+    const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
+    renderableMesh_.loadWithPose(context_, *loadedFile_, posePtr);
+
+    // Auto-center camera on mesh or skeleton
     if (renderableMesh_.hasData()) {
       const auto &bounds = renderableMesh_.bounds();
       camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
       console_.info("Uploaded " + std::to_string(renderableMesh_.meshCount()) + " meshes to GPU");
+    } else if (skeletonPose_.isValid()) {
+      // Center on skeleton if no mesh
+      glm::vec3 center(0.0f);
+      float maxDist = 1.0f;
+      for (size_t i = 0; i < skeletonPose_.boneCount(); ++i) {
+        glm::vec3 pos = skeletonPose_.bonePosition(i);
+        center += pos;
+        maxDist = std::max(maxDist, glm::length(pos));
+      }
+      center /= static_cast<float>(skeletonPose_.boneCount());
+      camera_.setTarget(center, maxDist * 2.5f);
     }
   }
 
@@ -240,24 +220,9 @@ private:
   void updateUniformBuffer(uint32_t frameIndex) {
     w3d::UniformBufferObject ubo{};
 
-    if (renderableMesh_.hasData()) {
-      // Use camera for loaded mesh
-      ubo.model = glm::mat4(1.0f);
-      ubo.view = camera_.viewMatrix();
-    } else {
-      // Animated rotation for demo cube
-      static auto startTime = std::chrono::high_resolution_clock::now();
-      auto currentTime = std::chrono::high_resolution_clock::now();
-      float time =
-          std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime)
-              .count();
-
-      ubo.model =
-          glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-      ubo.model = glm::rotate(ubo.model, time * glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-      ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                             glm::vec3(0.0f, 1.0f, 0.0f));
-    }
+    // Always use camera-based view
+    ubo.model = glm::mat4(1.0f);
+    ubo.view = camera_.viewMatrix();
 
     auto extent = context_.swapchainExtent();
     ubo.proj = glm::perspective(
@@ -317,7 +282,7 @@ private:
       if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About")) {
           console_.info("W3D Viewer - Vulkan-based W3D model viewer");
-          console_.info("Phase 3: Static Mesh Rendering");
+          console_.info("Phase 4: Hierarchy/Pose Display");
         }
         ImGui::EndMenu();
       }
@@ -357,6 +322,17 @@ private:
       ImGui::Text("Animations: %zu",
                   loadedFile_->animations.size() + loadedFile_->compressedAnimations.size());
 
+      // Skeleton info
+      if (skeletonPose_.isValid()) {
+        ImGui::Text("Skeleton bones: %zu", skeletonPose_.boneCount());
+      }
+
+      // Display toggles
+      ImGui::Separator();
+      ImGui::Text("Display Options");
+      ImGui::Checkbox("Show Mesh", &showMesh_);
+      ImGui::Checkbox("Show Skeleton", &showSkeleton_);
+
       // Camera controls
       ImGui::Separator();
       ImGui::Text("Camera Controls");
@@ -378,14 +354,14 @@ private:
       }
 
       if (ImGui::Button("Reset Camera")) {
-        const auto &bounds = renderableMesh_.bounds();
-        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+        if (renderableMesh_.hasData()) {
+          const auto &bounds = renderableMesh_.bounds();
+          camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+        }
       }
     } else {
       ImGui::Text("No model loaded");
       ImGui::Text("Use File > Open to load a W3D model");
-      ImGui::Separator();
-      ImGui::Text("Showing demo cube");
     }
 
     ImGui::End();
@@ -432,15 +408,17 @@ private:
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
                            descriptorManager_.descriptorSet(currentFrame_), {});
 
-    // Draw loaded mesh or fallback cube
-    if (renderableMesh_.hasData()) {
+    // Draw loaded mesh
+    if (showMesh_ && renderableMesh_.hasData()) {
       renderableMesh_.draw(cmd);
-    } else {
-      vk::Buffer vertexBuffers[] = {vertexBuffer_.buffer()};
-      vk::DeviceSize offsets[] = {0};
-      cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-      cmd.bindIndexBuffer(indexBuffer_.buffer(), 0, vk::IndexType::eUint32);
-      cmd.drawIndexed(indexBuffer_.indexCount(), 1, 0, 0, 0);
+    }
+
+    // Draw skeleton overlay
+    if (showSkeleton_ && skeletonRenderer_.hasData()) {
+      // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
+      cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer_.pipelineLayout(), 0,
+                             descriptorManager_.descriptorSet(currentFrame_), {});
+      skeletonRenderer_.draw(cmd);
     }
 
     // Draw ImGui
@@ -559,11 +537,10 @@ private:
       device.destroyFence(inFlightFences_[i]);
     }
 
+    skeletonRenderer_.destroy();
     renderableMesh_.destroy();
     descriptorManager_.destroy();
     uniformBuffers_.destroy();
-    indexBuffer_.destroy();
-    vertexBuffer_.destroy();
     pipeline_.destroy();
     context_.cleanup();
 
