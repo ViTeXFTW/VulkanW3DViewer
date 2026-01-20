@@ -15,7 +15,7 @@ void RenderableMesh::load(VulkanContext &context, const W3DFile &file) {
 }
 
 void RenderableMesh::loadWithPose(VulkanContext &context, const W3DFile &file,
-                                   const SkeletonPose *pose) {
+                                  const SkeletonPose *pose) {
   destroy(); // Clean up any existing data
 
   auto converted = MeshConverter::convertAllWithPose(file, pose);

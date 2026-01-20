@@ -4,16 +4,16 @@
 
 namespace w3d {
 
-glm::quat SkeletonPose::toGlmQuat(const Quaternion& q) {
+glm::quat SkeletonPose::toGlmQuat(const Quaternion &q) {
   // GLM quaternion constructor order: w, x, y, z
   return glm::quat(q.w, q.x, q.y, q.z);
 }
 
-glm::vec3 SkeletonPose::toGlmVec3(const Vector3& v) {
+glm::vec3 SkeletonPose::toGlmVec3(const Vector3 &v) {
   return glm::vec3(v.x, v.y, v.z);
 }
 
-glm::mat4 SkeletonPose::pivotToLocalMatrix(const Pivot& pivot) {
+glm::mat4 SkeletonPose::pivotToLocalMatrix(const Pivot &pivot) {
   // Start with identity
   glm::mat4 localMatrix(1.0f);
 
@@ -28,7 +28,7 @@ glm::mat4 SkeletonPose::pivotToLocalMatrix(const Pivot& pivot) {
   return localMatrix;
 }
 
-void SkeletonPose::computeRestPose(const Hierarchy& hierarchy) {
+void SkeletonPose::computeRestPose(const Hierarchy &hierarchy) {
   size_t numBones = hierarchy.pivots.size();
   if (numBones == 0) {
     boneWorldTransforms_.clear();
@@ -43,12 +43,13 @@ void SkeletonPose::computeRestPose(const Hierarchy& hierarchy) {
 
   // Process bones in order (parents come before children in W3D format)
   for (size_t i = 0; i < numBones; ++i) {
-    const Pivot& pivot = hierarchy.pivots[i];
+    const Pivot &pivot = hierarchy.pivots[i];
 
     // Store bone name and parent index
     boneNames_[i] = pivot.name;
     // W3D uses 0xFFFFFFFF (-1 as unsigned) to indicate root bone
-    parentIndices_[i] = (pivot.parentIndex == 0xFFFFFFFF) ? -1 : static_cast<int>(pivot.parentIndex);
+    parentIndices_[i] =
+        (pivot.parentIndex == 0xFFFFFFFF) ? -1 : static_cast<int>(pivot.parentIndex);
 
     // Compute local transform from pivot data
     glm::mat4 localTransform = pivotToLocalMatrix(pivot);
@@ -71,7 +72,7 @@ glm::vec3 SkeletonPose::bonePosition(size_t index) const {
   }
 
   // Extract position from the 4th column of the world transform matrix
-  const glm::mat4& transform = boneWorldTransforms_[index];
+  const glm::mat4 &transform = boneWorldTransforms_[index];
   return glm::vec3(transform[3]);
 }
 

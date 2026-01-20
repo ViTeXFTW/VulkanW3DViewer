@@ -1,4 +1,5 @@
 #include "skeleton_renderer.hpp"
+
 #include "core/vulkan_context.hpp"
 
 #include <algorithm>
@@ -13,23 +14,22 @@ SkeletonRenderer::~SkeletonRenderer() {
   destroy();
 }
 
-void SkeletonRenderer::create(VulkanContext& context) {
+void SkeletonRenderer::create(VulkanContext &context) {
   device_ = context.device();
   createDescriptorSetLayout(context);
   createPipeline(context);
 }
 
-void SkeletonRenderer::createDescriptorSetLayout(VulkanContext& /*context*/) {
+void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
   // Same UBO layout as the main pipeline (model, view, proj matrices)
-  vk::DescriptorSetLayoutBinding uboLayoutBinding{
-    0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex
-  };
+  vk::DescriptorSetLayoutBinding uboLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
+                                                  vk::ShaderStageFlagBits::eVertex};
 
   vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, uboLayoutBinding};
   descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);
 }
 
-std::vector<char> readShaderFile(const std::string& filename) {
+std::vector<char> readShaderFile(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
@@ -45,14 +45,13 @@ std::vector<char> readShaderFile(const std::string& filename) {
   return buffer;
 }
 
-vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char>& code) {
+vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char> &code) {
   vk::ShaderModuleCreateInfo createInfo{
-    {}, code.size(), reinterpret_cast<const uint32_t*>(code.data())
-  };
+      {}, code.size(), reinterpret_cast<const uint32_t *>(code.data())};
   return device.createShaderModule(createInfo);
 }
 
-void SkeletonRenderer::createPipeline(VulkanContext& context) {
+void SkeletonRenderer::createPipeline(VulkanContext &context) {
   // Load skeleton shaders
   auto vertShaderCode = readShaderFile("shaders/skeleton.vert.spv");
   auto fragShaderCode = readShaderFile("shaders/skeleton.frag.spv");
@@ -61,25 +60,22 @@ void SkeletonRenderer::createPipeline(VulkanContext& context) {
   auto fragShaderModule = createShaderModule(device_, fragShaderCode);
 
   vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
-    {}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"
-  };
+      {}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"};
   vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
-    {}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main"
-  };
-  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
-    vertShaderStageInfo, fragShaderStageInfo
-  };
+      {}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main"};
+  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo,
+                                                                   fragShaderStageInfo};
 
   // Vertex input - simplified for skeleton
   auto bindingDescription = SkeletonVertex::getBindingDescription();
   auto attributeDescriptions = SkeletonVertex::getAttributeDescriptions();
 
-  vk::PipelineVertexInputStateCreateInfo vertexInputInfo{{}, bindingDescription, attributeDescriptions};
+  vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
+      {}, bindingDescription, attributeDescriptions};
 
   // Dynamic viewport and scissor
-  std::array<vk::DynamicState, 2> dynamicStates = {
-    vk::DynamicState::eViewport, vk::DynamicState::eScissor
-  };
+  std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport,
+                                                   vk::DynamicState::eScissor};
   vk::PipelineDynamicStateCreateInfo dynamicState{{}, dynamicStates};
 
   vk::PipelineViewportStateCreateInfo viewportState{{}, 1, nullptr, 1, nullptr};
@@ -89,23 +85,27 @@ void SkeletonRenderer::createPipeline(VulkanContext& context) {
 
   // Depth stencil - enable depth test but write slightly closer to avoid z-fighting
   vk::PipelineDepthStencilStateCreateInfo depthStencil{
-    {},
-    VK_TRUE,  // depthTestEnable
-    VK_TRUE,  // depthWriteEnable
-    vk::CompareOp::eLessOrEqual,
-    VK_FALSE, // depthBoundsTestEnable
-    VK_FALSE  // stencilTestEnable
+      {},
+      VK_TRUE,  // depthTestEnable
+      VK_TRUE,  // depthWriteEnable
+      vk::CompareOp::eLessOrEqual,
+      VK_FALSE, // depthBoundsTestEnable
+      VK_FALSE  // stencilTestEnable
   };
 
   // Color blending - opaque
   vk::PipelineColorBlendAttachmentState colorBlendAttachment{
-    VK_FALSE,
-    vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-    vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-    vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-    vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
-  };
-  vk::PipelineColorBlendStateCreateInfo colorBlending{{}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
+      VK_FALSE,
+      vk::BlendFactor::eOne,
+      vk::BlendFactor::eZero,
+      vk::BlendOp::eAdd,
+      vk::BlendFactor::eOne,
+      vk::BlendFactor::eZero,
+      vk::BlendOp::eAdd,
+      vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+  vk::PipelineColorBlendStateCreateInfo colorBlending{
+      {}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
 
   // Pipeline layout - use our descriptor set layout
   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_};
@@ -114,36 +114,37 @@ void SkeletonRenderer::createPipeline(VulkanContext& context) {
   // Create LINE pipeline
   {
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-      {}, vk::PrimitiveTopology::eLineList, VK_FALSE
-    };
+        {}, vk::PrimitiveTopology::eLineList, VK_FALSE};
 
     vk::PipelineRasterizationStateCreateInfo rasterizer{
-      {},
-      VK_FALSE, // depthClampEnable
-      VK_FALSE, // rasterizerDiscardEnable
-      vk::PolygonMode::eFill,
-      vk::CullModeFlagBits::eNone,  // No culling for lines
-      vk::FrontFace::eCounterClockwise,
-      VK_FALSE, // depthBiasEnable
-      0.0f, 0.0f, 0.0f,
-      2.0f  // lineWidth - thicker for visibility
+        {},
+        VK_FALSE,                    // depthClampEnable
+        VK_FALSE,                    // rasterizerDiscardEnable
+        vk::PolygonMode::eFill,
+        vk::CullModeFlagBits::eNone, // No culling for lines
+        vk::FrontFace::eCounterClockwise,
+        VK_FALSE,                    // depthBiasEnable
+        0.0f,
+        0.0f,
+        0.0f,
+        2.0f // lineWidth - thicker for visibility
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{
-      {},
-      shaderStages,
-      &vertexInputInfo,
-      &inputAssembly,
-      nullptr, // tessellation
-      &viewportState,
-      &rasterizer,
-      &multisampling,
-      &depthStencil,
-      &colorBlending,
-      &dynamicState,
-      pipelineLayout_,
-      context.renderPass(),
-      0 // subpass
+        {},
+        shaderStages,
+        &vertexInputInfo,
+        &inputAssembly,
+        nullptr, // tessellation
+        &viewportState,
+        &rasterizer,
+        &multisampling,
+        &depthStencil,
+        &colorBlending,
+        &dynamicState,
+        pipelineLayout_,
+        context.renderPass(),
+        0 // subpass
     };
 
     auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);
@@ -156,36 +157,37 @@ void SkeletonRenderer::createPipeline(VulkanContext& context) {
   // Create POINT pipeline for joints
   {
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-      {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE
-    };
+        {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE};
 
     vk::PipelineRasterizationStateCreateInfo rasterizer{
-      {},
-      VK_FALSE, // depthClampEnable
-      VK_FALSE, // rasterizerDiscardEnable
-      vk::PolygonMode::eFill,
-      vk::CullModeFlagBits::eNone,  // No culling for small spheres
-      vk::FrontFace::eCounterClockwise,
-      VK_FALSE, // depthBiasEnable
-      0.0f, 0.0f, 0.0f,
-      1.0f  // lineWidth
+        {},
+        VK_FALSE,                    // depthClampEnable
+        VK_FALSE,                    // rasterizerDiscardEnable
+        vk::PolygonMode::eFill,
+        vk::CullModeFlagBits::eNone, // No culling for small spheres
+        vk::FrontFace::eCounterClockwise,
+        VK_FALSE,                    // depthBiasEnable
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f // lineWidth
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{
-      {},
-      shaderStages,
-      &vertexInputInfo,
-      &inputAssembly,
-      nullptr, // tessellation
-      &viewportState,
-      &rasterizer,
-      &multisampling,
-      &depthStencil,
-      &colorBlending,
-      &dynamicState,
-      pipelineLayout_,
-      context.renderPass(),
-      0 // subpass
+        {},
+        shaderStages,
+        &vertexInputInfo,
+        &inputAssembly,
+        nullptr, // tessellation
+        &viewportState,
+        &rasterizer,
+        &multisampling,
+        &depthStencil,
+        &colorBlending,
+        &dynamicState,
+        pipelineLayout_,
+        context.renderPass(),
+        0 // subpass
     };
 
     auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);
@@ -200,33 +202,43 @@ void SkeletonRenderer::createPipeline(VulkanContext& context) {
   device_.destroyShaderModule(fragShaderModule);
 }
 
-std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(
-    const glm::vec3& center, float radius, const glm::vec3& color) const {
+std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(const glm::vec3 &center,
+                                                                  float radius,
+                                                                  const glm::vec3 &color) const {
   // Generate an icosphere (subdivided icosahedron) for joints
   // Start with icosahedron vertices
   const float t = (1.0f + std::sqrt(5.0f)) / 2.0f;
 
   std::vector<glm::vec3> vertices = {
-    glm::normalize(glm::vec3(-1,  t,  0)),
-    glm::normalize(glm::vec3( 1,  t,  0)),
-    glm::normalize(glm::vec3(-1, -t,  0)),
-    glm::normalize(glm::vec3( 1, -t,  0)),
-    glm::normalize(glm::vec3( 0, -1,  t)),
-    glm::normalize(glm::vec3( 0,  1,  t)),
-    glm::normalize(glm::vec3( 0, -1, -t)),
-    glm::normalize(glm::vec3( 0,  1, -t)),
-    glm::normalize(glm::vec3( t,  0, -1)),
-    glm::normalize(glm::vec3( t,  0,  1)),
-    glm::normalize(glm::vec3(-t,  0, -1)),
-    glm::normalize(glm::vec3(-t,  0,  1))
-  };
+      glm::normalize(glm::vec3(-1, t, 0)),  glm::normalize(glm::vec3(1, t, 0)),
+      glm::normalize(glm::vec3(-1, -t, 0)), glm::normalize(glm::vec3(1, -t, 0)),
+      glm::normalize(glm::vec3(0, -1, t)),  glm::normalize(glm::vec3(0, 1, t)),
+      glm::normalize(glm::vec3(0, -1, -t)), glm::normalize(glm::vec3(0, 1, -t)),
+      glm::normalize(glm::vec3(t, 0, -1)),  glm::normalize(glm::vec3(t, 0, 1)),
+      glm::normalize(glm::vec3(-t, 0, -1)), glm::normalize(glm::vec3(-t, 0, 1))};
 
   // Icosahedron faces (triangles)
   std::vector<std::array<int, 3>> faces = {
-    {0, 11, 5}, {0, 5, 1}, {0, 1, 7}, {0, 7, 10}, {0, 10, 11},
-    {1, 5, 9}, {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
-    {3, 9, 4}, {3, 4, 2}, {3, 2, 6}, {3, 6, 8}, {3, 8, 9},
-    {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}
+      {0,  11, 5 },
+      {0,  5,  1 },
+      {0,  1,  7 },
+      {0,  7,  10},
+      {0,  10, 11},
+      {1,  5,  9 },
+      {5,  11, 4 },
+      {11, 10, 2 },
+      {10, 7,  6 },
+      {7,  1,  8 },
+      {3,  9,  4 },
+      {3,  4,  2 },
+      {3,  2,  6 },
+      {3,  6,  8 },
+      {3,  8,  9 },
+      {4,  9,  5 },
+      {2,  4,  11},
+      {6,  2,  10},
+      {8,  6,  7 },
+      {9,  8,  1 }
   };
 
   // Subdivide for smoother appearance
@@ -247,7 +259,7 @@ std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(
       return index;
     };
 
-    for (const auto& face : faces) {
+    for (const auto &face : faces) {
       int a = getMidpoint(face[0], face[1]);
       int b = getMidpoint(face[1], face[2]);
       int c = getMidpoint(face[2], face[0]);
@@ -264,7 +276,7 @@ std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(
   std::vector<SkeletonVertex> result;
   result.reserve(faces.size() * 3);
 
-  for (const auto& face : faces) {
+  for (const auto &face : faces) {
     for (int idx : face) {
       SkeletonVertex v;
       v.position = center + vertices[idx] * radius;
@@ -276,7 +288,7 @@ std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(
   return result;
 }
 
-void SkeletonRenderer::updateFromPose(VulkanContext& context, const SkeletonPose& pose) {
+void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose &pose) {
   if (!pose.isValid()) {
     lineVertexCount_ = 0;
     jointVertexCount_ = 0;
@@ -303,7 +315,7 @@ void SkeletonRenderer::updateFromPose(VulkanContext& context, const SkeletonPose
 
   float skeletonSize = std::max({maxX - minX, maxY - minY, maxZ - minZ});
   float jointRadius = skeletonSize * kJointSizeRatio;
-  jointRadius = std::max(jointRadius, 0.01f);  // Minimum size
+  jointRadius = std::max(jointRadius, 0.01f); // Minimum size
 
   // Generate line vertices (bone connections)
   std::vector<SkeletonVertex> lineVertices;

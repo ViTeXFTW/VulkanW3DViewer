@@ -21,7 +21,7 @@ struct MeshGPUData {
   VertexBuffer<Vertex> vertexBuffer;
   IndexBuffer indexBuffer;
   std::string name;
-  int32_t boneIndex = -1;  // Index into skeleton hierarchy (-1 = no bone)
+  int32_t boneIndex = -1; // Index into skeleton hierarchy (-1 = no bone)
 };
 
 // Manages GPU resources for all meshes in a loaded file
@@ -77,7 +77,7 @@ void RenderableMesh::drawWithBoneTransforms(vk::CommandBuffer cmd, const Skeleto
                                             UpdateModelMatrixFunc updateModelMatrix) const {
   for (const auto &mesh : meshes_) {
     // Get bone transform for this mesh
-    glm::mat4 boneTransform(1.0f);  // Identity by default
+    glm::mat4 boneTransform(1.0f); // Identity by default
     if (pose && mesh.boneIndex >= 0 && static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
       boneTransform = pose->boneTransform(static_cast<size_t>(mesh.boneIndex));
     }

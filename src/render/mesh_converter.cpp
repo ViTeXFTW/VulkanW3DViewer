@@ -1,4 +1,5 @@
 #include "mesh_converter.hpp"
+
 #include "skeleton.hpp"
 
 namespace w3d {
@@ -77,7 +78,7 @@ std::vector<ConvertedMesh> MeshConverter::convertAll(const W3DFile &file) {
 }
 
 std::vector<ConvertedMesh> MeshConverter::convertAllWithPose(const W3DFile &file,
-                                                              const SkeletonPose *pose) {
+                                                             const SkeletonPose *pose) {
   std::vector<ConvertedMesh> result;
   result.reserve(file.meshes.size());
 

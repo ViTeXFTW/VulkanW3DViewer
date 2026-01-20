@@ -18,7 +18,7 @@ struct ConvertedMesh {
   std::vector<uint32_t> indices;
   BoundingBox bounds;
   std::string name;
-  int32_t boneIndex = -1;  // Index into hierarchy (-1 = no bone attachment)
+  int32_t boneIndex = -1; // Index into hierarchy (-1 = no bone attachment)
 };
 
 class MeshConverter {
@@ -31,7 +31,7 @@ public:
 
   // Convert all meshes with bone transforms applied from skeleton pose
   static std::vector<ConvertedMesh> convertAllWithPose(const W3DFile &file,
-                                                        const SkeletonPose *pose);
+                                                       const SkeletonPose *pose);
 
   // Apply bone transform to a converted mesh's vertices
   static void applyBoneTransform(ConvertedMesh &mesh, const glm::mat4 &transform);

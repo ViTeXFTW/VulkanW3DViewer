@@ -416,8 +416,8 @@ private:
     // Draw skeleton overlay
     if (showSkeleton_ && skeletonRenderer_.hasData()) {
       // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
-      cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer_.pipelineLayout(), 0,
-                             descriptorManager_.descriptorSet(currentFrame_), {});
+      cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer_.pipelineLayout(),
+                             0, descriptorManager_.descriptorSet(currentFrame_), {});
       skeletonRenderer_.draw(cmd);
     }
 
