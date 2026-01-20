@@ -1,0 +1,38 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches: [ dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cmake \
+          ninja-build \
+          clang \
+          libvulkan-dev \
+          vulkan-validationlayers \
+          spirv-tools \
+          libglfw3-dev \
+          libglm-dev \
+          glslang-tools
+    
+    - name: Configure CMake
+      run: cmake --preset test
+    
+    - name: Build
+      run: cmake --build build/test
+    
+    - name: Run tests
+      run: ctest --test-dir build/test --output-on-failure
