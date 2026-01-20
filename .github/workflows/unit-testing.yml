@@ -26,7 +26,13 @@ jobs:
           spirv-tools \
           libglfw3-dev \
           libglm-dev \
-          glslang-tools
+          glslang-tools \
+          libxkbcommon-dev \
+          libwayland-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev
     
     - name: Configure CMake
       run: cmake --preset test
