@@ -1,10 +1,7 @@
 #pragma once
 
-#include "bounding_box.hpp"
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
-#include "skeleton.hpp"
-#include "w3d/types.hpp"
 
 #include <glm/glm.hpp>
 
@@ -12,22 +9,26 @@
 #include <unordered_map>
 #include <vector>
 
+#include "bounding_box.hpp"
+#include "skeleton.hpp"
+#include "w3d/types.hpp"
+
 namespace w3d {
 
 class VulkanContext;
 
 // Information about a single mesh within a LOD level
 struct HLodMeshInfo {
-  size_t meshIndex;        // Index into W3DFile::meshes
-  uint32_t boneIndex;      // Bone this mesh is attached to
-  std::string name;        // Mesh identifier (for debugging)
+  size_t meshIndex;   // Index into W3DFile::meshes
+  uint32_t boneIndex; // Bone this mesh is attached to
+  std::string name;   // Mesh identifier (for debugging)
 };
 
 // Information about a single LOD level
 struct HLodLevelInfo {
-  float maxScreenSize;                 // Maximum screen size for this LOD (0 = highest detail)
-  std::vector<HLodMeshInfo> meshes;    // Meshes to render at this LOD level
-  BoundingBox bounds;                  // Combined bounds for this LOD level
+  float maxScreenSize;              // Maximum screen size for this LOD (0 = highest detail)
+  std::vector<HLodMeshInfo> meshes; // Meshes to render at this LOD level
+  BoundingBox bounds;               // Combined bounds for this LOD level
 };
 
 // GPU resources for a mesh in the HLod model
@@ -36,14 +37,14 @@ struct HLodMeshGPU {
   IndexBuffer indexBuffer;
   std::string name;
   int32_t boneIndex = -1;
-  size_t lodLevel = 0;     // Which LOD level this mesh belongs to
+  size_t lodLevel = 0;      // Which LOD level this mesh belongs to
   bool isAggregate = false; // True if this is an always-rendered aggregate
 };
 
 // LOD selection mode
 enum class LODSelectionMode {
-  Auto,     // Automatically select LOD based on screen size
-  Manual    // Manual LOD level selection
+  Auto,  // Automatically select LOD based on screen size
+  Manual // Manual LOD level selection
 };
 
 // Complete HLod model with LOD management
@@ -125,15 +126,15 @@ private:
   std::string name_;
   std::string hierarchyName_;
 
-  std::vector<HLodLevelInfo> lodLevels_;     // LOD level information
-  std::vector<HLodMeshGPU> meshGPU_;         // All GPU mesh data
-  size_t aggregateCount_ = 0;                // Number of aggregate meshes (at start of meshGPU_)
+  std::vector<HLodLevelInfo> lodLevels_; // LOD level information
+  std::vector<HLodMeshGPU> meshGPU_;     // All GPU mesh data
+  size_t aggregateCount_ = 0;            // Number of aggregate meshes (at start of meshGPU_)
 
   LODSelectionMode selectionMode_ = LODSelectionMode::Auto;
-  size_t currentLOD_ = 0;                    // Current LOD level being rendered
-  float currentScreenSize_ = 0.0f;           // Current calculated screen size
+  size_t currentLOD_ = 0;          // Current LOD level being rendered
+  float currentScreenSize_ = 0.0f; // Current calculated screen size
 
-  BoundingBox combinedBounds_;               // Combined bounds of all meshes
+  BoundingBox combinedBounds_;     // Combined bounds of all meshes
 };
 
 // Template implementation

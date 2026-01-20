@@ -193,9 +193,9 @@ private:
       // Log LOD level details
       for (size_t i = 0; i < hlodModel_.lodCount(); ++i) {
         const auto &level = hlodModel_.lodLevel(i);
-        std::string lodInfo = "  LOD " + std::to_string(i) + ": " +
-                              std::to_string(level.meshes.size()) + " meshes, maxScreenSize=" +
-                              std::to_string(static_cast<int>(level.maxScreenSize));
+        std::string lodInfo =
+            "  LOD " + std::to_string(i) + ": " + std::to_string(level.meshes.size()) +
+            " meshes, maxScreenSize=" + std::to_string(static_cast<int>(level.maxScreenSize));
         console_.log(lodInfo);
       }
 
@@ -414,9 +414,9 @@ private:
             const auto &level = hlodModel_.lodLevel(i);
             bool isCurrent = (i == hlodModel_.currentLOD());
 
-            ImGui::PushStyleColor(ImGuiCol_Text,
-                                  isCurrent ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
-                                            : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+            ImGui::PushStyleColor(ImGuiCol_Text, isCurrent
+                                                     ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
+                                                     : ImGui::GetStyleColorVec4(ImGuiCol_Text));
 
             ImGui::Text("LOD %zu: %zu meshes (maxSize=%.0f)", i, level.meshes.size(),
                         level.maxScreenSize);

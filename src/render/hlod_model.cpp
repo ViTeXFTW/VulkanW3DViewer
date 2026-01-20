@@ -1,14 +1,17 @@
 #include "hlod_model.hpp"
 
 #include "core/vulkan_context.hpp"
-#include "mesh_converter.hpp"
 
 #include <algorithm>
 #include <cmath>
 
+#include "mesh_converter.hpp"
+
 namespace w3d {
 
-HLodModel::~HLodModel() { destroy(); }
+HLodModel::~HLodModel() {
+  destroy();
+}
 
 void HLodModel::destroy() {
   for (auto &mesh : meshGPU_) {
@@ -39,9 +42,9 @@ std::unordered_map<std::string, size_t> HLodModel::buildMeshNameMap(const W3DFil
   return nameMap;
 }
 
-std::optional<size_t> HLodModel::findMeshIndex(
-    const std::unordered_map<std::string, size_t> &nameMap, const W3DFile & /*file*/,
-    const std::string &name) {
+std::optional<size_t>
+HLodModel::findMeshIndex(const std::unordered_map<std::string, size_t> &nameMap,
+                         const W3DFile & /*file*/, const std::string &name) {
   // Try exact match first
   auto it = nameMap.find(name);
   if (it != nameMap.end()) {
