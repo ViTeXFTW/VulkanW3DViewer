@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "render/camera.hpp"
+#include "render/hlod_model.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
@@ -65,7 +66,9 @@ private:
 
   // Mesh rendering
   w3d::RenderableMesh renderableMesh_;
+  w3d::HLodModel hlodModel_;
   w3d::Camera camera_;
+  bool useHLodModel_ = false; // True when an HLod is present
 
   // Skeleton rendering
   w3d::SkeletonRenderer skeletonRenderer_;
@@ -172,17 +175,53 @@ private:
       console_.info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) + " bones");
     }
 
-    // Upload meshes to GPU with bone transforms applied
     const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
-    renderableMesh_.loadWithPose(context_, *loadedFile_, posePtr);
 
-    // Auto-center camera on mesh or skeleton
-    if (renderableMesh_.hasData()) {
-      const auto &bounds = renderableMesh_.bounds();
-      camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
-      console_.info("Uploaded " + std::to_string(renderableMesh_.meshCount()) + " meshes to GPU");
-    } else if (skeletonPose_.isValid()) {
-      // Center on skeleton if no mesh
+    // Check if file has HLod data - use HLodModel for proper LOD support
+    if (!loadedFile_->hlods.empty()) {
+      useHLodModel_ = true;
+      renderableMesh_.destroy(); // Clean up old mesh data
+
+      hlodModel_.load(context_, *loadedFile_, posePtr);
+
+      const auto &hlod = loadedFile_->hlods[0];
+      console_.info("Loaded HLod: " + hlod.name);
+      console_.info("  LOD levels: " + std::to_string(hlodModel_.lodCount()));
+      console_.info("  Aggregates: " + std::to_string(hlodModel_.aggregateCount()));
+      console_.info("  Total GPU meshes: " + std::to_string(hlodModel_.totalMeshCount()));
+
+      // Log LOD level details
+      for (size_t i = 0; i < hlodModel_.lodCount(); ++i) {
+        const auto &level = hlodModel_.lodLevel(i);
+        std::string lodInfo = "  LOD " + std::to_string(i) + ": " +
+                              std::to_string(level.meshes.size()) + " meshes, maxScreenSize=" +
+                              std::to_string(static_cast<int>(level.maxScreenSize));
+        console_.log(lodInfo);
+      }
+
+      if (hlodModel_.hasData()) {
+        const auto &bounds = hlodModel_.bounds();
+        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+      }
+    } else {
+      // No HLod - use simple mesh rendering
+      useHLodModel_ = false;
+      hlodModel_.destroy(); // Clean up old HLod data
+
+      renderableMesh_.loadWithPose(context_, *loadedFile_, posePtr);
+
+      if (renderableMesh_.hasData()) {
+        const auto &bounds = renderableMesh_.bounds();
+        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+        console_.info("Uploaded " + std::to_string(renderableMesh_.meshCount()) +
+                      " meshes to GPU (no HLod)");
+      }
+    }
+
+    // Center on skeleton if no mesh data
+    bool hasMeshData =
+        (useHLodModel_ && hlodModel_.hasData()) || (!useHLodModel_ && renderableMesh_.hasData());
+    if (!hasMeshData && skeletonPose_.isValid()) {
       glm::vec3 center(0.0f);
       float maxDist = 1.0f;
       for (size_t i = 0; i < skeletonPose_.boneCount(); ++i) {
@@ -282,7 +321,7 @@ private:
       if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About")) {
           console_.info("W3D Viewer - Vulkan-based W3D model viewer");
-          console_.info("Phase 4: Hierarchy/Pose Display");
+          console_.info("Phase 5: HLod Assembly & LOD Switching");
         }
         ImGui::EndMenu();
       }
@@ -316,8 +355,16 @@ private:
     // Display loaded file info
     if (loadedFile_) {
       ImGui::Text("Loaded: %s", loadedFilePath_.c_str());
-      ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
-                  renderableMesh_.meshCount());
+
+      if (useHLodModel_) {
+        ImGui::Text("HLod: %s", hlodModel_.name().c_str());
+        ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
+                    hlodModel_.totalMeshCount());
+      } else {
+        ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
+                    renderableMesh_.meshCount());
+      }
+
       ImGui::Text("Hierarchies: %zu", loadedFile_->hierarchies.size());
       ImGui::Text("Animations: %zu",
                   loadedFile_->animations.size() + loadedFile_->compressedAnimations.size());
@@ -332,6 +379,58 @@ private:
       ImGui::Text("Display Options");
       ImGui::Checkbox("Show Mesh", &showMesh_);
       ImGui::Checkbox("Show Skeleton", &showSkeleton_);
+
+      // LOD controls (only shown when HLod is present)
+      if (useHLodModel_ && hlodModel_.lodCount() > 1) {
+        ImGui::Separator();
+        ImGui::Text("LOD Controls");
+
+        // LOD mode selector
+        bool autoMode = hlodModel_.selectionMode() == w3d::LODSelectionMode::Auto;
+        if (ImGui::Checkbox("Auto LOD Selection", &autoMode)) {
+          hlodModel_.setSelectionMode(autoMode ? w3d::LODSelectionMode::Auto
+                                               : w3d::LODSelectionMode::Manual);
+        }
+
+        // Show current LOD info
+        ImGui::Text("Current LOD: %zu / %zu", hlodModel_.currentLOD() + 1, hlodModel_.lodCount());
+
+        if (hlodModel_.selectionMode() == w3d::LODSelectionMode::Auto) {
+          ImGui::Text("Screen size: %.1f px", hlodModel_.currentScreenSize());
+        }
+
+        // Manual LOD selector
+        if (hlodModel_.selectionMode() == w3d::LODSelectionMode::Manual) {
+          int currentLod = static_cast<int>(hlodModel_.currentLOD());
+          if (ImGui::SliderInt("LOD Level", &currentLod, 0,
+                               static_cast<int>(hlodModel_.lodCount()) - 1)) {
+            hlodModel_.setCurrentLOD(static_cast<size_t>(currentLod));
+          }
+        }
+
+        // Show LOD level details
+        if (ImGui::TreeNode("LOD Details")) {
+          for (size_t i = 0; i < hlodModel_.lodCount(); ++i) {
+            const auto &level = hlodModel_.lodLevel(i);
+            bool isCurrent = (i == hlodModel_.currentLOD());
+
+            ImGui::PushStyleColor(ImGuiCol_Text,
+                                  isCurrent ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
+                                            : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+
+            ImGui::Text("LOD %zu: %zu meshes (maxSize=%.0f)", i, level.meshes.size(),
+                        level.maxScreenSize);
+
+            ImGui::PopStyleColor();
+          }
+
+          if (hlodModel_.aggregateCount() > 0) {
+            ImGui::Text("Aggregates: %zu (always rendered)", hlodModel_.aggregateCount());
+          }
+
+          ImGui::TreePop();
+        }
+      }
 
       // Camera controls
       ImGui::Separator();
@@ -354,7 +453,10 @@ private:
       }
 
       if (ImGui::Button("Reset Camera")) {
-        if (renderableMesh_.hasData()) {
+        if (useHLodModel_ && hlodModel_.hasData()) {
+          const auto &bounds = hlodModel_.bounds();
+          camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+        } else if (renderableMesh_.hasData()) {
           const auto &bounds = renderableMesh_.bounds();
           camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
         }
@@ -408,9 +510,13 @@ private:
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
                            descriptorManager_.descriptorSet(currentFrame_), {});
 
-    // Draw loaded mesh
-    if (showMesh_ && renderableMesh_.hasData()) {
-      renderableMesh_.draw(cmd);
+    // Draw loaded mesh (either HLod model or simple renderable mesh)
+    if (showMesh_) {
+      if (useHLodModel_ && hlodModel_.hasData()) {
+        hlodModel_.draw(cmd);
+      } else if (renderableMesh_.hasData()) {
+        renderableMesh_.draw(cmd);
+      }
     }
 
     // Draw skeleton overlay
@@ -520,6 +626,16 @@ private:
       // Update camera
       camera_.update(window_);
 
+      // Update LOD selection based on camera distance
+      if (useHLodModel_ && hlodModel_.hasData()) {
+        auto extent = context_.swapchainExtent();
+        float screenHeight = static_cast<float>(extent.height);
+        float fovY = glm::radians(45.0f); // Must match projection FOV
+        float cameraDistance = camera_.distance();
+
+        hlodModel_.updateLOD(screenHeight, fovY, cameraDistance);
+      }
+
       drawFrame();
     }
 
@@ -538,6 +654,7 @@ private:
     }
 
     skeletonRenderer_.destroy();
+    hlodModel_.destroy();
     renderableMesh_.destroy();
     descriptorManager_.destroy();
     uniformBuffers_.destroy();
