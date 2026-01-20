@@ -1,0 +1,92 @@
+name: Update Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  update-changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Extract PR information
+        id: pr-info
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          echo "title=${PR_TITLE}" >> $GITHUB_OUTPUT
+          echo "number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          echo "author=${PR_AUTHOR}" >> $GITHUB_OUTPUT
+          
+          # Determine category from PR title or labels
+          CATEGORY="Changed"
+          if echo "$PR_TITLE" | grep -qiE "^feat(\(.*\))?:"; then
+            CATEGORY="Added"
+          elif echo "$PR_TITLE" | grep -qiE "^fix(\(.*\))?:"; then
+            CATEGORY="Fixed"
+          elif echo "$PR_TITLE" | grep -qiE "^remove(\(.*\))?:|^delete(\(.*\))?:"; then
+            CATEGORY="Removed"
+          elif echo "$PR_TITLE" | grep -qiE "^refactor(\(.*\))?:|^perf(\(.*\))?:|^style(\(.*\))?:"; then
+            CATEGORY="Changed"
+          fi
+          
+          echo "category=${CATEGORY}" >> $GITHUB_OUTPUT
+      
+      - name: Update CHANGELOG.md
+        run: |
+          CATEGORY="${{ steps.pr-info.outputs.category }}"
+          PR_TITLE="${{ steps.pr-info.outputs.title }}"
+          PR_NUMBER="${{ steps.pr-info.outputs.number }}"
+          
+          # Remove conventional commit prefix for cleaner changelog
+          CLEAN_TITLE=$(echo "$PR_TITLE" | sed -E 's/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|remove|delete)(\(.*\))?:\s*//')
+          
+          # Create the changelog entry
+          ENTRY="- ${CLEAN_TITLE} (#${PR_NUMBER})"
+          
+          # Find the line number of the category in Unreleased section
+          # Insert after the category header
+          awk -v category="### ${CATEGORY}" -v entry="$ENTRY" '
+          BEGIN { in_unreleased=0; found_category=0; }
+          /^## \[Unreleased\]/ { in_unreleased=1; print; next; }
+          /^## \[/ { in_unreleased=0; }
+          in_unreleased && $0 ~ "^### " category "$" {
+            found_category=1;
+            print;
+            print "";
+            print entry;
+            next;
+          }
+          { print; }
+          ' CHANGELOG.md > CHANGELOG.tmp
+          
+          mv CHANGELOG.tmp CHANGELOG.md
+      
+      - name: Commit changelog update
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changelog changes needed"
+          else
+            git add CHANGELOG.md
+            git commit -m "docs: Update CHANGELOG for PR #${{ steps.pr-info.outputs.number }} [skip ci]"
+            git push origin dev
+          fi
