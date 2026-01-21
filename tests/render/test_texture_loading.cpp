@@ -1,13 +1,13 @@
 // Test texture file parsing (DDS/TGA) without Vulkan dependencies
 
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 // Test fixture directory
 #ifndef TEXTURE_TEST_FIXTURES_DIR
@@ -64,8 +64,8 @@ DDSResult parseDDSHeader(const std::filesystem::path &path) {
   result.width = headerData[3];
 
   // Pixel format starts at offset 19 (76 bytes into header)
-  uint32_t pfFlags = headerData[20];
-  uint32_t fourCC = headerData[21];
+  uint32_t pfFlags = headerData[19];
+  uint32_t fourCC = headerData[20];
 
   result.compressed = (pfFlags & 0x4) != 0; // DDPF_FOURCC
 
@@ -81,7 +81,7 @@ DDSResult parseDDSHeader(const std::filesystem::path &path) {
     // Calculate data size
     // DXT1=0x31545844 "DXT1", DXT3=0x33545844 "DXT3", DXT5=0x35545844 "DXT5"
     size_t blockSize = 0;
-    if (fourCC == 0x31545844) { // DXT1
+    if (fourCC == 0x31545844) {                                // DXT1
       blockSize = 8;
     } else if (fourCC == 0x33545844 || fourCC == 0x35545844) { // DXT3/DXT5
       blockSize = 16;
@@ -134,7 +134,7 @@ TGAResult parseTGAHeader(const std::filesystem::path &path) {
 
 // Texture path resolution (mirrors TextureManager::resolveTexturePath)
 std::filesystem::path resolveTexturePath(const std::filesystem::path &basePath,
-                                          const std::string &w3dName) {
+                                         const std::string &w3dName) {
   if (basePath.empty()) {
     return {};
   }
@@ -200,11 +200,9 @@ TEST_F(TextureLoadingTest, ParseDDSHeader) {
   debugFile.read(reinterpret_cast<char *>(&rawFourCC), 4);
   std::cerr << "Raw fourCC at offset 84: 0x" << std::hex << rawFourCC << std::dec << std::endl;
 
-  std::cerr << "DDS parse result: success=" << result.success
-            << " width=" << result.width
-            << " height=" << result.height
-            << " compressed=" << result.compressed
-            << " fourCC='" << result.fourCC << "'"
+  std::cerr << "DDS parse result: success=" << result.success << " width=" << result.width
+            << " height=" << result.height << " compressed=" << result.compressed << " fourCC='"
+            << result.fourCC << "'"
             << " dataSize=" << result.dataSize << std::endl;
 
   EXPECT_TRUE(result.success) << "Path: " << path.string();
@@ -246,7 +244,8 @@ TEST_F(TextureLoadingTest, ResolveTexturePathWithTGAExtension) {
 
   auto resolved = resolveTexturePath(fixturesDir_, "AVTankParts.tga");
   std::cerr << "Resolved: " << resolved.string() << std::endl;
-  EXPECT_FALSE(resolved.empty()) << "Should find AVTankParts.dds when searching for AVTankParts.tga";
+  EXPECT_FALSE(resolved.empty())
+      << "Should find AVTankParts.dds when searching for AVTankParts.tga";
   // Case-insensitive check
   std::string resolvedLower = toLower(resolved.string());
   EXPECT_TRUE(resolvedLower.find("avtankparts") != std::string::npos);
