@@ -50,8 +50,11 @@ src/
   render/
     bounding_box.hpp          # AABB utilities
     camera.hpp/cpp            # Orbital camera with mouse controls
+    hlod_model.hpp/cpp        # HLod model assembly with LOD switching
     mesh_converter.hpp/cpp    # W3D mesh to GPU vertex conversion
     renderable_mesh.hpp/cpp   # GPU buffer management for meshes
+    skeleton.hpp/cpp          # Skeleton pose computation
+    skeleton_renderer.hpp/cpp # Skeleton debug visualization
   ui/
     imgui_backend.hpp/cpp     # ImGui Vulkan integration
     console_window.hpp/cpp    # Debug console UI
@@ -67,8 +70,8 @@ shaders/
 | 1 | Done | Vulkan foundation - device, swapchain, pipeline, cube rendering |
 | 2 | Done | W3D file parsing - chunk reader, mesh/hierarchy/animation structs |
 | 3 | Done | Static mesh rendering - GPU upload, viewer controls (no textures yet) |
-| 4 | Pending | Hierarchy/pose - bone matrices, rest pose display |
-| 5 | Pending | HLod assembly - model assembly, LOD switching |
+| 4 | Done | Hierarchy/pose - bone matrices, rest pose display |
+| 5 | Done | HLod assembly - model assembly, LOD switching |
 | 6 | Pending | Materials - W3D shader states, textures, multi-pass |
 
 ## Code Style
