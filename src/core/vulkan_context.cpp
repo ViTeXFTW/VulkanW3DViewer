@@ -249,7 +249,14 @@ void VulkanContext::createLogicalDevice() {
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
+  // Enable device features we need
+  vk::PhysicalDeviceFeatures supportedFeatures = physicalDevice_.getFeatures();
   vk::PhysicalDeviceFeatures deviceFeatures{};
+
+  // Enable anisotropic filtering if supported
+  if (supportedFeatures.samplerAnisotropy) {
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+  }
 
   vk::DeviceCreateInfo createInfo{{},
                                   queueCreateInfos,

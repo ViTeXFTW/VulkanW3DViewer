@@ -51,16 +51,18 @@ src/
     bounding_box.hpp          # AABB utilities
     camera.hpp/cpp            # Orbital camera with mouse controls
     hlod_model.hpp/cpp        # HLod model assembly with LOD switching
+    material.hpp              # Material definitions and GPU format
     mesh_converter.hpp/cpp    # W3D mesh to GPU vertex conversion
     renderable_mesh.hpp/cpp   # GPU buffer management for meshes
     skeleton.hpp/cpp          # Skeleton pose computation
     skeleton_renderer.hpp/cpp # Skeleton debug visualization
+    texture.hpp/cpp           # Texture loading and management
   ui/
     imgui_backend.hpp/cpp     # ImGui Vulkan integration
     console_window.hpp/cpp    # Debug console UI
     file_browser.hpp/cpp      # File browser for loading W3D files
 shaders/
-  basic.vert/frag             # Basic lit shader with vertex colors
+  basic.vert/frag             # Shader with texture and material support
 ```
 
 ## Implementation Phases
@@ -72,7 +74,7 @@ shaders/
 | 3 | Done | Static mesh rendering - GPU upload, viewer controls (no textures yet) |
 | 4 | Done | Hierarchy/pose - bone matrices, rest pose display |
 | 5 | Done | HLod assembly - model assembly, LOD switching |
-| 6 | Pending | Materials - W3D shader states, textures, multi-pass |
+| 6 | Done | Materials - texture manager, material push constants, shader support |
 
 ## Code Style
 

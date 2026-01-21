@@ -7,18 +7,22 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
+#include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
+#include "render/texture.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
@@ -32,11 +36,25 @@ public:
     initWindow();
     initVulkan();
     initUI();
+
+    // Load initial model if specified via command line
+    if (!initialModelPath_.empty()) {
+      loadW3DFile(initialModelPath_);
+    }
+
     mainLoop();
     cleanup();
   }
 
+  void setTexturePath(const std::string &path) { customTexturePath_ = path; }
+  void setDebugMode(bool debug) { debugMode_ = debug; }
+  void setInitialModel(const std::string &path) { initialModelPath_ = path; }
+
 private:
+  // Command line options
+  std::string customTexturePath_;
+  std::string initialModelPath_;
+  bool debugMode_ = false;
   GLFWwindow *window_ = nullptr;
   w3d::VulkanContext context_;
   w3d::Pipeline pipeline_;
@@ -69,6 +87,10 @@ private:
   w3d::HLodModel hlodModel_;
   w3d::Camera camera_;
   bool useHLodModel_ = false; // True when an HLod is present
+
+  // Texture and material system
+  w3d::TextureManager textureManager_;
+  w3d::Material defaultMaterial_;
 
   // Skeleton rendering
   w3d::SkeletonRenderer skeletonRenderer_;
@@ -113,13 +135,41 @@ private:
     pipeline_.create(context_, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
     skeletonRenderer_.create(context_);
 
+    // Initialize texture manager and create default texture
+    textureManager_.init(context_);
+
+    // Set texture path - use command line override if provided
+    std::filesystem::path texturePath;
+    if (!customTexturePath_.empty()) {
+      texturePath = customTexturePath_;
+    } else {
+      // Default: relative to working directory
+      texturePath = "resources/textures";
+      if (!std::filesystem::exists(texturePath)) {
+        // Try relative to executable location
+        texturePath = std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "textures";
+      }
+    }
+    textureManager_.setTexturePath(texturePath);
+
+    if (debugMode_) {
+      std::cerr << "[DEBUG] Texture path set to: " << textureManager_.texturePath().string() << "\n";
+      std::cerr << "[DEBUG] Path exists: " << std::filesystem::exists(texturePath) << "\n";
+    }
+
+    defaultMaterial_ = w3d::createDefaultMaterial();
+
     uniformBuffers_.create(context_, MAX_FRAMES_IN_FLIGHT);
 
     descriptorManager_.create(context_, pipeline_.descriptorSetLayout(), MAX_FRAMES_IN_FLIGHT);
 
+    // Get default texture for descriptor binding
+    const auto &defaultTex = textureManager_.texture(0);
+
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
       descriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
                                              sizeof(w3d::UniformBufferObject));
+      descriptorManager_.updateTexture(i, defaultTex.view, defaultTex.sampler);
     }
 
     createCommandBuffers();
@@ -176,6 +226,45 @@ private:
     }
 
     const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
+
+    // Load textures referenced by meshes
+    size_t texturesLoaded = 0;
+    size_t texturesMissing = 0;
+    std::set<std::string> uniqueTextures;
+
+    for (const auto &mesh : loadedFile_->meshes) {
+      for (const auto &tex : mesh.textures) {
+        // Skip if we already processed this texture
+        if (uniqueTextures.count(tex.name) > 0) {
+          continue;
+        }
+        uniqueTextures.insert(tex.name);
+
+        if (debugMode_) {
+          std::cerr << "[DEBUG] Loading texture: " << tex.name << "\n";
+        }
+
+        uint32_t texIdx = textureManager_.loadTexture(tex.name);
+        if (texIdx > 0) {
+          texturesLoaded++;
+          if (debugMode_) {
+            std::cerr << "[DEBUG]   -> Loaded as index " << texIdx << "\n";
+          }
+        } else {
+          texturesMissing++;
+          if (debugMode_) {
+            std::cerr << "[DEBUG]   -> NOT FOUND\n";
+          }
+        }
+      }
+    }
+
+    console_.info("Textures: " + std::to_string(texturesLoaded) + " loaded, " +
+                  std::to_string(texturesMissing) + " missing");
+
+    if (debugMode_) {
+      std::cerr << "[DEBUG] Total textures in manager: " << textureManager_.textureCount() << "\n";
+    }
 
     // Check if file has HLod data - use HLodModel for proper LOD support
     if (!loadedFile_->hlods.empty()) {
@@ -321,7 +410,7 @@ private:
       if (ImGui::BeginMenu("Help")) {
         if (ImGui::MenuItem("About")) {
           console_.info("W3D Viewer - Vulkan-based W3D model viewer");
-          console_.info("Phase 5: HLod Assembly & LOD Switching");
+          console_.info("Phase 6: Materials & Textures");
         }
         ImGui::EndMenu();
       }
@@ -513,8 +602,56 @@ private:
     // Draw loaded mesh (either HLod model or simple renderable mesh)
     if (showMesh_) {
       if (useHLodModel_ && hlodModel_.hasData()) {
-        hlodModel_.draw(cmd);
+        // Draw with texture binding
+        hlodModel_.drawWithTextures(cmd, [&](const std::string &textureName) {
+          w3d::MaterialPushConstant materialData{};
+          materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+          materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+          materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+          materialData.flags = 0;
+          materialData.alphaThreshold = 0.5f;
+
+          // Look up texture by name
+          uint32_t texIdx = 0;
+          if (!textureName.empty()) {
+            texIdx = textureManager_.findTexture(textureName);
+          }
+
+          if (texIdx > 0) {
+            // Get pre-allocated descriptor set for this texture
+            const auto &tex = textureManager_.texture(texIdx);
+            vk::DescriptorSet texDescSet = descriptorManager_.getTextureDescriptorSet(
+                currentFrame_, texIdx, tex.view, tex.sampler);
+            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                   texDescSet, {});
+            materialData.useTexture = 1;
+          } else {
+            // Use default texture descriptor set
+            const auto &defaultTex = textureManager_.texture(0);
+            vk::DescriptorSet defaultDescSet = descriptorManager_.getTextureDescriptorSet(
+                currentFrame_, 0, defaultTex.view, defaultTex.sampler);
+            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                   defaultDescSet, {});
+            materialData.useTexture = 0;
+          }
+
+          cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                            sizeof(w3d::MaterialPushConstant), &materialData);
+        });
       } else if (renderableMesh_.hasData()) {
+        // Simple mesh without textures
+        w3d::MaterialPushConstant materialData{};
+        materialData.diffuseColor = glm::vec4(defaultMaterial_.diffuse, defaultMaterial_.opacity);
+        materialData.emissiveColor = glm::vec4(defaultMaterial_.emissive, 1.0f);
+        materialData.specularColor =
+            glm::vec4(defaultMaterial_.specular, defaultMaterial_.shininess);
+        materialData.flags = 0;
+        materialData.alphaThreshold = 0.5f;
+        materialData.useTexture = 0;
+
+        cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                          sizeof(w3d::MaterialPushConstant), &materialData);
+
         renderableMesh_.draw(cmd);
       }
     }
@@ -656,6 +793,7 @@ private:
     skeletonRenderer_.destroy();
     hlodModel_.destroy();
     renderableMesh_.destroy();
+    textureManager_.destroy();
     descriptorManager_.destroy();
     uniformBuffers_.destroy();
     pipeline_.destroy();
@@ -668,8 +806,139 @@ private:
   }
 };
 
-int main() {
+void printUsage(const char *programName) {
+  std::cout << "Usage: " << programName << " [options] [model.w3d]\n"
+            << "\nOptions:\n"
+            << "  -h, --help              Show this help message\n"
+            << "  -t, --textures <path>   Set texture search path\n"
+            << "  -d, --debug             Enable verbose debug output\n"
+            << "  -l, --list-textures     List all textures referenced by the model\n"
+            << "\nExamples:\n"
+            << "  " << programName << " model.w3d\n"
+            << "  " << programName << " -t resources/textures model.w3d\n"
+            << "  " << programName << " -d -l model.w3d\n";
+}
+
+int main(int argc, char *argv[]) {
+  std::string modelPath;
+  std::string texturePath;
+  bool debugMode = false;
+  bool listTextures = false;
+
+  // Parse command line arguments
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+
+    if (arg == "-h" || arg == "--help") {
+      printUsage(argv[0]);
+      return EXIT_SUCCESS;
+    } else if (arg == "-t" || arg == "--textures") {
+      if (i + 1 < argc) {
+        texturePath = argv[++i];
+      } else {
+        std::cerr << "Error: -t requires a path argument\n";
+        return EXIT_FAILURE;
+      }
+    } else if (arg == "-d" || arg == "--debug") {
+      debugMode = true;
+    } else if (arg == "-l" || arg == "--list-textures") {
+      listTextures = true;
+    } else if (arg[0] != '-') {
+      modelPath = arg;
+    } else {
+      std::cerr << "Unknown option: " << arg << "\n";
+      printUsage(argv[0]);
+      return EXIT_FAILURE;
+    }
+  }
+
+  // If list-textures mode with a model, just analyze and exit
+  if (listTextures && !modelPath.empty()) {
+    std::cout << "Analyzing W3D file: " << modelPath << "\n\n";
+
+    std::string error;
+    auto file = w3d::Loader::load(modelPath, &error);
+    if (!file) {
+      std::cerr << "Failed to load: " << error << "\n";
+      return EXIT_FAILURE;
+    }
+
+    std::cout << "=== Textures referenced in model ===\n";
+    std::set<std::string> uniqueTextures;
+    for (const auto &mesh : file->meshes) {
+      for (const auto &tex : mesh.textures) {
+        uniqueTextures.insert(tex.name);
+      }
+    }
+
+    if (uniqueTextures.empty()) {
+      std::cout << "(No textures referenced)\n";
+    } else {
+      for (const auto &name : uniqueTextures) {
+        std::cout << "  " << name << "\n";
+      }
+    }
+
+    // Check texture path resolution
+    std::filesystem::path searchPath = texturePath.empty() ? "resources/textures" : texturePath;
+    std::cout << "\n=== Texture path resolution (searching in: " << searchPath.string() << ") ===\n";
+
+    if (!std::filesystem::exists(searchPath)) {
+      std::cout << "WARNING: Texture directory does not exist!\n";
+    } else {
+      std::cout << "Files in texture directory:\n";
+      for (const auto &entry : std::filesystem::directory_iterator(searchPath)) {
+        std::cout << "  " << entry.path().filename().string() << "\n";
+      }
+
+      std::cout << "\nTexture resolution results:\n";
+      for (const auto &name : uniqueTextures) {
+        // Try to resolve the texture
+        std::string baseName = name;
+        // Remove extension
+        size_t dotPos = baseName.find_last_of('.');
+        if (dotPos != std::string::npos) {
+          baseName = baseName.substr(0, dotPos);
+        }
+        // Convert to lowercase
+        std::transform(baseName.begin(), baseName.end(), baseName.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+
+        bool found = false;
+        std::string foundPath;
+        for (const auto &ext : {".dds", ".tga", ".DDS", ".TGA"}) {
+          auto path = searchPath / (baseName + ext);
+          if (std::filesystem::exists(path)) {
+            found = true;
+            foundPath = path.string();
+            break;
+          }
+        }
+
+        if (found) {
+          std::cout << "  [OK] " << name << " -> " << foundPath << "\n";
+        } else {
+          std::cout << "  [MISSING] " << name << "\n";
+        }
+      }
+    }
+
+    return EXIT_SUCCESS;
+  }
+
+  // Normal GUI mode
   VulkanW3DViewer app;
+
+  // Pass configuration to app
+  if (!texturePath.empty()) {
+    app.setTexturePath(texturePath);
+  }
+  if (debugMode) {
+    app.setDebugMode(true);
+  }
+  if (!modelPath.empty()) {
+    app.setInitialModel(modelPath);
+  }
 
   try {
     app.run();

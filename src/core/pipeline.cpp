@@ -12,6 +12,11 @@ Pipeline::~Pipeline() {
 
 void Pipeline::create(VulkanContext &context, const std::string &vertShaderPath,
                       const std::string &fragShaderPath) {
+  createWithTexture(context, vertShaderPath, fragShaderPath, {});
+}
+
+void Pipeline::createWithTexture(VulkanContext &context, const std::string &vertShaderPath,
+                                 const std::string &fragShaderPath, const PipelineConfig &config) {
   device_ = context.device();
 
   auto vertShaderCode = readFile(vertShaderPath);
@@ -60,7 +65,7 @@ void Pipeline::create(VulkanContext &context, const std::string &vertShaderPath,
       VK_FALSE, // depthClampEnable
       VK_FALSE, // rasterizerDiscardEnable
       vk::PolygonMode::eFill,
-      vk::CullModeFlagBits::eBack,
+      config.twoSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack,
       vk::FrontFace::eCounterClockwise,
       VK_FALSE, // depthBiasEnable
       0.0f,
@@ -75,38 +80,59 @@ void Pipeline::create(VulkanContext &context, const std::string &vertShaderPath,
   // Depth stencil
   vk::PipelineDepthStencilStateCreateInfo depthStencil{
       {},
-      VK_TRUE,  // depthTestEnable
-      VK_TRUE,  // depthWriteEnable
+      VK_TRUE,                                // depthTestEnable
+      config.depthWrite ? VK_TRUE : VK_FALSE, // depthWriteEnable
       vk::CompareOp::eLess,
       VK_FALSE, // depthBoundsTestEnable
       VK_FALSE  // stencilTestEnable
   };
 
   // Color blending
-  vk::PipelineColorBlendAttachmentState colorBlendAttachment{
-      VK_FALSE,
-      vk::BlendFactor::eOne,
-      vk::BlendFactor::eZero,
-      vk::BlendOp::eAdd,
-      vk::BlendFactor::eOne,
-      vk::BlendFactor::eZero,
-      vk::BlendOp::eAdd,
-      vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+  vk::PipelineColorBlendAttachmentState colorBlendAttachment;
+  if (config.enableBlending) {
+    colorBlendAttachment = vk::PipelineColorBlendAttachmentState{
+        VK_TRUE,
+        config.alphaBlend ? vk::BlendFactor::eSrcAlpha : vk::BlendFactor::eOne,
+        config.alphaBlend ? vk::BlendFactor::eOneMinusSrcAlpha : vk::BlendFactor::eOne,
+        vk::BlendOp::eAdd,
+        vk::BlendFactor::eOne,
+        vk::BlendFactor::eZero,
+        vk::BlendOp::eAdd,
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+  } else {
+    colorBlendAttachment = vk::PipelineColorBlendAttachmentState{
+        VK_FALSE,
+        vk::BlendFactor::eOne,
+        vk::BlendFactor::eZero,
+        vk::BlendOp::eAdd,
+        vk::BlendFactor::eOne,
+        vk::BlendFactor::eZero,
+        vk::BlendOp::eAdd,
+        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
+  }
 
   vk::PipelineColorBlendStateCreateInfo colorBlending{
       {}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
 
-  // Descriptor set layout for UBO
-  vk::DescriptorSetLayoutBinding uboLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                                  vk::ShaderStageFlagBits::eVertex};
+  // Descriptor set layout: binding 0 = UBO, binding 1 = texture sampler
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
+      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
+                                     vk::ShaderStageFlagBits::eVertex},
+      vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                     vk::ShaderStageFlagBits::eFragment}};
 
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, uboLayoutBinding};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
 
   descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);
 
-  // Pipeline layout
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_};
+  // Push constant range for material data
+  vk::PushConstantRange pushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
+                                          sizeof(MaterialPushConstant)};
+
+  // Pipeline layout with push constants
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_, pushConstantRange};
 
   pipelineLayout_ = device_.createPipelineLayout(pipelineLayoutInfo);
 
@@ -186,21 +212,43 @@ DescriptorManager::~DescriptorManager() {
 
 void DescriptorManager::create(VulkanContext &context, vk::DescriptorSetLayout layout,
                                uint32_t frameCount) {
+  createWithTexture(context, layout, frameCount);
+}
+
+void DescriptorManager::createWithTexture(VulkanContext &context, vk::DescriptorSetLayout layout,
+                                          uint32_t frameCount, uint32_t maxTextures) {
   device_ = context.device();
+  layout_ = layout;
+  frameCount_ = frameCount;
+  maxTextures_ = maxTextures;
 
-  // Create descriptor pool
-  vk::DescriptorPoolSize poolSize{vk::DescriptorType::eUniformBuffer, frameCount};
+  // Calculate total descriptor sets needed:
+  // - frameCount for the base frame descriptor sets
+  // - frameCount * maxTextures for per-texture descriptor sets
+  uint32_t totalSets = frameCount + frameCount * maxTextures;
 
-  vk::DescriptorPoolCreateInfo poolInfo{{}, frameCount, poolSize};
+  // Create descriptor pool with both UBO and sampler types
+  std::array<vk::DescriptorPoolSize, 2> poolSizes = {
+      vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, totalSets},
+      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, totalSets}};
+
+  vk::DescriptorPoolCreateInfo poolInfo{{}, totalSets, poolSizes};
 
   descriptorPool_ = device_.createDescriptorPool(poolInfo);
 
-  // Allocate descriptor sets
+  // Allocate base descriptor sets (one per frame)
   std::vector<vk::DescriptorSetLayout> layouts(frameCount, layout);
 
   vk::DescriptorSetAllocateInfo allocInfo{descriptorPool_, layouts};
 
   descriptorSets_ = device_.allocateDescriptorSets(allocInfo);
+
+  // Pre-allocate per-texture descriptor sets
+  uint32_t textureSetsCount = frameCount * maxTextures;
+  std::vector<vk::DescriptorSetLayout> textureLayouts(textureSetsCount, layout);
+  vk::DescriptorSetAllocateInfo textureAllocInfo{descriptorPool_, textureLayouts};
+  textureDescriptorSets_ = device_.allocateDescriptorSets(textureAllocInfo);
+  textureDescriptorSetInitialized_.resize(textureSetsCount, false);
 }
 
 void DescriptorManager::destroy() {
@@ -210,6 +258,11 @@ void DescriptorManager::destroy() {
       descriptorPool_ = nullptr;
     }
     descriptorSets_.clear();
+    textureDescriptorSets_.clear();
+    textureDescriptorSetInitialized_.clear();
+    layout_ = nullptr;
+    frameCount_ = 0;
+    maxTextures_ = 0;
     device_ = nullptr;
   }
 }
@@ -222,6 +275,49 @@ void DescriptorManager::updateUniformBuffer(uint32_t frameIndex, vk::Buffer buff
                                          vk::DescriptorType::eUniformBuffer, {}, bufferInfo};
 
   device_.updateDescriptorSets(descriptorWrite, {});
+}
+
+void DescriptorManager::updateTexture(uint32_t frameIndex, vk::ImageView imageView,
+                                      vk::Sampler sampler) {
+  vk::DescriptorImageInfo imageInfo{sampler, imageView, vk::ImageLayout::eShaderReadOnlyOptimal};
+
+  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex],
+                                         1, // binding 1
+                                         0,
+                                         vk::DescriptorType::eCombinedImageSampler,
+                                         imageInfo};
+
+  device_.updateDescriptorSets(descriptorWrite, {});
+}
+
+vk::DescriptorSet DescriptorManager::getTextureDescriptorSet(uint32_t frameIndex,
+                                                              uint32_t textureIndex,
+                                                              vk::ImageView imageView,
+                                                              vk::Sampler sampler) {
+  // Check bounds
+  if (textureIndex >= maxTextures_ || frameIndex >= frameCount_) {
+    // Fallback to base descriptor set
+    return descriptorSets_[frameIndex];
+  }
+
+  uint32_t setIndex = frameIndex * maxTextures_ + textureIndex;
+  vk::DescriptorSet set = textureDescriptorSets_[setIndex];
+
+  // Initialize descriptor set if not already done
+  if (!textureDescriptorSetInitialized_[setIndex]) {
+    // Copy UBO binding from the base descriptor set for this frame
+    vk::CopyDescriptorSet copyUbo{descriptorSets_[frameIndex], 0, 0, set, 0, 0, 1};
+
+    // Update texture binding
+    vk::DescriptorImageInfo imageInfo{sampler, imageView, vk::ImageLayout::eShaderReadOnlyOptimal};
+    vk::WriteDescriptorSet writeTexture{set, 1, 0, vk::DescriptorType::eCombinedImageSampler,
+                                        imageInfo};
+
+    device_.updateDescriptorSets(writeTexture, copyUbo);
+    textureDescriptorSetInitialized_[setIndex] = true;
+  }
+
+  return set;
 }
 
 } // namespace w3d
