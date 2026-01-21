@@ -36,6 +36,7 @@ struct HLodMeshGPU {
   VertexBuffer<Vertex> vertexBuffer;
   IndexBuffer indexBuffer;
   std::string name;
+  std::string textureName;  // Primary texture name (from first texture stage)
   int32_t boneIndex = -1;
   size_t lodLevel = 0;      // Which LOD level this mesh belongs to
   bool isAggregate = false; // True if this is an always-rendered aggregate
@@ -107,6 +108,14 @@ public:
   // Draw current LOD level (plus aggregates)
   void draw(vk::CommandBuffer cmd) const;
 
+  // Draw with texture binding callback
+  // bindTexture: called with texture name before drawing each mesh
+  template <typename BindTextureFunc>
+  void drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const;
+
+  // Get mesh GPU data (for external texture binding)
+  const std::vector<HLodMeshGPU> &meshes() const { return meshGPU_; }
+
   // Draw with per-mesh bone transforms
   template <typename UpdateModelMatrixFunc>
   void drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
@@ -138,6 +147,40 @@ private:
 };
 
 // Template implementation
+template <typename BindTextureFunc>
+void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
+  // Draw aggregates first (always rendered)
+  for (size_t i = 0; i < aggregateCount_; ++i) {
+    const auto &mesh = meshGPU_[i];
+
+    bindTexture(mesh.textureName);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+  }
+
+  // Draw current LOD level meshes
+  for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    const auto &mesh = meshGPU_[i];
+
+    // Skip if not in current LOD level
+    if (mesh.lodLevel != currentLOD_) {
+      continue;
+    }
+
+    bindTexture(mesh.textureName);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+  }
+}
+
 template <typename UpdateModelMatrixFunc>
 void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
                                        UpdateModelMatrixFunc updateModelMatrix) const {

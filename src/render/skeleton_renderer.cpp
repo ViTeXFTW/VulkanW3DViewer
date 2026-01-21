@@ -3,6 +3,7 @@
 #include "core/vulkan_context.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <map>
@@ -21,11 +22,17 @@ void SkeletonRenderer::create(VulkanContext &context) {
 }
 
 void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
-  // Same UBO layout as the main pipeline (model, view, proj matrices)
-  vk::DescriptorSetLayoutBinding uboLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                                  vk::ShaderStageFlagBits::eVertex};
+  // Match the main pipeline layout (UBO + texture sampler) for descriptor set compatibility
+  // Even though skeleton shader doesn't use textures, we need compatible layouts to share
+  // descriptor sets
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
+      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                     vk::ShaderStageFlagBits::eVertex  },
+      vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                     vk::ShaderStageFlagBits::eFragment}
+  };
 
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, uboLayoutBinding};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
   descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);
 }
 
@@ -127,7 +134,7 @@ void SkeletonRenderer::createPipeline(VulkanContext &context) {
         0.0f,
         0.0f,
         0.0f,
-        2.0f // lineWidth - thicker for visibility
+        1.0f // lineWidth - wideLines feature required for > 1.0
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo{

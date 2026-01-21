@@ -13,42 +13,113 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
     return result;
   }
 
-  result.vertices.reserve(vertexCount);
+  // Find UV source and check for per-face UV indices
+  const std::vector<Vector2> *uvSource = &mesh.texCoords;
+  const std::vector<uint32_t> *perFaceUVIds = nullptr;
 
-  // Convert vertices
-  for (size_t i = 0; i < vertexCount; ++i) {
-    Vertex v;
-
-    // Position
-    v.position = {mesh.vertices[i].x, mesh.vertices[i].y, mesh.vertices[i].z};
-
-    // Normal (with fallback to up vector)
-    if (i < mesh.normals.size()) {
-      v.normal = {mesh.normals[i].x, mesh.normals[i].y, mesh.normals[i].z};
-    } else {
-      v.normal = {0.0f, 1.0f, 0.0f};
+  if (!mesh.materialPasses.empty()) {
+    for (const auto &pass : mesh.materialPasses) {
+      for (const auto &stage : pass.textureStages) {
+        // Check for per-face UV indices first
+        if (!stage.perFaceTexCoordIds.empty()) {
+          perFaceUVIds = &stage.perFaceTexCoordIds;
+        }
+        // Get UV source from stage if mesh-level UVs are empty
+        if (!stage.texCoords.empty() && mesh.texCoords.empty()) {
+          uvSource = &stage.texCoords;
+        }
+        // Only use first stage with data
+        if (perFaceUVIds || uvSource != &mesh.texCoords) {
+          break;
+        }
+      }
+      if (perFaceUVIds || uvSource != &mesh.texCoords)
+        break;
     }
-
-    // Texture coordinates (with fallback)
-    if (i < mesh.texCoords.size()) {
-      v.texCoord = {mesh.texCoords[i].u, mesh.texCoords[i].v};
-    } else {
-      v.texCoord = {0.0f, 0.0f};
-    }
-
-    // Vertex color
-    v.color = getVertexColor(mesh, static_cast<uint32_t>(i));
-
-    result.vertices.push_back(v);
-    result.bounds.expand(v.position);
   }
 
-  // Convert triangles to flat index array
-  result.indices.reserve(mesh.triangles.size() * 3);
-  for (const auto &tri : mesh.triangles) {
-    result.indices.push_back(tri.vertexIndices[0]);
-    result.indices.push_back(tri.vertexIndices[1]);
-    result.indices.push_back(tri.vertexIndices[2]);
+  // If we have per-face UV indices, we need to unroll the mesh
+  // (create separate vertices for each triangle corner since UVs vary per-face)
+  if (perFaceUVIds && !perFaceUVIds->empty() && !uvSource->empty()) {
+    size_t triCount = mesh.triangles.size();
+    result.vertices.reserve(triCount * 3);
+    result.indices.reserve(triCount * 3);
+
+    for (size_t triIdx = 0; triIdx < triCount; ++triIdx) {
+      const auto &tri = mesh.triangles[triIdx];
+
+      for (int corner = 0; corner < 3; ++corner) {
+        uint32_t vertIdx = tri.vertexIndices[corner];
+        Vertex v;
+
+        // Position
+        if (vertIdx < mesh.vertices.size()) {
+          v.position = {mesh.vertices[vertIdx].x, mesh.vertices[vertIdx].y,
+                        mesh.vertices[vertIdx].z};
+        }
+
+        // Normal
+        if (vertIdx < mesh.normals.size()) {
+          v.normal = {mesh.normals[vertIdx].x, mesh.normals[vertIdx].y, mesh.normals[vertIdx].z};
+        } else {
+          v.normal = {0.0f, 1.0f, 0.0f};
+        }
+
+        // UV from per-face indices
+        size_t uvIdxPosition = triIdx * 3 + corner;
+        if (uvIdxPosition < perFaceUVIds->size()) {
+          uint32_t uvIdx = (*perFaceUVIds)[uvIdxPosition];
+          if (uvIdx < uvSource->size()) {
+            v.texCoord = {(*uvSource)[uvIdx].u, (*uvSource)[uvIdx].v};
+          }
+        }
+
+        // Vertex color
+        v.color = getVertexColor(mesh, vertIdx);
+
+        result.bounds.expand(v.position);
+        result.indices.push_back(static_cast<uint32_t>(result.vertices.size()));
+        result.vertices.push_back(v);
+      }
+    }
+  } else {
+    // Standard per-vertex UV mapping
+    result.vertices.reserve(vertexCount);
+
+    for (size_t i = 0; i < vertexCount; ++i) {
+      Vertex v;
+
+      // Position
+      v.position = {mesh.vertices[i].x, mesh.vertices[i].y, mesh.vertices[i].z};
+
+      // Normal (with fallback to up vector)
+      if (i < mesh.normals.size()) {
+        v.normal = {mesh.normals[i].x, mesh.normals[i].y, mesh.normals[i].z};
+      } else {
+        v.normal = {0.0f, 1.0f, 0.0f};
+      }
+
+      // Texture coordinates (with fallback)
+      if (i < uvSource->size()) {
+        v.texCoord = {(*uvSource)[i].u, (*uvSource)[i].v};
+      } else {
+        v.texCoord = {0.0f, 0.0f};
+      }
+
+      // Vertex color
+      v.color = getVertexColor(mesh, static_cast<uint32_t>(i));
+
+      result.vertices.push_back(v);
+      result.bounds.expand(v.position);
+    }
+
+    // Convert triangles to flat index array
+    result.indices.reserve(mesh.triangles.size() * 3);
+    for (const auto &tri : mesh.triangles) {
+      result.indices.push_back(tri.vertexIndices[0]);
+      result.indices.push_back(tri.vertexIndices[1]);
+      result.indices.push_back(tri.vertexIndices[2]);
+    }
   }
 
   return result;

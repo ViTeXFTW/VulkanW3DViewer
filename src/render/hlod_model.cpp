@@ -9,6 +9,36 @@
 
 namespace w3d {
 
+namespace {
+
+// Extract the primary texture name from a mesh
+// Returns empty string if no texture is defined
+std::string extractPrimaryTexture(const Mesh &mesh) {
+  // Check if mesh has any textures defined
+  if (mesh.textures.empty()) {
+    return "";
+  }
+
+  // Check material passes for texture stage references
+  if (!mesh.materialPasses.empty()) {
+    const auto &pass = mesh.materialPasses[0];
+    if (!pass.textureStages.empty()) {
+      const auto &stage = pass.textureStages[0];
+      if (!stage.textureIds.empty()) {
+        uint32_t texId = stage.textureIds[0];
+        if (texId < mesh.textures.size()) {
+          return mesh.textures[texId].name;
+        }
+      }
+    }
+  }
+
+  // Fallback: use first texture in the list
+  return mesh.textures[0].name;
+}
+
+} // namespace
+
 HLodModel::~HLodModel() {
   destroy();
 }
@@ -95,6 +125,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
       HLodMeshGPU gpuMesh;
       gpuMesh.name = converted.name;
+      gpuMesh.textureName = extractPrimaryTexture(file.meshes[i]);
       gpuMesh.boneIndex = -1;
       gpuMesh.lodLevel = 0;
       gpuMesh.isAggregate = false;
@@ -164,6 +195,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
     HLodMeshGPU gpuMesh;
     gpuMesh.name = subObj.name;
+    gpuMesh.textureName = extractPrimaryTexture(file.meshes[meshIdx.value()]);
     gpuMesh.boneIndex = static_cast<int32_t>(subObj.boneIndex);
     gpuMesh.lodLevel = 0; // Aggregates don't have a specific LOD level
     gpuMesh.isAggregate = true;
@@ -206,6 +238,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
       HLodMeshGPU gpuMesh;
       gpuMesh.name = meshInfo.name;
+      gpuMesh.textureName = extractPrimaryTexture(file.meshes[meshInfo.meshIndex]);
       gpuMesh.boneIndex = static_cast<int32_t>(meshInfo.boneIndex);
       gpuMesh.lodLevel = lodIdx;
       gpuMesh.isAggregate = false;
