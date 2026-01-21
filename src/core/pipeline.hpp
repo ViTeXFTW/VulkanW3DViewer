@@ -1,11 +1,12 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
+
+#include <glm/glm.hpp>
+
 #include <array>
 #include <string>
 #include <vector>
-
-#include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
 
 namespace w3d {
 
@@ -39,19 +40,19 @@ struct UniformBufferObject {
 
 // Material push constant for per-draw material data
 struct MaterialPushConstant {
-  alignas(16) glm::vec4 diffuseColor;   // RGB + alpha
-  alignas(16) glm::vec4 emissiveColor;  // RGB + intensity
-  alignas(16) glm::vec4 specularColor;  // RGB + shininess
-  alignas(4) uint32_t flags;            // Material flags
-  alignas(4) float alphaThreshold;      // For alpha testing
-  alignas(4) uint32_t useTexture;       // 1 = sample texture, 0 = use vertex color
+  alignas(16) glm::vec4 diffuseColor;  // RGB + alpha
+  alignas(16) glm::vec4 emissiveColor; // RGB + intensity
+  alignas(16) glm::vec4 specularColor; // RGB + shininess
+  alignas(4) uint32_t flags;           // Material flags
+  alignas(4) float alphaThreshold;     // For alpha testing
+  alignas(4) uint32_t useTexture;      // 1 = sample texture, 0 = use vertex color
   alignas(4) float padding;
 };
 
 // Pipeline configuration for different blend modes
 struct PipelineConfig {
   bool enableBlending = false;
-  bool alphaBlend = false;     // true = alpha blend, false = additive
+  bool alphaBlend = false; // true = alpha blend, false = additive
   bool depthWrite = true;
   bool twoSided = false;
 };

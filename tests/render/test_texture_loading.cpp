@@ -202,8 +202,7 @@ TEST_F(TextureLoadingTest, ParseDDSHeader) {
 
   std::cerr << "DDS parse result: success=" << result.success << " width=" << result.width
             << " height=" << result.height << " compressed=" << result.compressed << " fourCC='"
-            << result.fourCC << "'"
-            << " dataSize=" << result.dataSize << std::endl;
+            << result.fourCC << "'" << " dataSize=" << result.dataSize << std::endl;
 
   EXPECT_TRUE(result.success) << "Path: " << path.string();
   EXPECT_GT(result.width, 0) << "Width should be > 0";

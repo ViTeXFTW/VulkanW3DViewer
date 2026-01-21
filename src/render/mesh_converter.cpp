@@ -14,8 +14,8 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
   }
 
   // Find UV source and check for per-face UV indices
-  const std::vector<Vector2>* uvSource = &mesh.texCoords;
-  const std::vector<uint32_t>* perFaceUVIds = nullptr;
+  const std::vector<Vector2> *uvSource = &mesh.texCoords;
+  const std::vector<uint32_t> *perFaceUVIds = nullptr;
 
   if (!mesh.materialPasses.empty()) {
     for (const auto &pass : mesh.materialPasses) {
@@ -33,10 +33,10 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
           break;
         }
       }
-      if (perFaceUVIds || uvSource != &mesh.texCoords) break;
+      if (perFaceUVIds || uvSource != &mesh.texCoords)
+        break;
     }
   }
-
 
   // If we have per-face UV indices, we need to unroll the mesh
   // (create separate vertices for each triangle corner since UVs vary per-face)
@@ -60,8 +60,7 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
 
         // Normal
         if (vertIdx < mesh.normals.size()) {
-          v.normal = {mesh.normals[vertIdx].x, mesh.normals[vertIdx].y,
-                      mesh.normals[vertIdx].z};
+          v.normal = {mesh.normals[vertIdx].x, mesh.normals[vertIdx].y, mesh.normals[vertIdx].z};
         } else {
           v.normal = {0.0f, 1.0f, 0.0f};
         }

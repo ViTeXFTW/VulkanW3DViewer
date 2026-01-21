@@ -147,13 +147,15 @@ private:
       texturePath = "resources/textures";
       if (!std::filesystem::exists(texturePath)) {
         // Try relative to executable location
-        texturePath = std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "textures";
+        texturePath =
+            std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "textures";
       }
     }
     textureManager_.setTexturePath(texturePath);
 
     if (debugMode_) {
-      std::cerr << "[DEBUG] Texture path set to: " << textureManager_.texturePath().string() << "\n";
+      std::cerr << "[DEBUG] Texture path set to: " << textureManager_.texturePath().string()
+                << "\n";
       std::cerr << "[DEBUG] Path exists: " << std::filesystem::exists(texturePath) << "\n";
     }
 
@@ -881,7 +883,8 @@ int main(int argc, char *argv[]) {
 
     // Check texture path resolution
     std::filesystem::path searchPath = texturePath.empty() ? "resources/textures" : texturePath;
-    std::cout << "\n=== Texture path resolution (searching in: " << searchPath.string() << ") ===\n";
+    std::cout << "\n=== Texture path resolution (searching in: " << searchPath.string()
+              << ") ===\n";
 
     if (!std::filesystem::exists(searchPath)) {
       std::cout << "WARNING: Texture directory does not exist!\n";

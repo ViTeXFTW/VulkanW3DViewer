@@ -26,10 +26,11 @@ void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
   // Even though skeleton shader doesn't use textures, we need compatible layouts to share
   // descriptor sets
   std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
-      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                     vk::ShaderStageFlagBits::eVertex},
+      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                     vk::ShaderStageFlagBits::eVertex  },
       vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                     vk::ShaderStageFlagBits::eFragment}};
+                                     vk::ShaderStageFlagBits::eFragment}
+  };
 
   vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
   descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);

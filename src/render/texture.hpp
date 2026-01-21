@@ -1,11 +1,11 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
+
 #include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <vulkan/vulkan.hpp>
 
 namespace w3d {
 
@@ -92,8 +92,7 @@ private:
   vk::ImageView createImageView(vk::Image image, vk::Format format);
   vk::Sampler createSampler();
 
-  void transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout,
-                             vk::ImageLayout newLayout);
+  void transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
   void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 

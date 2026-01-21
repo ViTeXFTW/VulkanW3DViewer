@@ -32,7 +32,9 @@ std::string removeExtension(const std::string &filename) {
 
 } // namespace
 
-TextureManager::~TextureManager() { destroy(); }
+TextureManager::~TextureManager() {
+  destroy();
+}
 
 void TextureManager::init(VulkanContext &context) {
   context_ = &context;
@@ -116,7 +118,8 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
   // Resolve the texture path
   std::filesystem::path path = resolveTexturePath(w3dName);
   if (path.empty()) {
-    std::cerr << "Texture not found: " << w3dName << " (searched in " << texturePath_.string() << ")\n";
+    std::cerr << "Texture not found: " << w3dName << " (searched in " << texturePath_.string()
+              << ")\n";
     return 0; // Return default texture
   }
   std::cerr << "Loading texture: " << w3dName << " -> " << path.string() << "\n";
@@ -156,7 +159,8 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
       index = createTexture(normalizedName, width, height, data.data());
     } else {
       // Compressed format
-      index = createTextureWithFormat(normalizedName, width, height, data.data(), data.size(), format);
+      index =
+          createTextureWithFormat(normalizedName, width, height, data.data(), data.size(), format);
     }
   } catch (const std::exception &e) {
     std::cerr << "  GPU texture creation failed: " << e.what() << "\n";
@@ -264,8 +268,8 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
 
   // Pixel format starts at offset 72 bytes into header (index 18)
   // DDS_PIXELFORMAT: size(4), flags(4), fourCC(4), rgbBitCount(4), masks(4x4)
-  uint32_t pfFlags = headerData[19];   // offset 76 = flags
-  uint32_t fourCC = headerData[20];    // offset 80 = fourCC
+  uint32_t pfFlags = headerData[19]; // offset 76 = flags
+  uint32_t fourCC = headerData[20];  // offset 80 = fourCC
   uint32_t rgbBitCount = headerData[21];
   uint32_t rMask = headerData[22];
   uint32_t gMask = headerData[23];
@@ -376,10 +380,10 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
   vk::Buffer stagingBuffer = device.createBuffer(bufferInfo);
 
   vk::MemoryRequirements memRequirements = device.getBufferMemoryRequirements(stagingBuffer);
-  vk::MemoryAllocateInfo allocInfo{
-      memRequirements.size,
-      findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible |
-                                                         vk::MemoryPropertyFlagBits::eHostCoherent)};
+  vk::MemoryAllocateInfo allocInfo{memRequirements.size,
+                                   findMemoryType(memRequirements.memoryTypeBits,
+                                                  vk::MemoryPropertyFlagBits::eHostVisible |
+                                                      vk::MemoryPropertyFlagBits::eHostCoherent)};
 
   vk::DeviceMemory stagingMemory = device.allocateMemory(allocInfo);
   device.bindBufferMemory(stagingBuffer, stagingMemory, 0);
@@ -422,8 +426,8 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
 }
 
 uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32_t width,
-                                                  uint32_t height, const uint8_t *data,
-                                                  size_t dataSize, vk::Format format) {
+                                                 uint32_t height, const uint8_t *data,
+                                                 size_t dataSize, vk::Format format) {
   if (!context_) {
     return 0;
   }
@@ -441,10 +445,10 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
   vk::Buffer stagingBuffer = device.createBuffer(bufferInfo);
 
   vk::MemoryRequirements memRequirements = device.getBufferMemoryRequirements(stagingBuffer);
-  vk::MemoryAllocateInfo allocInfo{
-      memRequirements.size,
-      findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible |
-                                                         vk::MemoryPropertyFlagBits::eHostCoherent)};
+  vk::MemoryAllocateInfo allocInfo{memRequirements.size,
+                                   findMemoryType(memRequirements.memoryTypeBits,
+                                                  vk::MemoryPropertyFlagBits::eHostVisible |
+                                                      vk::MemoryPropertyFlagBits::eHostCoherent)};
 
   vk::DeviceMemory stagingMemory = device.allocateMemory(allocInfo);
   device.bindBufferMemory(stagingBuffer, stagingMemory, 0);
@@ -528,16 +532,18 @@ void TextureManager::createImage(uint32_t width, uint32_t height, vk::Format for
                                  vk::DeviceMemory &memory) {
   vk::Device device = context_->device();
 
-  vk::ImageCreateInfo imageInfo{{},
-                                vk::ImageType::e2D,
-                                format,
-                                {width, height, 1},
-                                1,
-                                1,
-                                vk::SampleCountFlagBits::e1,
-                                tiling,
-                                usage,
-                                vk::SharingMode::eExclusive};
+  vk::ImageCreateInfo imageInfo{
+      {},
+      vk::ImageType::e2D,
+      format,
+      {width, height, 1},
+      1,
+      1,
+      vk::SampleCountFlagBits::e1,
+      tiling,
+      usage,
+      vk::SharingMode::eExclusive
+  };
 
   image = device.createImage(imageInfo);
 
@@ -550,12 +556,11 @@ void TextureManager::createImage(uint32_t width, uint32_t height, vk::Format for
 }
 
 vk::ImageView TextureManager::createImageView(vk::Image image, vk::Format format) {
-  vk::ImageViewCreateInfo viewInfo{{},
-                                   image,
-                                   vk::ImageViewType::e2D,
-                                   format,
-                                   {},
-                                   {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+  vk::ImageViewCreateInfo viewInfo{
+      {},
+      image, vk::ImageViewType::e2D, format, {},
+      {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+  };
 
   return context_->device().createImageView(viewInfo);
 }
@@ -589,14 +594,16 @@ void TextureManager::transitionImageLayout(vk::Image image, vk::ImageLayout oldL
                                            vk::ImageLayout newLayout) {
   vk::CommandBuffer cmd = context_->beginSingleTimeCommands();
 
-  vk::ImageMemoryBarrier barrier{{},
-                                 {},
-                                 oldLayout,
-                                 newLayout,
-                                 VK_QUEUE_FAMILY_IGNORED,
-                                 VK_QUEUE_FAMILY_IGNORED,
-                                 image,
-                                 {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+  vk::ImageMemoryBarrier barrier{
+      {},
+      {},
+      oldLayout,
+      newLayout,
+      VK_QUEUE_FAMILY_IGNORED,
+      VK_QUEUE_FAMILY_IGNORED,
+      image,
+      {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}
+  };
 
   vk::PipelineStageFlags srcStage;
   vk::PipelineStageFlags dstStage;
@@ -627,7 +634,10 @@ void TextureManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint3
   vk::CommandBuffer cmd = context_->beginSingleTimeCommands();
 
   vk::BufferImageCopy region{
-      0, 0, 0, {vk::ImageAspectFlagBits::eColor, 0, 0, 1}, {0, 0, 0}, {width, height, 1}};
+      0, 0, 0, {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+         {0, 0, 0},
+         {width, height, 1}
+  };
 
   cmd.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
 

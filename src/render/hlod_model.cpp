@@ -39,7 +39,9 @@ std::string extractPrimaryTexture(const Mesh &mesh) {
 
 } // namespace
 
-HLodModel::~HLodModel() { destroy(); }
+HLodModel::~HLodModel() {
+  destroy();
+}
 
 void HLodModel::destroy() {
   for (auto &mesh : meshGPU_) {

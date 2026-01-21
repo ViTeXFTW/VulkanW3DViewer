@@ -36,7 +36,7 @@ struct HLodMeshGPU {
   VertexBuffer<Vertex> vertexBuffer;
   IndexBuffer indexBuffer;
   std::string name;
-  std::string textureName;   // Primary texture name (from first texture stage)
+  std::string textureName;  // Primary texture name (from first texture stage)
   int32_t boneIndex = -1;
   size_t lodLevel = 0;      // Which LOD level this mesh belongs to
   bool isAggregate = false; // True if this is an always-rendered aggregate

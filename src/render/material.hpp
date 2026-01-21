@@ -9,20 +9,20 @@ namespace w3d {
 
 // Blend mode for transparent materials
 enum class BlendMode : uint8_t {
-  Opaque = 0,      // No blending
-  AlphaBlend = 1,  // Standard alpha blending (src_alpha, 1-src_alpha)
-  Additive = 2,    // Additive blending (one, one)
-  AlphaTest = 3    // Alpha testing (discard below threshold)
+  Opaque = 0,     // No blending
+  AlphaBlend = 1, // Standard alpha blending (src_alpha, 1-src_alpha)
+  Additive = 2,   // Additive blending (one, one)
+  AlphaTest = 3   // Alpha testing (discard below threshold)
 };
 
 // GPU material data (matches shader uniform)
 struct GPUMaterial {
-  alignas(16) glm::vec4 diffuseColor;   // RGB + alpha
-  alignas(16) glm::vec4 emissiveColor;  // RGB + intensity
-  alignas(16) glm::vec4 specularColor;  // RGB + shininess
-  alignas(4) uint32_t textureIndex;     // Index into texture array (0 = no texture)
-  alignas(4) uint32_t flags;            // Bit flags for material options
-  alignas(4) float alphaThreshold;      // For alpha testing
+  alignas(16) glm::vec4 diffuseColor;  // RGB + alpha
+  alignas(16) glm::vec4 emissiveColor; // RGB + intensity
+  alignas(16) glm::vec4 specularColor; // RGB + shininess
+  alignas(4) uint32_t textureIndex;    // Index into texture array (0 = no texture)
+  alignas(4) uint32_t flags;           // Bit flags for material options
+  alignas(4) float alphaThreshold;     // For alpha testing
   alignas(4) float padding;
 };
 

@@ -1,8 +1,9 @@
+#include "pipeline.hpp"
+
+#include "vulkan_context.hpp"
+
 #include <fstream>
 #include <stdexcept>
-
-#include "pipeline.hpp"
-#include "vulkan_context.hpp"
 
 namespace w3d {
 
@@ -83,8 +84,8 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
       VK_TRUE,                                // depthTestEnable
       config.depthWrite ? VK_TRUE : VK_FALSE, // depthWriteEnable
       vk::CompareOp::eLess,
-      VK_FALSE, // depthBoundsTestEnable
-      VK_FALSE  // stencilTestEnable
+      VK_FALSE,                               // depthBoundsTestEnable
+      VK_FALSE                                // stencilTestEnable
   };
 
   // Color blending
@@ -118,10 +119,11 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
 
   // Descriptor set layout: binding 0 = UBO, binding 1 = texture sampler
   std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
-      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer, 1,
-                                     vk::ShaderStageFlagBits::eVertex},
+      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                     vk::ShaderStageFlagBits::eVertex  },
       vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                     vk::ShaderStageFlagBits::eFragment}};
+                                     vk::ShaderStageFlagBits::eFragment}
+  };
 
   vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
 
@@ -229,8 +231,9 @@ void DescriptorManager::createWithTexture(VulkanContext &context, vk::Descriptor
 
   // Create descriptor pool with both UBO and sampler types
   std::array<vk::DescriptorPoolSize, 2> poolSizes = {
-      vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, totalSets},
-      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, totalSets}};
+      vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer,        totalSets},
+      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, totalSets}
+  };
 
   vk::DescriptorPoolCreateInfo poolInfo{{}, totalSets, poolSizes};
 
@@ -283,17 +286,15 @@ void DescriptorManager::updateTexture(uint32_t frameIndex, vk::ImageView imageVi
 
   vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex],
                                          1, // binding 1
-                                         0,
-                                         vk::DescriptorType::eCombinedImageSampler,
-                                         imageInfo};
+                                         0, vk::DescriptorType::eCombinedImageSampler, imageInfo};
 
   device_.updateDescriptorSets(descriptorWrite, {});
 }
 
 vk::DescriptorSet DescriptorManager::getTextureDescriptorSet(uint32_t frameIndex,
-                                                              uint32_t textureIndex,
-                                                              vk::ImageView imageView,
-                                                              vk::Sampler sampler) {
+                                                             uint32_t textureIndex,
+                                                             vk::ImageView imageView,
+                                                             vk::Sampler sampler) {
   // Check bounds
   if (textureIndex >= maxTextures_ || frameIndex >= frameCount_) {
     // Fallback to base descriptor set
