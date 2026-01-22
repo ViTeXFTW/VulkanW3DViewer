@@ -42,7 +42,7 @@ if ($LASTEXITCODE -eq 0) {
     exit 1
 }
 
-if($R) {
+if ($R) {
     Write-Host ""
     Write-Host "Running application for preset: $Preset" -ForegroundColor Yellow
     $exePath = Join-Path $buildDir "VulkanW3DViewer.exe"
