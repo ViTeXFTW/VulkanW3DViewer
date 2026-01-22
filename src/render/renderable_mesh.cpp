@@ -21,18 +21,26 @@ void RenderableMesh::loadWithPose(VulkanContext &context, const W3DFile &file,
   auto converted = MeshConverter::convertAllWithPose(file, pose);
   bounds_ = MeshConverter::combinedBounds(converted);
 
-  meshes_.reserve(converted.size());
-  for (auto &cm : converted) {
-    if (cm.vertices.empty() || cm.indices.empty()) {
-      continue;
-    }
+  // Count total sub-meshes for reservation
+  size_t totalSubMeshes = 0;
+  for (const auto &cm : converted) {
+    totalSubMeshes += cm.subMeshes.size();
+  }
+  meshes_.reserve(totalSubMeshes);
 
-    MeshGPUData gpu;
-    gpu.name = cm.name;
-    gpu.boneIndex = cm.boneIndex;
-    gpu.vertexBuffer.create(context, cm.vertices);
-    gpu.indexBuffer.create(context, cm.indices);
-    meshes_.push_back(std::move(gpu));
+  for (const auto &cm : converted) {
+    for (const auto &subMesh : cm.subMeshes) {
+      if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+        continue;
+      }
+
+      MeshGPUData gpu;
+      gpu.name = cm.name;
+      gpu.boneIndex = cm.boneIndex;
+      gpu.vertexBuffer.create(context, subMesh.vertices);
+      gpu.indexBuffer.create(context, subMesh.indices);
+      meshes_.push_back(std::move(gpu));
+    }
   }
 }
 

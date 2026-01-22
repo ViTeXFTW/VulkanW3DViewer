@@ -9,36 +9,6 @@
 
 namespace w3d {
 
-namespace {
-
-// Extract the primary texture name from a mesh
-// Returns empty string if no texture is defined
-std::string extractPrimaryTexture(const Mesh &mesh) {
-  // Check if mesh has any textures defined
-  if (mesh.textures.empty()) {
-    return "";
-  }
-
-  // Check material passes for texture stage references
-  if (!mesh.materialPasses.empty()) {
-    const auto &pass = mesh.materialPasses[0];
-    if (!pass.textureStages.empty()) {
-      const auto &stage = pass.textureStages[0];
-      if (!stage.textureIds.empty()) {
-        uint32_t texId = stage.textureIds[0];
-        if (texId < mesh.textures.size()) {
-          return mesh.textures[texId].name;
-        }
-      }
-    }
-  }
-
-  // Fallback: use first texture in the list
-  return mesh.textures[0].name;
-}
-
-} // namespace
-
 HLodModel::~HLodModel() {
   destroy();
 }
@@ -119,24 +89,35 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
     // Convert and upload all meshes
     for (size_t i = 0; i < file.meshes.size(); ++i) {
       auto converted = MeshConverter::convert(file.meshes[i]);
-      if (converted.vertices.empty() || converted.indices.empty()) {
+      if (converted.subMeshes.empty()) {
         continue;
       }
 
-      HLodMeshGPU gpuMesh;
-      gpuMesh.name = converted.name;
-      gpuMesh.textureName = extractPrimaryTexture(file.meshes[i]);
-      gpuMesh.boneIndex = -1;
-      gpuMesh.lodLevel = 0;
-      gpuMesh.isAggregate = false;
+      // Create one GPU mesh for each sub-mesh (each with different texture)
+      for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+        const auto &subMesh = converted.subMeshes[subIdx];
+        if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+          continue;
+        }
 
-      gpuMesh.vertexBuffer.create(context, converted.vertices);
-      gpuMesh.indexBuffer.create(context, converted.indices);
+        HLodMeshGPU gpuMesh;
+        gpuMesh.name = converted.name;
+        if (converted.subMeshes.size() > 1) {
+          gpuMesh.name += "_sub" + std::to_string(subIdx);
+        }
+        gpuMesh.textureName = subMesh.textureName;
+        gpuMesh.boneIndex = -1;
+        gpuMesh.lodLevel = 0;
+        gpuMesh.isAggregate = false;
 
-      combinedBounds_.expand(converted.bounds);
-      lodLevels_[0].bounds.expand(converted.bounds);
+        gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+        gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      meshGPU_.push_back(std::move(gpuMesh));
+        combinedBounds_.expand(subMesh.bounds);
+        lodLevels_[0].bounds.expand(subMesh.bounds);
+
+        meshGPU_.push_back(std::move(gpuMesh));
+      }
     }
 
     return;
@@ -183,7 +164,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
     }
 
     auto converted = MeshConverter::convert(file.meshes[meshIdx.value()]);
-    if (converted.vertices.empty() || converted.indices.empty()) {
+    if (converted.subMeshes.empty()) {
       continue;
     }
 
@@ -193,20 +174,32 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
       MeshConverter::applyBoneTransform(converted, boneTransform);
     }
 
-    HLodMeshGPU gpuMesh;
-    gpuMesh.name = subObj.name;
-    gpuMesh.textureName = extractPrimaryTexture(file.meshes[meshIdx.value()]);
-    gpuMesh.boneIndex = static_cast<int32_t>(subObj.boneIndex);
-    gpuMesh.lodLevel = 0; // Aggregates don't have a specific LOD level
-    gpuMesh.isAggregate = true;
+    // Create one GPU mesh for each sub-mesh
+    for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+      const auto &subMesh = converted.subMeshes[subIdx];
+      if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+        continue;
+      }
 
-    gpuMesh.vertexBuffer.create(context, converted.vertices);
-    gpuMesh.indexBuffer.create(context, converted.indices);
+      HLodMeshGPU gpuMesh;
+      gpuMesh.name = subObj.name;
+      if (converted.subMeshes.size() > 1) {
+        gpuMesh.name += "_sub" + std::to_string(subIdx);
+      }
+      gpuMesh.textureName = subMesh.textureName;
+      gpuMesh.boneIndex = static_cast<int32_t>(subObj.boneIndex);
+      gpuMesh.lodLevel = 0; // Aggregates don't have a specific LOD level
+      gpuMesh.isAggregate = true;
 
-    combinedBounds_.expand(converted.bounds);
+      gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+      gpuMesh.indexBuffer.create(context, subMesh.indices);
+
+      combinedBounds_.expand(subMesh.bounds);
+
+      meshGPU_.push_back(std::move(gpuMesh));
+    }
 
     uploadedMeshes[meshIdx.value()] = meshGPU_.size();
-    meshGPU_.push_back(std::move(gpuMesh));
   }
 
   aggregateCount_ = meshGPU_.size();
@@ -226,7 +219,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
       }
 
       auto converted = MeshConverter::convert(file.meshes[meshInfo.meshIndex]);
-      if (converted.vertices.empty() || converted.indices.empty()) {
+      if (converted.subMeshes.empty()) {
         continue;
       }
 
@@ -236,20 +229,31 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         MeshConverter::applyBoneTransform(converted, boneTransform);
       }
 
-      HLodMeshGPU gpuMesh;
-      gpuMesh.name = meshInfo.name;
-      gpuMesh.textureName = extractPrimaryTexture(file.meshes[meshInfo.meshIndex]);
-      gpuMesh.boneIndex = static_cast<int32_t>(meshInfo.boneIndex);
-      gpuMesh.lodLevel = lodIdx;
-      gpuMesh.isAggregate = false;
+      // Create one GPU mesh for each sub-mesh
+      for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+        const auto &subMesh = converted.subMeshes[subIdx];
+        if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+          continue;
+        }
 
-      gpuMesh.vertexBuffer.create(context, converted.vertices);
-      gpuMesh.indexBuffer.create(context, converted.indices);
+        HLodMeshGPU gpuMesh;
+        gpuMesh.name = meshInfo.name;
+        if (converted.subMeshes.size() > 1) {
+          gpuMesh.name += "_sub" + std::to_string(subIdx);
+        }
+        gpuMesh.textureName = subMesh.textureName;
+        gpuMesh.boneIndex = static_cast<int32_t>(meshInfo.boneIndex);
+        gpuMesh.lodLevel = lodIdx;
+        gpuMesh.isAggregate = false;
 
-      combinedBounds_.expand(converted.bounds);
-      levelInfo.bounds.expand(converted.bounds);
+        gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+        gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      meshGPU_.push_back(std::move(gpuMesh));
+        combinedBounds_.expand(subMesh.bounds);
+        levelInfo.bounds.expand(subMesh.bounds);
+
+        meshGPU_.push_back(std::move(gpuMesh));
+      }
     }
   }
 
