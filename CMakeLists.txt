@@ -58,13 +58,14 @@ if(NOT BUILD_TESTING)
     add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
 
     # Include directories
+    # Use Vulkan headers from Vulkan-Hpp submodule (not system headers) to ensure version compatibility
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp/Vulkan-Headers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
-        ${Vulkan_INCLUDE_DIRS}
     )
 
     # Link libraries
