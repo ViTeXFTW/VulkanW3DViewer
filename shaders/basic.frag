@@ -38,10 +38,8 @@ void main() {
   // Get base color from texture or vertex color
   vec4 baseColor;
   if (material.useTexture == 1u) {
-    // Flip V coordinate - W3D uses OpenGL convention (0,0 at bottom-left)
-    // while DDS/Vulkan expects (0,0 at top-left)
-    vec2 flippedUV = vec2(fragTexCoord.x, 1.0 - fragTexCoord.y);
-    baseColor = texture(texSampler, flippedUV);
+    // UVs already in correct coordinate system (V-flipped during W3D parsing)
+    baseColor = texture(texSampler, fragTexCoord);
   } else {
     baseColor = vec4(fragColor, 1.0);
   }

@@ -572,10 +572,13 @@ TEST_F(MeshParserTest, TexCoordsParsing) {
   Mesh mesh = MeshParser::parse(reader, static_cast<uint32_t>(meshData.size()));
 
   ASSERT_EQ(mesh.texCoords.size(), 4);
+  // V coordinates are inverted: input (0,0) -> output (0,1), input (0,1) -> output (0,0)
   EXPECT_FLOAT_EQ(mesh.texCoords[0].u, 0.0f);
-  EXPECT_FLOAT_EQ(mesh.texCoords[0].v, 0.0f);
+  EXPECT_FLOAT_EQ(mesh.texCoords[0].v, 1.0f); // Inverted: 1.0f - 0.0f
   EXPECT_FLOAT_EQ(mesh.texCoords[1].u, 1.0f);
+  EXPECT_FLOAT_EQ(mesh.texCoords[1].v, 1.0f); // Inverted: 1.0f - 0.0f
   EXPECT_FLOAT_EQ(mesh.texCoords[2].u, 1.0f);
-  EXPECT_FLOAT_EQ(mesh.texCoords[2].v, 1.0f);
-  EXPECT_FLOAT_EQ(mesh.texCoords[3].v, 1.0f);
+  EXPECT_FLOAT_EQ(mesh.texCoords[2].v, 0.0f); // Inverted: 1.0f - 1.0f
+  EXPECT_FLOAT_EQ(mesh.texCoords[3].u, 0.0f);
+  EXPECT_FLOAT_EQ(mesh.texCoords[3].v, 0.0f); // Inverted: 1.0f - 1.0f
 }

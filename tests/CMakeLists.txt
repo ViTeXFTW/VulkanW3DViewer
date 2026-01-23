@@ -34,7 +34,7 @@ add_test(NAME w3d_tests COMMAND w3d_tests)
 
 # Define path to test fixtures (real W3D files)
 target_compile_definitions(w3d_tests PRIVATE
-  W3D_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/legacy/models/Art/W3D"
+  W3D_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/legacy/models/W3D"
 )
 
 # Texture loading tests (no Vulkan dependencies)
