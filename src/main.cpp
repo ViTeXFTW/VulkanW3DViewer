@@ -104,6 +104,7 @@ private:
   // Animation playback
   w3d::AnimationPlayer animationPlayer_;
   float lastFrameTime_ = 0.0f;
+  float lastAppliedFrame_ = -1.0f; // Track last frame applied to pose
 
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
@@ -890,15 +891,18 @@ private:
       // Update animation
       animationPlayer_.update(deltaTime);
 
-      // Apply animation to pose if active
+      // Apply animation to pose only when frame changes
       if (loadedFile_ && animationPlayer_.animationCount() > 0 &&
           !loadedFile_->hierarchies.empty()) {
-        animationPlayer_.applyToPose(skeletonPose_, loadedFile_->hierarchies[0]);
-
-        // Wait for GPU to finish before updating skeleton buffers
-        // This prevents device lost errors from buffer recreation during rendering
-        context_.device().waitIdle();
-        skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+        float currentFrame = animationPlayer_.currentFrame();
+        if (currentFrame != lastAppliedFrame_ || !animationPlayer_.isPlaying()) {
+          animationPlayer_.applyToPose(skeletonPose_, loadedFile_->hierarchies[0]);
+          // Wait for GPU to finish before updating skeleton buffers
+          // This prevents device lost errors from buffer recreation during rendering
+          context_.device().waitIdle();
+          skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+          lastAppliedFrame_ = currentFrame;
+        }
       }
 
       // Update LOD selection based on camera distance
