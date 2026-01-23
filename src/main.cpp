@@ -244,7 +244,8 @@ private:
     animationPlayer_.clear();
     if (!loadedFile_->animations.empty() || !loadedFile_->compressedAnimations.empty()) {
       animationPlayer_.load(*loadedFile_);
-      console_.info("Loaded " + std::to_string(animationPlayer_.animationCount()) + " animation(s)");
+      console_.info("Loaded " + std::to_string(animationPlayer_.animationCount()) +
+                    " animation(s)");
     }
 
     const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
@@ -503,7 +504,9 @@ private:
         ImGui::Text("Animation");
 
         // Animation dropdown
-        if (ImGui::BeginCombo("##animation", animationPlayer_.animationName(animationPlayer_.currentAnimationIndex()).c_str())) {
+        if (ImGui::BeginCombo(
+                "##animation",
+                animationPlayer_.animationName(animationPlayer_.currentAnimationIndex()).c_str())) {
           for (size_t i = 0; i < animationPlayer_.animationCount(); ++i) {
             bool isSelected = (i == animationPlayer_.currentAnimationIndex());
             if (ImGui::Selectable(animationPlayer_.animationName(i).c_str(), isSelected)) {
@@ -542,29 +545,37 @@ private:
 
         // Playback mode
         ImGui::SameLine();
-        const char* modeStr = "Loop";
+        const char *modeStr = "Loop";
         switch (animationPlayer_.playbackMode()) {
-          case w3d::PlaybackMode::Once: modeStr = "Once"; break;
-          case w3d::PlaybackMode::Loop: modeStr = "Loop"; break;
-          case w3d::PlaybackMode::PingPong: modeStr = "PingPong"; break;
+        case w3d::PlaybackMode::Once:
+          modeStr = "Once";
+          break;
+        case w3d::PlaybackMode::Loop:
+          modeStr = "Loop";
+          break;
+        case w3d::PlaybackMode::PingPong:
+          modeStr = "PingPong";
+          break;
         }
 
         if (ImGui::BeginCombo("Mode", modeStr)) {
-          if (ImGui::Selectable("Once", animationPlayer_.playbackMode() == w3d::PlaybackMode::Once)) {
+          if (ImGui::Selectable("Once",
+                                animationPlayer_.playbackMode() == w3d::PlaybackMode::Once)) {
             animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Once);
           }
-          if (ImGui::Selectable("Loop", animationPlayer_.playbackMode() == w3d::PlaybackMode::Loop)) {
+          if (ImGui::Selectable("Loop",
+                                animationPlayer_.playbackMode() == w3d::PlaybackMode::Loop)) {
             animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Loop);
           }
-          if (ImGui::Selectable("PingPong", animationPlayer_.playbackMode() == w3d::PlaybackMode::PingPong)) {
+          if (ImGui::Selectable("PingPong",
+                                animationPlayer_.playbackMode() == w3d::PlaybackMode::PingPong)) {
             animationPlayer_.setPlaybackMode(w3d::PlaybackMode::PingPong);
           }
           ImGui::EndCombo();
         }
 
         // Info display
-        ImGui::Text("Frame: %.1f / %u @ %u FPS",
-                    animationPlayer_.currentFrame(),
+        ImGui::Text("Frame: %.1f / %u @ %u FPS", animationPlayer_.currentFrame(),
                     animationPlayer_.numFrames() > 0 ? animationPlayer_.numFrames() - 1 : 0,
                     animationPlayer_.frameRate());
       }
@@ -880,7 +891,8 @@ private:
       animationPlayer_.update(deltaTime);
 
       // Apply animation to pose if active
-      if (loadedFile_ && animationPlayer_.animationCount() > 0 && !loadedFile_->hierarchies.empty()) {
+      if (loadedFile_ && animationPlayer_.animationCount() > 0 &&
+          !loadedFile_->hierarchies.empty()) {
         animationPlayer_.applyToPose(skeletonPose_, loadedFile_->hierarchies[0]);
 
         // Wait for GPU to finish before updating skeleton buffers

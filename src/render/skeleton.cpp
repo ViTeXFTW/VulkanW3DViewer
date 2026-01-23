@@ -67,8 +67,8 @@ void SkeletonPose::computeRestPose(const Hierarchy &hierarchy) {
 }
 
 void SkeletonPose::computeAnimatedPose(const Hierarchy &hierarchy,
-                                        const std::vector<glm::vec3> &animTranslations,
-                                        const std::vector<glm::quat> &animRotations) {
+                                       const std::vector<glm::vec3> &animTranslations,
+                                       const std::vector<glm::quat> &animRotations) {
   size_t numBones = hierarchy.pivots.size();
   if (numBones == 0) {
     boneWorldTransforms_.clear();

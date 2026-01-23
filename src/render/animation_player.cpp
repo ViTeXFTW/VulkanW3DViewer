@@ -7,13 +7,13 @@
 
 namespace w3d {
 
-void AnimationPlayer::load(const W3DFile& file) {
+void AnimationPlayer::load(const W3DFile &file) {
   clear();
   sourceFile_ = &file;
 
   // Load standard animations
   for (size_t i = 0; i < file.animations.size(); ++i) {
-    const Animation& anim = file.animations[i];
+    const Animation &anim = file.animations[i];
     AnimationData data;
     data.name = anim.name;
     data.hierarchyName = anim.hierarchyName;
@@ -28,7 +28,7 @@ void AnimationPlayer::load(const W3DFile& file) {
 
   // Load compressed animations
   for (size_t i = 0; i < file.compressedAnimations.size(); ++i) {
-    const CompressedAnimation& anim = file.compressedAnimations[i];
+    const CompressedAnimation &anim = file.compressedAnimations[i];
     AnimationData data;
     data.name = anim.name;
     data.hierarchyName = anim.hierarchyName;
@@ -79,7 +79,7 @@ float AnimationPlayer::maxFrame() const {
     return 0.0f;
   }
 
-  const AnimationData& anim = animations_[currentAnimationIndex_];
+  const AnimationData &anim = animations_[currentAnimationIndex_];
   return static_cast<float>(anim.numFrames > 0 ? anim.numFrames - 1 : 0);
 }
 
@@ -121,7 +121,7 @@ void AnimationPlayer::update(float deltaSeconds) {
     return;
   }
 
-  const AnimationData& anim = animations_[currentAnimationIndex_];
+  const AnimationData &anim = animations_[currentAnimationIndex_];
   float framesPerSecond = static_cast<float>(anim.frameRate);
   float deltaFrames = deltaSeconds * framesPerSecond;
 
@@ -131,39 +131,38 @@ void AnimationPlayer::update(float deltaSeconds) {
 
   // Handle playback modes
   switch (playbackMode_) {
-    case PlaybackMode::Once:
-      if (currentFrame_ > max) {
-        currentFrame_ = max;
-        isPlaying_ = false;
-      }
-      break;
+  case PlaybackMode::Once:
+    if (currentFrame_ > max) {
+      currentFrame_ = max;
+      isPlaying_ = false;
+    }
+    break;
 
-    case PlaybackMode::Loop:
-      if (currentFrame_ > max) {
-        currentFrame_ = std::fmod(currentFrame_, max + 1.0f);
-      }
-      break;
+  case PlaybackMode::Loop:
+    if (currentFrame_ > max) {
+      currentFrame_ = std::fmod(currentFrame_, max + 1.0f);
+    }
+    break;
 
-    case PlaybackMode::PingPong:
-      // TODO: Implement ping-pong mode
-      // For now, just loop
-      if (currentFrame_ > max) {
-        currentFrame_ = std::fmod(currentFrame_, max + 1.0f);
-      }
-      break;
+  case PlaybackMode::PingPong:
+    // TODO: Implement ping-pong mode
+    // For now, just loop
+    if (currentFrame_ > max) {
+      currentFrame_ = std::fmod(currentFrame_, max + 1.0f);
+    }
+    break;
   }
 }
 
-bool AnimationPlayer::applyToPose(SkeletonPose& pose, const Hierarchy& hierarchy) const {
+bool AnimationPlayer::applyToPose(SkeletonPose &pose, const Hierarchy &hierarchy) const {
   if (!sourceFile_ || animations_.empty() || currentAnimationIndex_ >= animations_.size()) {
     return false;
   }
 
-  const AnimationData& animData = animations_[currentAnimationIndex_];
+  const AnimationData &animData = animations_[currentAnimationIndex_];
 
   // Check if animation matches hierarchy
-  if (!animData.hierarchyName.empty() &&
-      animData.hierarchyName != hierarchy.name) {
+  if (!animData.hierarchyName.empty() && animData.hierarchyName != hierarchy.name) {
     return false;
   }
 
@@ -179,13 +178,13 @@ bool AnimationPlayer::applyToPose(SkeletonPose& pose, const Hierarchy& hierarchy
 
   // Evaluate animation channels
   if (animData.isCompressed) {
-    const CompressedAnimation& anim = sourceFile_->compressedAnimations[animData.fileIndex];
+    const CompressedAnimation &anim = sourceFile_->compressedAnimations[animData.fileIndex];
     for (size_t i = 0; i < hierarchy.pivots.size(); ++i) {
       translations[i] = evaluateTranslationCompressed(anim, i, currentFrame_);
       rotations[i] = evaluateRotationCompressed(anim, i, currentFrame_);
     }
   } else {
-    const Animation& anim = sourceFile_->animations[animData.fileIndex];
+    const Animation &anim = sourceFile_->animations[animData.fileIndex];
     for (size_t i = 0; i < hierarchy.pivots.size(); ++i) {
       translations[i] = evaluateTranslation(anim, i, currentFrame_);
       rotations[i] = evaluateRotation(anim, i, currentFrame_);
@@ -198,11 +197,12 @@ bool AnimationPlayer::applyToPose(SkeletonPose& pose, const Hierarchy& hierarchy
   return true;
 }
 
-glm::vec3 AnimationPlayer::evaluateTranslation(const Animation& anim, size_t pivotIndex, float frame) const {
+glm::vec3 AnimationPlayer::evaluateTranslation(const Animation &anim, size_t pivotIndex,
+                                               float frame) const {
   glm::vec3 translation(0.0f);
 
   // Find channels for this pivot
-  for (const AnimChannel& channel : anim.channels) {
+  for (const AnimChannel &channel : anim.channels) {
     if (channel.pivot != pivotIndex) {
       continue;
     }
@@ -216,8 +216,10 @@ glm::vec3 AnimationPlayer::evaluateTranslation(const Animation& anim, size_t piv
         float ratio = frame - static_cast<float>(frame0);
 
         // Clamp to valid frame range
-        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
-        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
+        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
+        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
 
         size_t idx0 = frame0 - channel.firstFrame;
         size_t idx1 = frame1 - channel.firstFrame;
@@ -233,8 +235,10 @@ glm::vec3 AnimationPlayer::evaluateTranslation(const Animation& anim, size_t piv
         int frame1 = frame0 + 1;
         float ratio = frame - static_cast<float>(frame0);
 
-        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
-        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
+        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
+        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
 
         size_t idx0 = frame0 - channel.firstFrame;
         size_t idx1 = frame1 - channel.firstFrame;
@@ -250,8 +254,10 @@ glm::vec3 AnimationPlayer::evaluateTranslation(const Animation& anim, size_t piv
         int frame1 = frame0 + 1;
         float ratio = frame - static_cast<float>(frame0);
 
-        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
-        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
+        frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
+        frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame),
+                            static_cast<int>(channel.lastFrame));
 
         size_t idx0 = frame0 - channel.firstFrame;
         size_t idx1 = frame1 - channel.firstFrame;
@@ -266,11 +272,12 @@ glm::vec3 AnimationPlayer::evaluateTranslation(const Animation& anim, size_t piv
   return translation;
 }
 
-glm::quat AnimationPlayer::evaluateRotation(const Animation& anim, size_t pivotIndex, float frame) const {
+glm::quat AnimationPlayer::evaluateRotation(const Animation &anim, size_t pivotIndex,
+                                            float frame) const {
   glm::quat rotation(1.0f, 0.0f, 0.0f, 0.0f); // Identity
 
   // Find quaternion rotation channel for this pivot
-  for (const AnimChannel& channel : anim.channels) {
+  for (const AnimChannel &channel : anim.channels) {
     if (channel.pivot != pivotIndex) {
       continue;
     }
@@ -282,26 +289,26 @@ glm::quat AnimationPlayer::evaluateRotation(const Animation& anim, size_t pivotI
       float ratio = frame - static_cast<float>(frame0);
 
       // Clamp to valid frame range
-      frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
-      frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame), static_cast<int>(channel.lastFrame));
+      frame0 = std::clamp(frame0, static_cast<int>(channel.firstFrame),
+                          static_cast<int>(channel.lastFrame));
+      frame1 = std::clamp(frame1, static_cast<int>(channel.firstFrame),
+                          static_cast<int>(channel.lastFrame));
 
       size_t idx0 = (frame0 - channel.firstFrame) * 4;
       size_t idx1 = (frame1 - channel.firstFrame) * 4;
 
       if (idx0 + 3 < channel.data.size() && idx1 + 3 < channel.data.size()) {
         // Extract quaternions (x, y, z, w order in data)
-        glm::quat q0(
-          channel.data[idx0 + 3],  // w
-          channel.data[idx0 + 0],  // x
-          channel.data[idx0 + 1],  // y
-          channel.data[idx0 + 2]   // z
+        glm::quat q0(channel.data[idx0 + 3], // w
+                     channel.data[idx0 + 0], // x
+                     channel.data[idx0 + 1], // y
+                     channel.data[idx0 + 2]  // z
         );
 
-        glm::quat q1(
-          channel.data[idx1 + 3],  // w
-          channel.data[idx1 + 0],  // x
-          channel.data[idx1 + 1],  // y
-          channel.data[idx1 + 2]   // z
+        glm::quat q1(channel.data[idx1 + 3], // w
+                     channel.data[idx1 + 0], // x
+                     channel.data[idx1 + 1], // y
+                     channel.data[idx1 + 2]  // z
         );
 
         // SLERP between quaternions
@@ -315,11 +322,12 @@ glm::quat AnimationPlayer::evaluateRotation(const Animation& anim, size_t pivotI
   return rotation;
 }
 
-glm::vec3 AnimationPlayer::evaluateTranslationCompressed(const CompressedAnimation& anim, size_t pivotIndex, float frame) const {
+glm::vec3 AnimationPlayer::evaluateTranslationCompressed(const CompressedAnimation &anim,
+                                                         size_t pivotIndex, float frame) const {
   glm::vec3 translation(0.0f);
 
   // Find channels for this pivot
-  for (const CompressedAnimChannel& channel : anim.channels) {
+  for (const CompressedAnimChannel &channel : anim.channels) {
     if (channel.pivot != pivotIndex) {
       continue;
     }
@@ -370,11 +378,12 @@ glm::vec3 AnimationPlayer::evaluateTranslationCompressed(const CompressedAnimati
   return translation;
 }
 
-glm::quat AnimationPlayer::evaluateRotationCompressed(const CompressedAnimation& anim, size_t pivotIndex, float frame) const {
+glm::quat AnimationPlayer::evaluateRotationCompressed(const CompressedAnimation &anim,
+                                                      size_t pivotIndex, float frame) const {
   glm::quat rotation(1.0f, 0.0f, 0.0f, 0.0f); // Identity
 
   // Find quaternion rotation channel for this pivot
-  for (const CompressedAnimChannel& channel : anim.channels) {
+  for (const CompressedAnimChannel &channel : anim.channels) {
     if (channel.pivot != pivotIndex) {
       continue;
     }
@@ -388,18 +397,16 @@ glm::quat AnimationPlayer::evaluateRotationCompressed(const CompressedAnimation&
 
       if (dataIdx0 + 3 < channel.data.size() && dataIdx1 + 3 < channel.data.size()) {
         // Extract quaternions (x, y, z, w order in data)
-        glm::quat q0(
-          channel.data[dataIdx0 + 3],  // w
-          channel.data[dataIdx0 + 0],  // x
-          channel.data[dataIdx0 + 1],  // y
-          channel.data[dataIdx0 + 2]   // z
+        glm::quat q0(channel.data[dataIdx0 + 3], // w
+                     channel.data[dataIdx0 + 0], // x
+                     channel.data[dataIdx0 + 1], // y
+                     channel.data[dataIdx0 + 2]  // z
         );
 
-        glm::quat q1(
-          channel.data[dataIdx1 + 3],  // w
-          channel.data[dataIdx1 + 0],  // x
-          channel.data[dataIdx1 + 1],  // y
-          channel.data[dataIdx1 + 2]   // z
+        glm::quat q1(channel.data[dataIdx1 + 3], // w
+                     channel.data[dataIdx1 + 0], // x
+                     channel.data[dataIdx1 + 1], // y
+                     channel.data[dataIdx1 + 2]  // z
         );
 
         // Calculate interpolation ratio
@@ -418,7 +425,8 @@ glm::quat AnimationPlayer::evaluateRotationCompressed(const CompressedAnimation&
   return rotation;
 }
 
-std::pair<size_t, size_t> AnimationPlayer::findKeyframes(const CompressedAnimChannel& channel, float frame) const {
+std::pair<size_t, size_t> AnimationPlayer::findKeyframes(const CompressedAnimChannel &channel,
+                                                         float frame) const {
   if (channel.timeCodes.empty()) {
     return {0, 0};
   }
