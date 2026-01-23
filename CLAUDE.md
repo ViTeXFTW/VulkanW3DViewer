@@ -81,7 +81,7 @@ shaders/
 
 ## Performance Note
 Current animation implementation uses `context_.device().waitIdle()` before skeleton buffers. Which impacts performance and should be handled in the future with proper fix. Consider:
-- Double/truple buffered skeleton buffers.
+- Double/triple buffered skeleton buffers.
 - Only update buffers when skeleton animation actually changes.
 - Implement fence-based synchronization instead of `waitIdle()`.
 
