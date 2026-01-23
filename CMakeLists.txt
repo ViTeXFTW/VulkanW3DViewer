@@ -82,6 +82,11 @@ if(NOT BUILD_TESTING)
         target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
 
+    # Debug/Release definitions
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Debug>:W3D_DEBUG>
+    )
+
     # Find glslc shader compiler
     find_program(GLSLC glslc HINTS "$ENV{VULKAN_SDK}/Bin")
     if(NOT GLSLC)

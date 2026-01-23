@@ -122,7 +122,9 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
               << ")\n";
     return 0; // Return default texture
   }
+#ifdef W3D_DEBUG
   std::cerr << "Loading texture: " << w3dName << " -> " << path.string() << "\n";
+#endif
 
   // Load based on extension
   std::vector<uint8_t> data;
@@ -134,23 +136,31 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
 
   if (ext == ".dds") {
     loaded = loadDDS(path, data, width, height, format);
+#ifdef W3D_DEBUG
     if (!loaded) {
       std::cerr << "  DDS load failed for: " << path.string() << "\n";
     }
+#endif
   } else if (ext == ".tga") {
     loaded = loadTGA(path, data, width, height);
+#ifdef W3D_DEBUG
     if (!loaded) {
       std::cerr << "  TGA load failed for: " << path.string() << "\n";
     }
+#endif
   }
 
   if (!loaded || data.empty()) {
+#ifdef W3D_DEBUG
     std::cerr << "  loaded=" << loaded << " data.size=" << data.size() << "\n";
+#endif
     return 0;
   }
 
+#ifdef W3D_DEBUG
   std::cerr << "  Creating texture: " << width << "x" << height
             << " format=" << static_cast<int>(format) << " dataSize=" << data.size() << "\n";
+#endif
 
   // Create the GPU texture using the appropriate function based on format
   uint32_t index;
@@ -163,7 +173,11 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
           createTextureWithFormat(normalizedName, width, height, data.data(), data.size(), format);
     }
   } catch (const std::exception &e) {
+#ifdef W3D_DEBUG
     std::cerr << "  GPU texture creation failed: " << e.what() << "\n";
+#else
+    (void)e; // Suppress unused variable warning in release
+#endif
     return 0;
   }
   return index;
@@ -276,8 +290,10 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
   uint32_t bMask = headerData[24];
   uint32_t aMask = headerData[25];
 
+#ifdef W3D_DEBUG
   std::cerr << "    DDS: " << width << "x" << height << " pfFlags=0x" << std::hex << pfFlags
             << " fourCC=0x" << fourCC << std::dec << "\n";
+#endif
 
   // Determine format
   bool compressed = (pfFlags & 0x4) != 0; // DDPF_FOURCC

@@ -76,7 +76,9 @@ private:
   bool showFileBrowser_ = false;
   bool showConsole_ = true;
   bool showViewport_ = true;
+#ifdef W3D_DEBUG
   bool showDemoWindow_ = false;
+#endif
 
   // Loaded W3D data
   std::optional<w3d::W3DFile> loadedFile_;
@@ -131,7 +133,11 @@ private:
   }
 
   void initVulkan() {
-    context_.init(window_, true);
+#ifdef W3D_DEBUG
+    context_.init(window_, true);  // Enable validation in debug builds
+#else
+    context_.init(window_, false); // Disable validation in release builds
+#endif
     pipeline_.create(context_, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
     skeletonRenderer_.create(context_);
 
@@ -153,11 +159,13 @@ private:
     }
     textureManager_.setTexturePath(texturePath);
 
+#ifdef W3D_DEBUG
     if (debugMode_) {
       std::cerr << "[DEBUG] Texture path set to: " << textureManager_.texturePath().string()
                 << "\n";
       std::cerr << "[DEBUG] Path exists: " << std::filesystem::exists(texturePath) << "\n";
     }
+#endif
 
     defaultMaterial_ = w3d::createDefaultMaterial();
 
@@ -242,21 +250,27 @@ private:
         }
         uniqueTextures.insert(tex.name);
 
+#ifdef W3D_DEBUG
         if (debugMode_) {
           std::cerr << "[DEBUG] Loading texture: " << tex.name << "\n";
         }
+#endif
 
         uint32_t texIdx = textureManager_.loadTexture(tex.name);
         if (texIdx > 0) {
           texturesLoaded++;
+#ifdef W3D_DEBUG
           if (debugMode_) {
             std::cerr << "[DEBUG]   -> Loaded as index " << texIdx << "\n";
           }
+#endif
         } else {
           texturesMissing++;
+#ifdef W3D_DEBUG
           if (debugMode_) {
             std::cerr << "[DEBUG]   -> NOT FOUND\n";
           }
+#endif
         }
       }
     }
@@ -264,9 +278,11 @@ private:
     console_.info("Textures: " + std::to_string(texturesLoaded) + " loaded, " +
                   std::to_string(texturesMissing) + " missing");
 
+#ifdef W3D_DEBUG
     if (debugMode_) {
       std::cerr << "[DEBUG] Total textures in manager: " << textureManager_.textureCount() << "\n";
     }
+#endif
 
     // Check if file has HLod data - use HLodModel for proper LOD support
     if (!loadedFile_->hlods.empty()) {
@@ -404,8 +420,10 @@ private:
         ImGui::MenuItem("Viewport", nullptr, &showViewport_);
         ImGui::MenuItem("Console", nullptr, &showConsole_);
         ImGui::MenuItem("File Browser", nullptr, &showFileBrowser_);
+#ifdef W3D_DEBUG
         ImGui::Separator();
         ImGui::MenuItem("ImGui Demo", nullptr, &showDemoWindow_);
+#endif
         ImGui::EndMenu();
       }
 
@@ -435,9 +453,11 @@ private:
       fileBrowser_.draw(&showFileBrowser_);
     }
 
+#ifdef W3D_DEBUG
     if (showDemoWindow_) {
       ImGui::ShowDemoWindow(&showDemoWindow_);
     }
+#endif
   }
 
   void drawViewportWindow() {

@@ -7,6 +7,7 @@
 
 namespace w3d {
 
+#ifdef W3D_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallbackC(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -17,6 +18,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallbackC(
   }
   return VK_FALSE;
 }
+#endif
 
 VulkanContext::~VulkanContext() {
   cleanup();
@@ -141,6 +143,7 @@ void VulkanContext::createInstance(bool enableValidation) {
 
   instance_ = vk::createInstance(createInfo);
 
+#ifdef W3D_DEBUG
   if (enableValidation) {
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -160,6 +163,9 @@ void VulkanContext::createInstance(bool enableValidation) {
       debugMessenger_ = messenger;
     }
   }
+#else
+  (void)enableValidation; // Suppress unused parameter warning in release
+#endif
 }
 
 void VulkanContext::createSurface(GLFWwindow *window) {
@@ -187,8 +193,10 @@ void VulkanContext::pickPhysicalDevice() {
     throw std::runtime_error("Failed to find a suitable GPU");
   }
 
+#ifdef W3D_DEBUG
   auto props = physicalDevice_.getProperties();
   std::cout << "Selected GPU: " << props.deviceName << "\n";
+#endif
 }
 
 bool VulkanContext::isDeviceSuitable(vk::PhysicalDevice device) {
