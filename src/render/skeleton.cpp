@@ -66,6 +66,61 @@ void SkeletonPose::computeRestPose(const Hierarchy &hierarchy) {
   }
 }
 
+void SkeletonPose::computeAnimatedPose(const Hierarchy &hierarchy,
+                                        const std::vector<glm::vec3> &animTranslations,
+                                        const std::vector<glm::quat> &animRotations) {
+  size_t numBones = hierarchy.pivots.size();
+  if (numBones == 0) {
+    boneWorldTransforms_.clear();
+    parentIndices_.clear();
+    boneNames_.clear();
+    return;
+  }
+
+  // Ensure animation data matches bone count
+  if (animTranslations.size() != numBones || animRotations.size() != numBones) {
+    // Fall back to rest pose if animation data doesn't match
+    computeRestPose(hierarchy);
+    return;
+  }
+
+  boneWorldTransforms_.resize(numBones);
+  parentIndices_.resize(numBones);
+  boneNames_.resize(numBones);
+
+  // Process bones in order (parents come before children in W3D format)
+  for (size_t i = 0; i < numBones; ++i) {
+    const Pivot &pivot = hierarchy.pivots[i];
+
+    // Store bone name and parent index
+    boneNames_[i] = pivot.name;
+    parentIndices_[i] =
+        (pivot.parentIndex == 0xFFFFFFFF) ? -1 : static_cast<int>(pivot.parentIndex);
+
+    // Compute local transform: base translation + animated translation + animated rotation
+    glm::mat4 localTransform(1.0f);
+
+    // Apply base translation from pivot
+    localTransform = glm::translate(localTransform, toGlmVec3(pivot.translation));
+
+    // Apply animated translation offset
+    localTransform = glm::translate(localTransform, animTranslations[i]);
+
+    // Apply animated rotation
+    localTransform *= glm::mat4_cast(animRotations[i]);
+
+    // Compute world transform
+    if (parentIndices_[i] < 0) {
+      // Root bone - local transform is world transform
+      boneWorldTransforms_[i] = localTransform;
+    } else {
+      // Child bone - multiply parent's world transform by local transform
+      size_t parentIdx = static_cast<size_t>(parentIndices_[i]);
+      boneWorldTransforms_[i] = boneWorldTransforms_[parentIdx] * localTransform;
+    }
+  }
+}
+
 glm::vec3 SkeletonPose::bonePosition(size_t index) const {
   if (index >= boneWorldTransforms_.size()) {
     return glm::vec3(0.0f);

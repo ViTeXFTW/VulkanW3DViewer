@@ -17,6 +17,11 @@ public:
   // Compute the rest pose from a hierarchy
   void computeRestPose(const Hierarchy &hierarchy);
 
+  // Compute an animated pose from a hierarchy with animation data
+  void computeAnimatedPose(const Hierarchy &hierarchy,
+                           const std::vector<glm::vec3> &animTranslations,
+                           const std::vector<glm::quat> &animRotations);
+
   // Get bone count
   size_t boneCount() const { return boneWorldTransforms_.size(); }
 

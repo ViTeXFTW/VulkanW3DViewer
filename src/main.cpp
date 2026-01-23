@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "render/animation_player.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
 #include "render/material.hpp"
@@ -99,6 +100,10 @@ private:
   w3d::SkeletonPose skeletonPose_;
   bool showSkeleton_ = true;
   bool showMesh_ = true;
+
+  // Animation playback
+  w3d::AnimationPlayer animationPlayer_;
+  float lastFrameTime_ = 0.0f;
 
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
@@ -233,6 +238,13 @@ private:
       skeletonPose_.computeRestPose(loadedFile_->hierarchies[0]);
       skeletonRenderer_.updateFromPose(context_, skeletonPose_);
       console_.info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) + " bones");
+    }
+
+    // Load animations if present
+    animationPlayer_.clear();
+    if (!loadedFile_->animations.empty() || !loadedFile_->compressedAnimations.empty()) {
+      animationPlayer_.load(*loadedFile_);
+      console_.info("Loaded " + std::to_string(animationPlayer_.animationCount()) + " animation(s)");
     }
 
     const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
@@ -483,6 +495,78 @@ private:
       // Skeleton info
       if (skeletonPose_.isValid()) {
         ImGui::Text("Skeleton bones: %zu", skeletonPose_.boneCount());
+      }
+
+      // Animation controls
+      if (animationPlayer_.animationCount() > 0) {
+        ImGui::Separator();
+        ImGui::Text("Animation");
+
+        // Animation dropdown
+        if (ImGui::BeginCombo("##animation", animationPlayer_.animationName(animationPlayer_.currentAnimationIndex()).c_str())) {
+          for (size_t i = 0; i < animationPlayer_.animationCount(); ++i) {
+            bool isSelected = (i == animationPlayer_.currentAnimationIndex());
+            if (ImGui::Selectable(animationPlayer_.animationName(i).c_str(), isSelected)) {
+              animationPlayer_.selectAnimation(i);
+            }
+            if (isSelected) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        // Frame slider
+        float frame = animationPlayer_.currentFrame();
+        float maxFrame = animationPlayer_.maxFrame();
+        if (ImGui::SliderFloat("Frame", &frame, 0.0f, maxFrame)) {
+          animationPlayer_.pause();
+          animationPlayer_.setFrame(frame);
+        }
+
+        // Play/Pause and Stop buttons
+        if (animationPlayer_.isPlaying()) {
+          if (ImGui::Button("Pause")) {
+            animationPlayer_.pause();
+          }
+        } else {
+          if (ImGui::Button("Play")) {
+            animationPlayer_.play();
+          }
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Stop")) {
+          animationPlayer_.stop();
+        }
+
+        // Playback mode
+        ImGui::SameLine();
+        const char* modeStr = "Loop";
+        switch (animationPlayer_.playbackMode()) {
+          case w3d::PlaybackMode::Once: modeStr = "Once"; break;
+          case w3d::PlaybackMode::Loop: modeStr = "Loop"; break;
+          case w3d::PlaybackMode::PingPong: modeStr = "PingPong"; break;
+        }
+
+        if (ImGui::BeginCombo("Mode", modeStr)) {
+          if (ImGui::Selectable("Once", animationPlayer_.playbackMode() == w3d::PlaybackMode::Once)) {
+            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Once);
+          }
+          if (ImGui::Selectable("Loop", animationPlayer_.playbackMode() == w3d::PlaybackMode::Loop)) {
+            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Loop);
+          }
+          if (ImGui::Selectable("PingPong", animationPlayer_.playbackMode() == w3d::PlaybackMode::PingPong)) {
+            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::PingPong);
+          }
+          ImGui::EndCombo();
+        }
+
+        // Info display
+        ImGui::Text("Frame: %.1f / %u @ %u FPS",
+                    animationPlayer_.currentFrame(),
+                    animationPlayer_.numFrames() > 0 ? animationPlayer_.numFrames() - 1 : 0,
+                    animationPlayer_.frameRate());
       }
 
       // Display toggles
@@ -779,11 +863,27 @@ private:
   }
 
   void mainLoop() {
+    lastFrameTime_ = static_cast<float>(glfwGetTime());
+
     while (!glfwWindowShouldClose(window_)) {
       glfwPollEvents();
 
+      // Calculate delta time
+      float currentTime = static_cast<float>(glfwGetTime());
+      float deltaTime = currentTime - lastFrameTime_;
+      lastFrameTime_ = currentTime;
+
       // Update camera
       camera_.update(window_);
+
+      // Update animation
+      animationPlayer_.update(deltaTime);
+
+      // Apply animation to pose if active
+      if (animationPlayer_.animationCount() > 0 && !loadedFile_->hierarchies.empty()) {
+        animationPlayer_.applyToPose(skeletonPose_, loadedFile_->hierarchies[0]);
+        skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+      }
 
       // Update LOD selection based on camera distance
       if (useHLodModel_ && hlodModel_.hasData()) {
