@@ -24,7 +24,7 @@ struct ConvertedSubMesh {
 // Result of converting a mesh (may have multiple sub-meshes if per-triangle textures)
 struct ConvertedMesh {
   std::string name;
-  int32_t boneIndex = -1; // Index into hierarchy (-1 = no bone attachment)
+  int32_t boneIndex = -1;                  // Index into hierarchy (-1 = no bone attachment)
   std::vector<ConvertedSubMesh> subMeshes; // One per unique texture
   BoundingBox combinedBounds;
 };

@@ -1,8 +1,8 @@
 #include "mesh_converter.hpp"
 
-#include "skeleton.hpp"
-
 #include <map>
+
+#include "skeleton.hpp"
 
 namespace w3d {
 
@@ -18,8 +18,7 @@ std::string getTextureName(const Mesh &mesh, uint32_t texId) {
 
 // Build a vertex from mesh data at given vertex and triangle indices
 Vertex buildVertex(const Mesh &mesh, uint32_t vertIdx, size_t triIdx, int corner,
-                   const std::vector<Vector2> *uvSource,
-                   const std::vector<uint32_t> *perFaceUVIds,
+                   const std::vector<Vector2> *uvSource, const std::vector<uint32_t> *perFaceUVIds,
                    const std::function<glm::vec3(const Mesh &, uint32_t)> &getColor) {
   Vertex v;
 
@@ -134,8 +133,8 @@ ConvertedMesh MeshConverter::convert(const Mesh &mesh) {
 
         for (int corner = 0; corner < 3; ++corner) {
           uint32_t vertIdx = tri.vertexIndices[corner];
-          Vertex v = buildVertex(mesh, vertIdx, triIdx, corner, uvSource, perFaceUVIds,
-                                 getVertexColor);
+          Vertex v =
+              buildVertex(mesh, vertIdx, triIdx, corner, uvSource, perFaceUVIds, getVertexColor);
 
           subMesh.bounds.expand(v.position);
           subMesh.indices.push_back(static_cast<uint32_t>(subMesh.vertices.size()));
