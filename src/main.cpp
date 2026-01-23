@@ -134,7 +134,7 @@ private:
 
   void initVulkan() {
 #ifdef W3D_DEBUG
-    context_.init(window_, true);  // Enable validation in debug builds
+    context_.init(window_, true); // Enable validation in debug builds
 #else
     context_.init(window_, false); // Disable validation in release builds
 #endif
