@@ -41,7 +41,7 @@ Mesh MeshParser::parse(ChunkReader &reader, uint32_t chunkSize) {
       mesh.texCoords.reserve(count);
       for (size_t i = 0; i < count; ++i) {
         auto uv = reader.readVector2();
-        uv.v = 1.0f - uv.v;  // Flip V to match legacy behavior (W3D -> OpenGL/Vulkan)
+        uv.v = 1.0f - uv.v; // Flip V to match legacy behavior (W3D -> OpenGL/Vulkan)
         mesh.texCoords.push_back(uv);
       }
       break;
@@ -317,7 +317,7 @@ TextureStage MeshParser::parseTextureStage(ChunkReader &reader, uint32_t chunkSi
       stage.texCoords.reserve(count);
       for (size_t i = 0; i < count; ++i) {
         auto uv = reader.readVector2();
-        uv.v = 1.0f - uv.v;  // Flip V to match legacy behavior (W3D -> OpenGL/Vulkan)
+        uv.v = 1.0f - uv.v; // Flip V to match legacy behavior (W3D -> OpenGL/Vulkan)
         stage.texCoords.push_back(uv);
       }
       break;
