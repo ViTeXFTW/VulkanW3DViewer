@@ -1,9 +1,9 @@
+#include "animation_player.hpp"
+
 #include <algorithm>
 #include <cmath>
 
-#include "animation_player.hpp"
 #include "w3d/chunk_types.hpp"
-
 
 namespace w3d {
 
