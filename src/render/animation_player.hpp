@@ -95,6 +95,7 @@ private:
   float currentFrame_ = 0.0f;
   bool isPlaying_ = false;
   PlaybackMode playbackMode_ = PlaybackMode::Loop;
+  float playbackDirection_ = 1.0f; // 1.0f for forward, -1.0f for backward (pingpong)
 };
 
 } // namespace w3d

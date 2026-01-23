@@ -1,9 +1,9 @@
-#include "animation_player.hpp"
-
 #include <algorithm>
 #include <cmath>
 
+#include "animation_player.hpp"
 #include "w3d/chunk_types.hpp"
+
 
 namespace w3d {
 
@@ -71,6 +71,7 @@ bool AnimationPlayer::selectAnimation(size_t index) {
 
   currentAnimationIndex_ = index;
   currentFrame_ = 0.0f;
+  playbackDirection_ = 1.0f; // Reset direction when selecting new animation
   return true;
 }
 
@@ -114,6 +115,7 @@ void AnimationPlayer::pause() {
 void AnimationPlayer::stop() {
   isPlaying_ = false;
   currentFrame_ = 0.0f;
+  playbackDirection_ = 1.0f; // Reset direction when stopping
 }
 
 void AnimationPlayer::update(float deltaSeconds) {
@@ -123,7 +125,7 @@ void AnimationPlayer::update(float deltaSeconds) {
 
   const AnimationData &anim = animations_[currentAnimationIndex_];
   float framesPerSecond = static_cast<float>(anim.frameRate);
-  float deltaFrames = deltaSeconds * framesPerSecond;
+  float deltaFrames = deltaSeconds * framesPerSecond * playbackDirection_;
 
   currentFrame_ += deltaFrames;
 
@@ -145,10 +147,12 @@ void AnimationPlayer::update(float deltaSeconds) {
     break;
 
   case PlaybackMode::PingPong:
-    // TODO: Implement ping-pong mode
-    // For now, just loop
     if (currentFrame_ > max) {
-      currentFrame_ = std::fmod(currentFrame_, max + 1.0f);
+      currentFrame_ = max;
+      playbackDirection_ = -1.0f; // Switch to backward
+    } else if (currentFrame_ < 0.0f) {
+      currentFrame_ = 0.0f;
+      playbackDirection_ = 1.0f; // Switch to forward
     }
     break;
   }
