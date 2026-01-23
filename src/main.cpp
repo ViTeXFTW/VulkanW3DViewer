@@ -880,8 +880,12 @@ private:
       animationPlayer_.update(deltaTime);
 
       // Apply animation to pose if active
-      if (animationPlayer_.animationCount() > 0 && !loadedFile_->hierarchies.empty()) {
+      if (loadedFile_ && animationPlayer_.animationCount() > 0 && !loadedFile_->hierarchies.empty()) {
         animationPlayer_.applyToPose(skeletonPose_, loadedFile_->hierarchies[0]);
+
+        // Wait for GPU to finish before updating skeleton buffers
+        // This prevents device lost errors from buffer recreation during rendering
+        context_.device().waitIdle();
         skeletonRenderer_.updateFromPose(context_, skeletonPose_);
       }
 
