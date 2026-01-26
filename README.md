@@ -5,7 +5,7 @@ Modern renderer for Electronic Arts W3D format using Vulkan, GLFW and GLM.
 ## Disclaimer
 
 **EA has not endorsed and does not support this product.**  
-**All rights goes to their respective owners.**
+**All rights go to their respective owners.**
 
 ## Overview
 
@@ -86,7 +86,7 @@ chmod +x scripts/rebuild.sh
 | 7 | Done | Animations - load animation, and apply to bones |
 | 8 | Done | Render animations onto meshes |
 
-Future development will include terrain renderering to as a baseline render a map from Command & Conquer Generals Zero Hour.
+Future development will include terrain rendering to as a baseline render a map from Command & Conquer Generals Zero Hour.
 
 ## Usage
 
