@@ -49,8 +49,9 @@ public:
   // Check if inverse bind pose is computed
   bool hasInverseBindPose() const { return !inverseBindPose_.empty(); }
 
-  // Get final skinning matrices: boneWorld * inverseBindPose
-  // These matrices transform vertices from bind pose to current animated pose
+  // Get skinning matrices for GPU skinning
+  // W3D vertices are in bone-local space, so this returns bone world transforms directly
+  // (matches legacy MeshGeometryClass::get_deformed_vertices behavior)
   std::vector<glm::mat4> getSkinningMatrices() const;
 
 private:

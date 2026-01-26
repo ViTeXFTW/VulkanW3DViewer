@@ -315,28 +315,21 @@ private:
     }
 #endif
 
-    // Check if any mesh has skinning data (vertex influences)
-    bool hasSkinningData = false;
-    for (const auto &mesh : loadedFile_->meshes) {
-      if (!mesh.vertexInfluences.empty()) {
-        hasSkinningData = true;
-        break;
-      }
-    }
-
     // Check if file has HLod data - use HLodModel for proper LOD support
     if (!loadedFile_->hlods.empty()) {
       useHLodModel_ = true;
       renderableMesh_.destroy(); // Clean up old mesh data
 
-      // Use skinned rendering if we have skinning data and animations
-      if (hasSkinningData && !loadedFile_->hierarchies.empty()) {
+      // Use skinned rendering if we have a hierarchy (for animation support)
+      // This handles both per-vertex skinned meshes AND rigidly attached meshes
+      if (!loadedFile_->hierarchies.empty()) {
         useSkinnedRendering_ = true;
         hlodModel_.loadSkinned(context_, *loadedFile_);
         console_.info("Using GPU skinned rendering");
       } else {
         useSkinnedRendering_ = false;
-        hlodModel_.load(context_, *loadedFile_, posePtr);
+        hlodModel_.load(context_, *loadedFile_, nullptr);
+        console_.info("Using static rendering (no skeleton)");
       }
 
       const auto &hlod = loadedFile_->hlods[0];
@@ -984,7 +977,7 @@ private:
           skeletonRenderer_.updateFromPose(context_, skeletonPose_);
 
           // Update bone matrix buffer for GPU skinning
-          if (useSkinnedRendering_ && skeletonPose_.hasInverseBindPose()) {
+          if (useSkinnedRendering_ && skeletonPose_.isValid()) {
             auto skinningMatrices = skeletonPose_.getSkinningMatrices();
             boneMatrixBuffer_.update(skinningMatrices);
           }

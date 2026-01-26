@@ -143,24 +143,10 @@ void SkeletonPose::computeInverseBindPose() {
 }
 
 std::vector<glm::mat4> SkeletonPose::getSkinningMatrices() const {
-  size_t numBones = boneWorldTransforms_.size();
-  std::vector<glm::mat4> skinningMatrices(numBones);
-
-  if (inverseBindPose_.empty()) {
-    // No inverse bind pose computed - return identity matrices
-    for (size_t i = 0; i < numBones; ++i) {
-      skinningMatrices[i] = glm::mat4(1.0f);
-    }
-    return skinningMatrices;
-  }
-
-  // Final skinning matrix = boneWorldTransform * inverseBindPose
-  // This transforms vertices from bind pose space to current animated pose
-  for (size_t i = 0; i < numBones; ++i) {
-    skinningMatrices[i] = boneWorldTransforms_[i] * inverseBindPose_[i];
-  }
-
-  return skinningMatrices;
+  // W3D vertices are in bone-local space, not bind-pose world space.
+  // Legacy deformation (meshgeometry.cpp) transforms vertices directly by
+  // bone world transform without inverse bind pose multiplication.
+  return boneWorldTransforms_;
 }
 
 } // namespace w3d
