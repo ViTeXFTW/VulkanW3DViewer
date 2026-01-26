@@ -8,14 +8,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Configure (first time or after CMakeLists.txt changes)
 cmake --preset debug    # Debug build
 cmake --preset release  # Release build
+cmake --preset test     # Test build
 
 # Build
 cmake --build --preset debug
 cmake --build --preset release
+cmake --build --preset test
 
 # Run (after building)
 ./build/debug/VulkanW3DViewer.exe    # Windows debug
 ./build/release/VulkanW3DViewer.exe  # Windows release
+ctest --preset test                  # Run tests
 ```
 
 ## Project Overview
@@ -25,11 +28,16 @@ This is a **W3D format renderer** - a modern Vulkan-based tool for loading and r
 **W3D Format:** Westwood 3D format (chunk-based) containing meshes, hierarchies, skeletal animations, and HLod (hierarchical LOD). Reference implementation is in `legacy/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/`.
 
 ### Requirements
+
 - **Vulkan 1.3+** GPU (uses dynamic rendering, no VkRenderPass)
 - Vulkan SDK installed system-wide (`C:/VulkanSDK/`)
-- GLFW, Vulkan-Hpp, and GLM are git submodules in `lib/`
+- GLFW, Vulkan-Hpp, ImGui, GLM and googletest are git submodules in `lib/`
 
 ## Architecture
+
+- Use RAII where ever applicable to keep track of resource lifetime.
+
+### Code Structure
 
 ```
 src/
@@ -39,6 +47,7 @@ src/
     buffer.hpp/cpp            # GPU buffer management with staging
     pipeline.hpp/cpp          # Graphics pipeline, descriptors
   w3d/
+    w3d.hpp                   # W3D module main header
     loader.hpp/cpp            # W3D file loading interface
     chunk_reader.hpp          # Binary chunk parsing utilities
     chunk_types.hpp           # W3D chunk type enumerations
@@ -48,7 +57,8 @@ src/
     animation_parser.hpp/cpp  # Animation keyframe parsing
     hlod_parser.hpp/cpp       # Hierarchical LOD parsing
   render/
-    animation_player.cpp      # Animation handling
+    animation_player.hpp/cpp  # Animation playback control
+    bone_buffer.hpp/cpp       # GPU buffer management for bone transformations
     bounding_box.hpp          # AABB utilities
     camera.hpp/cpp            # Orbital camera with mouse controls
     hlod_model.hpp/cpp        # HLod model assembly with LOD switching
@@ -76,14 +86,8 @@ shaders/
 | 4 | Done | Hierarchy/pose - bone matrices, rest pose display |
 | 5 | Done | HLod assembly - model assembly, LOD switching |
 | 6 | Done | Materials - texture manager, material push constants, shader support |
-| 7 | In Progress | Animations - load animation, and apply to bones |
-| 8 | Pending | render animations onto meshes |
-
-## Performance Note
-Current animation implementation uses `context_.device().waitIdle()` before skeleton buffers. Which impacts performance and should be handled in the future with proper fix. Consider:
-- Double/triple buffered skeleton buffers.
-- Only update buffers when skeleton animation actually changes.
-- Implement fence-based synchronization instead of `waitIdle()`.
+| 7 | Done | Animations - load animation, and apply to bones |
+| 8 | Done | Render animations onto meshes |
 
 ## Code Style
 
@@ -92,6 +96,11 @@ Current animation implementation uses `context_.device().waitIdle()` before skel
 - Uses Clang toolchain via MSYS2 MinGW64
 - Namespace: `w3d::`
 - Modern C++20 patterns (structured bindings, designated initializers)
+
+## Testing
+
+- New features should follow a Test Driven Development (TDD) style where the expected behavior of key functions are created and added to the relevant test suite before implementing the feature.
+- Tests should be structured similar to the `src/` directory to easily find the relevant tests for the associated file.
 
 ## Key Reference Files
 
