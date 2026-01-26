@@ -482,6 +482,12 @@ private:
       ImGui::EndMenuBar();
     }
 
+    // Handle keyboard shortcuts
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_O)) {
+      showFileBrowser_ = true;
+    }
+
     ImGui::End();
 
     // Draw windows
