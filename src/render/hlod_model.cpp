@@ -19,8 +19,16 @@ void HLodModel::destroy() {
     mesh.indexBuffer.destroy();
   }
   meshGPU_.clear();
+
+  for (auto &mesh : skinnedMeshGPU_) {
+    mesh.vertexBuffer.destroy();
+    mesh.indexBuffer.destroy();
+  }
+  skinnedMeshGPU_.clear();
+
   lodLevels_.clear();
   aggregateCount_ = 0;
+  skinnedAggregateCount_ = 0;
   currentLOD_ = 0;
   combinedBounds_ = BoundingBox{};
   name_.clear();
@@ -253,6 +261,171 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         levelInfo.bounds.expand(subMesh.bounds);
 
         meshGPU_.push_back(std::move(gpuMesh));
+      }
+    }
+  }
+
+  // Default to highest detail LOD
+  currentLOD_ = 0;
+}
+
+void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
+  destroy();
+
+  // Check if we have an HLod to process
+  if (file.hlods.empty()) {
+    // No HLod - fall back to loading all meshes as a single LOD level
+    HLodLevelInfo level0;
+    level0.maxScreenSize = 0.0f;
+
+    for (size_t i = 0; i < file.meshes.size(); ++i) {
+      HLodMeshInfo info;
+      info.meshIndex = i;
+      info.boneIndex = 0;
+      info.name = file.meshes[i].header.meshName;
+      level0.meshes.push_back(info);
+    }
+
+    lodLevels_.push_back(level0);
+
+    // Convert all meshes to skinned format
+    auto skinnedMeshes = MeshConverter::convertAllSkinned(file);
+    for (auto &converted : skinnedMeshes) {
+      for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+        auto &subMesh = converted.subMeshes[subIdx];
+        if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+          continue;
+        }
+
+        HLodSkinnedMeshGPU gpuMesh;
+        gpuMesh.name = converted.name;
+        if (converted.subMeshes.size() > 1) {
+          gpuMesh.name += "_sub" + std::to_string(subIdx);
+        }
+        gpuMesh.textureName = subMesh.textureName;
+        gpuMesh.fallbackBoneIndex = converted.fallbackBoneIndex;
+        gpuMesh.lodLevel = 0;
+        gpuMesh.isAggregate = false;
+        gpuMesh.hasSkinning = converted.hasSkinning;
+
+        gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+        gpuMesh.indexBuffer.create(context, subMesh.indices);
+
+        combinedBounds_.expand(subMesh.bounds);
+        lodLevels_[0].bounds.expand(subMesh.bounds);
+
+        skinnedMeshGPU_.push_back(std::move(gpuMesh));
+      }
+    }
+
+    return;
+  }
+
+  // Use first HLod
+  const auto &hlod = file.hlods[0];
+  name_ = hlod.name;
+  hierarchyName_ = hlod.hierarchyName;
+
+  auto meshNameMap = buildMeshNameMap(file);
+
+  // Process LOD levels
+  lodLevels_.resize(hlod.lodArrays.size());
+
+  for (size_t lodIdx = 0; lodIdx < hlod.lodArrays.size(); ++lodIdx) {
+    const auto &lodArray = hlod.lodArrays[lodIdx];
+    auto &levelInfo = lodLevels_[lodIdx];
+
+    levelInfo.maxScreenSize = lodArray.maxScreenSize;
+    levelInfo.meshes.reserve(lodArray.subObjects.size());
+
+    for (const auto &subObj : lodArray.subObjects) {
+      auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
+      if (meshIdx.has_value()) {
+        HLodMeshInfo info;
+        info.meshIndex = meshIdx.value();
+        info.boneIndex = subObj.boneIndex;
+        info.name = subObj.name;
+        levelInfo.meshes.push_back(info);
+      }
+    }
+  }
+
+  // Process aggregates first (always rendered)
+  for (const auto &subObj : hlod.aggregates) {
+    auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
+    if (!meshIdx.has_value()) {
+      continue;
+    }
+
+    auto converted = MeshConverter::convertSkinned(file.meshes[meshIdx.value()],
+                                                   static_cast<int32_t>(subObj.boneIndex));
+    if (converted.subMeshes.empty()) {
+      continue;
+    }
+
+    for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+      auto &subMesh = converted.subMeshes[subIdx];
+      if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+        continue;
+      }
+
+      HLodSkinnedMeshGPU gpuMesh;
+      gpuMesh.name = subObj.name;
+      if (converted.subMeshes.size() > 1) {
+        gpuMesh.name += "_sub" + std::to_string(subIdx);
+      }
+      gpuMesh.textureName = subMesh.textureName;
+      gpuMesh.fallbackBoneIndex = static_cast<int32_t>(subObj.boneIndex);
+      gpuMesh.lodLevel = 0;
+      gpuMesh.isAggregate = true;
+      gpuMesh.hasSkinning = converted.hasSkinning;
+
+      gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+      gpuMesh.indexBuffer.create(context, subMesh.indices);
+
+      combinedBounds_.expand(subMesh.bounds);
+
+      skinnedMeshGPU_.push_back(std::move(gpuMesh));
+    }
+  }
+
+  skinnedAggregateCount_ = skinnedMeshGPU_.size();
+
+  // Process each LOD level's meshes
+  for (size_t lodIdx = 0; lodIdx < lodLevels_.size(); ++lodIdx) {
+    auto &levelInfo = lodLevels_[lodIdx];
+
+    for (const auto &meshInfo : levelInfo.meshes) {
+      auto converted = MeshConverter::convertSkinned(file.meshes[meshInfo.meshIndex],
+                                                     static_cast<int32_t>(meshInfo.boneIndex));
+      if (converted.subMeshes.empty()) {
+        continue;
+      }
+
+      for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
+        auto &subMesh = converted.subMeshes[subIdx];
+        if (subMesh.vertices.empty() || subMesh.indices.empty()) {
+          continue;
+        }
+
+        HLodSkinnedMeshGPU gpuMesh;
+        gpuMesh.name = meshInfo.name;
+        if (converted.subMeshes.size() > 1) {
+          gpuMesh.name += "_sub" + std::to_string(subIdx);
+        }
+        gpuMesh.textureName = subMesh.textureName;
+        gpuMesh.fallbackBoneIndex = static_cast<int32_t>(meshInfo.boneIndex);
+        gpuMesh.lodLevel = lodIdx;
+        gpuMesh.isAggregate = false;
+        gpuMesh.hasSkinning = converted.hasSkinning;
+
+        gpuMesh.vertexBuffer.create(context, subMesh.vertices);
+        gpuMesh.indexBuffer.create(context, subMesh.indices);
+
+        combinedBounds_.expand(subMesh.bounds);
+        levelInfo.bounds.expand(subMesh.bounds);
+
+        skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
     }
   }

@@ -17,6 +17,7 @@
 #include <stdexcept>
 
 #include "render/animation_player.hpp"
+#include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
 #include "render/material.hpp"
@@ -59,8 +60,11 @@ private:
   GLFWwindow *window_ = nullptr;
   w3d::VulkanContext context_;
   w3d::Pipeline pipeline_;
+  w3d::Pipeline skinnedPipeline_;
   w3d::DescriptorManager descriptorManager_;
+  w3d::SkinnedDescriptorManager skinnedDescriptorManager_;
   w3d::UniformBuffer<w3d::UniformBufferObject> uniformBuffers_;
+  w3d::BoneMatrixBuffer boneMatrixBuffer_;
 
   std::vector<vk::CommandBuffer> commandBuffers_;
   std::vector<vk::Semaphore> imageAvailableSemaphores_;
@@ -89,7 +93,8 @@ private:
   w3d::RenderableMesh renderableMesh_;
   w3d::HLodModel hlodModel_;
   w3d::Camera camera_;
-  bool useHLodModel_ = false; // True when an HLod is present
+  bool useHLodModel_ = false;    // True when an HLod is present
+  bool useSkinnedRendering_ = false; // True when using GPU skinning
 
   // Texture and material system
   w3d::TextureManager textureManager_;
@@ -145,7 +150,11 @@ private:
     context_.init(window_, false); // Disable validation in release builds
 #endif
     pipeline_.create(context_, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
+    skinnedPipeline_.createSkinned(context_, "shaders/skinned.vert.spv", "shaders/basic.frag.spv");
     skeletonRenderer_.create(context_);
+
+    // Create bone matrix buffer for GPU skinning
+    boneMatrixBuffer_.create(context_);
 
     // Initialize texture manager and create default texture
     textureManager_.init(context_);
@@ -178,6 +187,8 @@ private:
     uniformBuffers_.create(context_, MAX_FRAMES_IN_FLIGHT);
 
     descriptorManager_.create(context_, pipeline_.descriptorSetLayout(), MAX_FRAMES_IN_FLIGHT);
+    skinnedDescriptorManager_.create(context_, skinnedPipeline_.descriptorSetLayout(),
+                                     MAX_FRAMES_IN_FLIGHT);
 
     // Get default texture for descriptor binding
     const auto &defaultTex = textureManager_.texture(0);
@@ -186,6 +197,12 @@ private:
       descriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
                                              sizeof(w3d::UniformBufferObject));
       descriptorManager_.updateTexture(i, defaultTex.view, defaultTex.sampler);
+
+      // Initialize skinned descriptor manager
+      skinnedDescriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
+                                                    sizeof(w3d::UniformBufferObject));
+      skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer_.buffer(),
+                                                 sizeof(glm::mat4) * w3d::BoneMatrixBuffer::MAX_BONES);
     }
 
     createCommandBuffers();
@@ -298,18 +315,38 @@ private:
     }
 #endif
 
+    // Check if any mesh has skinning data (vertex influences)
+    bool hasSkinningData = false;
+    for (const auto &mesh : loadedFile_->meshes) {
+      if (!mesh.vertexInfluences.empty()) {
+        hasSkinningData = true;
+        break;
+      }
+    }
+
     // Check if file has HLod data - use HLodModel for proper LOD support
     if (!loadedFile_->hlods.empty()) {
       useHLodModel_ = true;
       renderableMesh_.destroy(); // Clean up old mesh data
 
-      hlodModel_.load(context_, *loadedFile_, posePtr);
+      // Use skinned rendering if we have skinning data and animations
+      if (hasSkinningData && !loadedFile_->hierarchies.empty()) {
+        useSkinnedRendering_ = true;
+        hlodModel_.loadSkinned(context_, *loadedFile_);
+        console_.info("Using GPU skinned rendering");
+      } else {
+        useSkinnedRendering_ = false;
+        hlodModel_.load(context_, *loadedFile_, posePtr);
+      }
 
       const auto &hlod = loadedFile_->hlods[0];
       console_.info("Loaded HLod: " + hlod.name);
       console_.info("  LOD levels: " + std::to_string(hlodModel_.lodCount()));
       console_.info("  Aggregates: " + std::to_string(hlodModel_.aggregateCount()));
       console_.info("  Total GPU meshes: " + std::to_string(hlodModel_.totalMeshCount()));
+      if (useSkinnedRendering_) {
+        console_.info("  Skinned meshes: " + std::to_string(hlodModel_.skinnedMeshCount()));
+      }
 
       // Log LOD level details
       for (size_t i = 0; i < hlodModel_.lodCount(); ++i) {
@@ -720,42 +757,86 @@ private:
     // Draw loaded mesh (either HLod model or simple renderable mesh)
     if (showMesh_) {
       if (useHLodModel_ && hlodModel_.hasData()) {
-        // Draw with texture binding
-        hlodModel_.drawWithTextures(cmd, [&](const std::string &textureName) {
-          w3d::MaterialPushConstant materialData{};
-          materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-          materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-          materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
-          materialData.flags = 0;
-          materialData.alphaThreshold = 0.5f;
+        if (useSkinnedRendering_ && hlodModel_.hasSkinning()) {
+          // Draw with skinned pipeline (GPU skinning)
+          cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.pipeline());
 
-          // Look up texture by name
-          uint32_t texIdx = 0;
-          if (!textureName.empty()) {
-            texIdx = textureManager_.findTexture(textureName);
-          }
+          hlodModel_.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
+            w3d::MaterialPushConstant materialData{};
+            materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+            materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.flags = 0;
+            materialData.alphaThreshold = 0.5f;
 
-          if (texIdx > 0) {
-            // Get pre-allocated descriptor set for this texture
-            const auto &tex = textureManager_.texture(texIdx);
-            vk::DescriptorSet texDescSet = descriptorManager_.getTextureDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
-                                   texDescSet, {});
-            materialData.useTexture = 1;
-          } else {
-            // Use default texture descriptor set
-            const auto &defaultTex = textureManager_.texture(0);
-            vk::DescriptorSet defaultDescSet = descriptorManager_.getTextureDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
-                                   defaultDescSet, {});
-            materialData.useTexture = 0;
-          }
+            // Look up texture by name
+            uint32_t texIdx = 0;
+            if (!textureName.empty()) {
+              texIdx = textureManager_.findTexture(textureName);
+            }
 
-          cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                            sizeof(w3d::MaterialPushConstant), &materialData);
-        });
+            if (texIdx > 0) {
+              const auto &tex = textureManager_.texture(texIdx);
+              vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
+                  currentFrame_, texIdx, tex.view, tex.sampler, boneMatrixBuffer_.buffer(),
+                  sizeof(glm::mat4) * w3d::BoneMatrixBuffer::MAX_BONES);
+              cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
+                                     texDescSet, {});
+              materialData.useTexture = 1;
+            } else {
+              const auto &defaultTex = textureManager_.texture(0);
+              vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
+                  currentFrame_, 0, defaultTex.view, defaultTex.sampler, boneMatrixBuffer_.buffer(),
+                  sizeof(glm::mat4) * w3d::BoneMatrixBuffer::MAX_BONES);
+              cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
+                                     defaultDescSet, {});
+              materialData.useTexture = 0;
+            }
+
+            cmd.pushConstants(skinnedPipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                              sizeof(w3d::MaterialPushConstant), &materialData);
+          });
+
+          // Switch back to regular pipeline for skeleton overlay
+          cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
+        } else {
+          // Draw with regular pipeline (CPU-transformed vertices)
+          hlodModel_.drawWithTextures(cmd, [&](const std::string &textureName) {
+            w3d::MaterialPushConstant materialData{};
+            materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+            materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.flags = 0;
+            materialData.alphaThreshold = 0.5f;
+
+            // Look up texture by name
+            uint32_t texIdx = 0;
+            if (!textureName.empty()) {
+              texIdx = textureManager_.findTexture(textureName);
+            }
+
+            if (texIdx > 0) {
+              // Get pre-allocated descriptor set for this texture
+              const auto &tex = textureManager_.texture(texIdx);
+              vk::DescriptorSet texDescSet = descriptorManager_.getTextureDescriptorSet(
+                  currentFrame_, texIdx, tex.view, tex.sampler);
+              cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                     texDescSet, {});
+              materialData.useTexture = 1;
+            } else {
+              // Use default texture descriptor set
+              const auto &defaultTex = textureManager_.texture(0);
+              vk::DescriptorSet defaultDescSet = descriptorManager_.getTextureDescriptorSet(
+                  currentFrame_, 0, defaultTex.view, defaultTex.sampler);
+              cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                     defaultDescSet, {});
+              materialData.useTexture = 0;
+            }
+
+            cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                              sizeof(w3d::MaterialPushConstant), &materialData);
+          });
+        }
       } else if (renderableMesh_.hasData()) {
         // Simple mesh without textures
         w3d::MaterialPushConstant materialData{};
@@ -901,6 +982,13 @@ private:
           // This prevents device lost errors from buffer recreation during rendering
           context_.device().waitIdle();
           skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+
+          // Update bone matrix buffer for GPU skinning
+          if (useSkinnedRendering_ && skeletonPose_.hasInverseBindPose()) {
+            auto skinningMatrices = skeletonPose_.getSkinningMatrices();
+            boneMatrixBuffer_.update(skinningMatrices);
+          }
+
           lastAppliedFrame_ = currentFrame;
         }
       }
@@ -936,8 +1024,11 @@ private:
     hlodModel_.destroy();
     renderableMesh_.destroy();
     textureManager_.destroy();
+    boneMatrixBuffer_.destroy();
+    skinnedDescriptorManager_.destroy();
     descriptorManager_.destroy();
     uniformBuffers_.destroy();
+    skinnedPipeline_.destroy();
     pipeline_.destroy();
     context_.cleanup();
 

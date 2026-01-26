@@ -74,13 +74,15 @@ Mesh MeshParser::parse(ChunkReader &reader, uint32_t chunkSize) {
     }
 
     case ChunkType::VERTEX_INFLUENCES: {
-      // Each influence is: 2 uint16 bone indices
-      size_t count = dataSize / (2 * sizeof(uint16_t));
+      // W3dVertInfStruct: uint16 BoneIdx + uint8 Pad[6] = 8 bytes per vertex
+      // Legacy uses rigid skinning (one bone per vertex, no blend weights)
+      size_t count = dataSize / 8;
       mesh.vertexInfluences.reserve(count);
       for (size_t i = 0; i < count; ++i) {
         VertexInfluence vi;
         vi.boneIndex = reader.read<uint16_t>();
-        vi.boneIndex2 = reader.read<uint16_t>();
+        reader.skip(6); // Skip padding (matches legacy W3D format)
+        vi.weight = 1.0f; // Rigid skinning - full weight
         mesh.vertexInfluences.push_back(vi);
       }
       break;

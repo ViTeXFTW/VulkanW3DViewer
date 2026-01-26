@@ -43,6 +43,16 @@ public:
   // Get all bone transforms (for passing to GPU)
   const std::vector<glm::mat4> &allTransforms() const { return boneWorldTransforms_; }
 
+  // Get inverse bind pose matrices
+  const std::vector<glm::mat4> &inverseBindPose() const { return inverseBindPose_; }
+
+  // Check if inverse bind pose is computed
+  bool hasInverseBindPose() const { return !inverseBindPose_.empty(); }
+
+  // Get final skinning matrices: boneWorld * inverseBindPose
+  // These matrices transform vertices from bind pose to current animated pose
+  std::vector<glm::mat4> getSkinningMatrices() const;
+
 private:
   // Convert W3D Pivot to a local transformation matrix
   static glm::mat4 pivotToLocalMatrix(const Pivot &pivot);
@@ -53,7 +63,11 @@ private:
   // Convert W3D vector to GLM
   static glm::vec3 toGlmVec3(const Vector3 &v);
 
+  // Compute inverse bind pose from current world transforms
+  void computeInverseBindPose();
+
   std::vector<glm::mat4> boneWorldTransforms_; // World-space transforms
+  std::vector<glm::mat4> inverseBindPose_;     // Inverse of rest pose transforms
   std::vector<int> parentIndices_;             // Parent bone indices (-1 for root)
   std::vector<std::string> boneNames_;         // Bone names for debugging
 };

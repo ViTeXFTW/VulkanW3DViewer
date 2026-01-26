@@ -32,6 +32,7 @@ void SkeletonPose::computeRestPose(const Hierarchy &hierarchy) {
   size_t numBones = hierarchy.pivots.size();
   if (numBones == 0) {
     boneWorldTransforms_.clear();
+    inverseBindPose_.clear();
     parentIndices_.clear();
     boneNames_.clear();
     return;
@@ -64,6 +65,9 @@ void SkeletonPose::computeRestPose(const Hierarchy &hierarchy) {
       boneWorldTransforms_[i] = boneWorldTransforms_[parentIdx] * localTransform;
     }
   }
+
+  // Compute inverse bind pose from rest pose
+  computeInverseBindPose();
 }
 
 void SkeletonPose::computeAnimatedPose(const Hierarchy &hierarchy,
@@ -97,11 +101,8 @@ void SkeletonPose::computeAnimatedPose(const Hierarchy &hierarchy,
     parentIndices_[i] =
         (pivot.parentIndex == 0xFFFFFFFF) ? -1 : static_cast<int>(pivot.parentIndex);
 
-    // Compute local transform: base translation + animated translation + animated rotation
-    glm::mat4 localTransform(1.0f);
-
-    // Apply base translation from pivot
-    localTransform = glm::translate(localTransform, toGlmVec3(pivot.translation));
+    // Compute base transform (T_base * R_base) - same as rest pose
+    glm::mat4 localTransform = pivotToLocalMatrix(pivot);
 
     // Apply animated translation offset
     localTransform = glm::translate(localTransform, animTranslations[i]);
@@ -129,6 +130,37 @@ glm::vec3 SkeletonPose::bonePosition(size_t index) const {
   // Extract position from the 4th column of the world transform matrix
   const glm::mat4 &transform = boneWorldTransforms_[index];
   return glm::vec3(transform[3]);
+}
+
+void SkeletonPose::computeInverseBindPose() {
+  size_t numBones = boneWorldTransforms_.size();
+  inverseBindPose_.resize(numBones);
+
+  for (size_t i = 0; i < numBones; ++i) {
+    // Inverse bind pose = inverse of the rest pose world transform
+    inverseBindPose_[i] = glm::inverse(boneWorldTransforms_[i]);
+  }
+}
+
+std::vector<glm::mat4> SkeletonPose::getSkinningMatrices() const {
+  size_t numBones = boneWorldTransforms_.size();
+  std::vector<glm::mat4> skinningMatrices(numBones);
+
+  if (inverseBindPose_.empty()) {
+    // No inverse bind pose computed - return identity matrices
+    for (size_t i = 0; i < numBones; ++i) {
+      skinningMatrices[i] = glm::mat4(1.0f);
+    }
+    return skinningMatrices;
+  }
+
+  // Final skinning matrix = boneWorldTransform * inverseBindPose
+  // This transforms vertices from bind pose space to current animated pose
+  for (size_t i = 0; i < numBones; ++i) {
+    skinningMatrices[i] = boneWorldTransforms_[i] * inverseBindPose_[i];
+  }
+
+  return skinningMatrices;
 }
 
 } // namespace w3d
