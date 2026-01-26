@@ -255,6 +255,14 @@ private:
     if (!loadedFile_->hierarchies.empty()) {
       skeletonPose_.computeRestPose(loadedFile_->hierarchies[0]);
       skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+
+      // Initialize bone matrix buffer with rest pose transforms
+      // This ensures models without animations still have correct bone positioning
+      if (skeletonPose_.isValid()) {
+        auto skinningMatrices = skeletonPose_.getSkinningMatrices();
+        boneMatrixBuffer_.update(skinningMatrices);
+      }
+
       console_.info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) + " bones");
     }
 
