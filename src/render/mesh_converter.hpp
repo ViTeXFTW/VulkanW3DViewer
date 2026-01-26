@@ -21,6 +21,14 @@ struct ConvertedSubMesh {
   std::string textureName;
 };
 
+// A skinned sub-mesh with per-vertex bone indices
+struct ConvertedSkinnedSubMesh {
+  std::vector<SkinnedVertex> vertices;
+  std::vector<uint32_t> indices;
+  BoundingBox bounds;
+  std::string textureName;
+};
+
 // Result of converting a mesh (may have multiple sub-meshes if per-triangle textures)
 struct ConvertedMesh {
   std::string name;
@@ -29,10 +37,22 @@ struct ConvertedMesh {
   BoundingBox combinedBounds;
 };
 
+// Result of converting a skinned mesh
+struct ConvertedSkinnedMesh {
+  std::string name;
+  int32_t fallbackBoneIndex = -1;                 // Default bone if no per-vertex influences
+  std::vector<ConvertedSkinnedSubMesh> subMeshes; // One per unique texture
+  BoundingBox combinedBounds;
+  bool hasSkinning = false;                       // True if mesh has per-vertex bone indices
+};
+
 class MeshConverter {
 public:
   // Convert a single W3D mesh to GPU format
   static ConvertedMesh convert(const Mesh &mesh);
+
+  // Convert a single W3D mesh to skinned GPU format (with per-vertex bone indices)
+  static ConvertedSkinnedMesh convertSkinned(const Mesh &mesh, int32_t fallbackBoneIndex);
 
   // Convert all meshes in a W3D file (without bone transforms applied)
   static std::vector<ConvertedMesh> convertAll(const W3DFile &file);
@@ -41,11 +61,17 @@ public:
   static std::vector<ConvertedMesh> convertAllWithPose(const W3DFile &file,
                                                        const SkeletonPose *pose);
 
+  // Convert all meshes to skinned format with per-vertex bone indices
+  static std::vector<ConvertedSkinnedMesh> convertAllSkinned(const W3DFile &file);
+
   // Apply bone transform to a converted mesh's vertices
   static void applyBoneTransform(ConvertedMesh &mesh, const glm::mat4 &transform);
 
   // Calculate combined bounds for all meshes
   static BoundingBox combinedBounds(const std::vector<ConvertedMesh> &meshes);
+
+  // Calculate combined bounds for skinned meshes
+  static BoundingBox combinedBounds(const std::vector<ConvertedSkinnedMesh> &meshes);
 
 private:
   // Get vertex color with fallback to default

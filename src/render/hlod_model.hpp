@@ -42,6 +42,18 @@ struct HLodMeshGPU {
   bool isAggregate = false; // True if this is an always-rendered aggregate
 };
 
+// GPU resources for a skinned mesh (with per-vertex bone indices)
+struct HLodSkinnedMeshGPU {
+  VertexBuffer<SkinnedVertex> vertexBuffer;
+  IndexBuffer indexBuffer;
+  std::string name;
+  std::string textureName;
+  int32_t fallbackBoneIndex = -1; // Default bone if vertex has no influence
+  size_t lodLevel = 0;
+  bool isAggregate = false;
+  bool hasSkinning = false; // True if mesh has per-vertex bone indices
+};
+
 // LOD selection mode
 enum class LODSelectionMode {
   Auto,  // Automatically select LOD based on screen size
@@ -61,11 +73,20 @@ public:
   // Uses the first HLod definition in the file
   void load(VulkanContext &context, const W3DFile &file, const SkeletonPose *pose);
 
+  // Load HLod model with skinned meshes (per-vertex bone indices for GPU skinning)
+  void loadSkinned(VulkanContext &context, const W3DFile &file);
+
   // Free GPU resources
   void destroy();
 
   // Check if model is loaded
-  bool hasData() const { return !meshGPU_.empty(); }
+  bool hasData() const { return !meshGPU_.empty() || !skinnedMeshGPU_.empty(); }
+
+  // Check if model has skinned meshes
+  bool hasSkinning() const { return !skinnedMeshGPU_.empty(); }
+
+  // Get skinned mesh count
+  size_t skinnedMeshCount() const { return skinnedMeshGPU_.size(); }
 
   // Get the HLod name
   const std::string &name() const { return name_; }
@@ -121,6 +142,14 @@ public:
   void drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
                               UpdateModelMatrixFunc updateModelMatrix) const;
 
+  // Draw skinned meshes with texture binding callback
+  // Uses GPU skinning with bone matrices from SSBO
+  template <typename BindTextureFunc>
+  void drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const;
+
+  // Get skinned mesh GPU data
+  const std::vector<HLodSkinnedMeshGPU> &skinnedMeshes() const { return skinnedMeshGPU_; }
+
 private:
   // Build mesh name to index mapping
   std::unordered_map<std::string, size_t> buildMeshNameMap(const W3DFile &file);
@@ -135,9 +164,11 @@ private:
   std::string name_;
   std::string hierarchyName_;
 
-  std::vector<HLodLevelInfo> lodLevels_; // LOD level information
-  std::vector<HLodMeshGPU> meshGPU_;     // All GPU mesh data
-  size_t aggregateCount_ = 0;            // Number of aggregate meshes (at start of meshGPU_)
+  std::vector<HLodLevelInfo> lodLevels_;           // LOD level information
+  std::vector<HLodMeshGPU> meshGPU_;               // All GPU mesh data
+  std::vector<HLodSkinnedMeshGPU> skinnedMeshGPU_; // Skinned GPU mesh data
+  size_t aggregateCount_ = 0;        // Number of aggregate meshes (at start of meshGPU_)
+  size_t skinnedAggregateCount_ = 0; // Number of skinned aggregate meshes
 
   LODSelectionMode selectionMode_ = LODSelectionMode::Auto;
   size_t currentLOD_ = 0;          // Current LOD level being rendered
@@ -217,6 +248,40 @@ void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose
     }
 
     updateModelMatrix(boneTransform);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+  }
+}
+
+template <typename BindTextureFunc>
+void HLodModel::drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
+  // Draw skinned aggregates first (always rendered)
+  for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
+    const auto &mesh = skinnedMeshGPU_[i];
+
+    bindTexture(mesh.textureName);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+  }
+
+  // Draw current LOD level skinned meshes
+  for (size_t i = skinnedAggregateCount_; i < skinnedMeshGPU_.size(); ++i) {
+    const auto &mesh = skinnedMeshGPU_[i];
+
+    // Skip if not in current LOD level
+    if (mesh.lodLevel != currentLOD_) {
+      continue;
+    }
+
+    bindTexture(mesh.textureName);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};

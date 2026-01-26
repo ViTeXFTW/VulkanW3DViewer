@@ -48,6 +48,7 @@ src/
     animation_parser.hpp/cpp  # Animation keyframe parsing
     hlod_parser.hpp/cpp       # Hierarchical LOD parsing
   render/
+    animation_player.cpp      # Animation handling
     bounding_box.hpp          # AABB utilities
     camera.hpp/cpp            # Orbital camera with mouse controls
     hlod_model.hpp/cpp        # HLod model assembly with LOD switching
@@ -75,6 +76,14 @@ shaders/
 | 4 | Done | Hierarchy/pose - bone matrices, rest pose display |
 | 5 | Done | HLod assembly - model assembly, LOD switching |
 | 6 | Done | Materials - texture manager, material push constants, shader support |
+| 7 | In Progress | Animations - load animation, and apply to bones |
+| 8 | Pending | render animations onto meshes |
+
+## Performance Note
+Current animation implementation uses `context_.device().waitIdle()` before skeleton buffers. Which impacts performance and should be handled in the future with proper fix. Consider:
+- Double/triple buffered skeleton buffers.
+- Only update buffers when skeleton animation actually changes.
+- Implement fence-based synchronization instead of `waitIdle()`.
 
 ## Code Style
 
