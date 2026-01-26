@@ -40,10 +40,10 @@ struct ConvertedMesh {
 // Result of converting a skinned mesh
 struct ConvertedSkinnedMesh {
   std::string name;
-  int32_t fallbackBoneIndex = -1;                    // Default bone if no per-vertex influences
-  std::vector<ConvertedSkinnedSubMesh> subMeshes;    // One per unique texture
+  int32_t fallbackBoneIndex = -1;                 // Default bone if no per-vertex influences
+  std::vector<ConvertedSkinnedSubMesh> subMeshes; // One per unique texture
   BoundingBox combinedBounds;
-  bool hasSkinning = false;                          // True if mesh has per-vertex bone indices
+  bool hasSkinning = false;                       // True if mesh has per-vertex bone indices
 };
 
 class MeshConverter {

@@ -20,8 +20,7 @@ void BoneMatrixBuffer::create(VulkanContext &context, size_t maxBones) {
   // Use host-visible memory for easy updates (could optimize with staging later)
   vk::DeviceSize bufferSize = sizeof(glm::mat4) * maxBones;
 
-  buffer_.create(context, bufferSize,
-                 vk::BufferUsageFlagBits::eStorageBuffer,
+  buffer_.create(context, bufferSize, vk::BufferUsageFlagBits::eStorageBuffer,
                  vk::MemoryPropertyFlagBits::eHostVisible |
                      vk::MemoryPropertyFlagBits::eHostCoherent);
 
@@ -48,11 +47,7 @@ void BoneMatrixBuffer::destroy() {
 }
 
 vk::DescriptorBufferInfo BoneMatrixBuffer::descriptorInfo() const {
-  return vk::DescriptorBufferInfo{
-      buffer_.buffer(),
-      0,
-      sizeof(glm::mat4) * maxBones_
-  };
+  return vk::DescriptorBufferInfo{buffer_.buffer(), 0, sizeof(glm::mat4) * maxBones_};
 }
 
 } // namespace w3d

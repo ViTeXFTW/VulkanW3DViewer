@@ -51,7 +51,7 @@ struct HLodSkinnedMeshGPU {
   int32_t fallbackBoneIndex = -1; // Default bone if vertex has no influence
   size_t lodLevel = 0;
   bool isAggregate = false;
-  bool hasSkinning = false;       // True if mesh has per-vertex bone indices
+  bool hasSkinning = false; // True if mesh has per-vertex bone indices
 };
 
 // LOD selection mode
@@ -164,11 +164,11 @@ private:
   std::string name_;
   std::string hierarchyName_;
 
-  std::vector<HLodLevelInfo> lodLevels_;       // LOD level information
-  std::vector<HLodMeshGPU> meshGPU_;           // All GPU mesh data
+  std::vector<HLodLevelInfo> lodLevels_;           // LOD level information
+  std::vector<HLodMeshGPU> meshGPU_;               // All GPU mesh data
   std::vector<HLodSkinnedMeshGPU> skinnedMeshGPU_; // Skinned GPU mesh data
-  size_t aggregateCount_ = 0;                  // Number of aggregate meshes (at start of meshGPU_)
-  size_t skinnedAggregateCount_ = 0;           // Number of skinned aggregate meshes
+  size_t aggregateCount_ = 0;        // Number of aggregate meshes (at start of meshGPU_)
+  size_t skinnedAggregateCount_ = 0; // Number of skinned aggregate meshes
 
   LODSelectionMode selectionMode_ = LODSelectionMode::Auto;
   size_t currentLOD_ = 0;          // Current LOD level being rendered

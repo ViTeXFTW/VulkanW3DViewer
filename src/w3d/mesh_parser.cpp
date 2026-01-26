@@ -81,7 +81,7 @@ Mesh MeshParser::parse(ChunkReader &reader, uint32_t chunkSize) {
       for (size_t i = 0; i < count; ++i) {
         VertexInfluence vi;
         vi.boneIndex = reader.read<uint16_t>();
-        reader.skip(6); // Skip padding (matches legacy W3D format)
+        reader.skip(6);   // Skip padding (matches legacy W3D format)
         vi.weight = 1.0f; // Rigid skinning - full weight
         mesh.vertexInfluences.push_back(vi);
       }

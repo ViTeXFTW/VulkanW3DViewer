@@ -93,7 +93,7 @@ private:
   w3d::RenderableMesh renderableMesh_;
   w3d::HLodModel hlodModel_;
   w3d::Camera camera_;
-  bool useHLodModel_ = false;    // True when an HLod is present
+  bool useHLodModel_ = false;        // True when an HLod is present
   bool useSkinnedRendering_ = false; // True when using GPU skinning
 
   // Texture and material system
@@ -201,8 +201,8 @@ private:
       // Initialize skinned descriptor manager
       skinnedDescriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
                                                     sizeof(w3d::UniformBufferObject));
-      skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer_.buffer(),
-                                                 sizeof(glm::mat4) * w3d::BoneMatrixBuffer::MAX_BONES);
+      skinnedDescriptorManager_.updateBoneBuffer(
+          i, boneMatrixBuffer_.buffer(), sizeof(glm::mat4) * w3d::BoneMatrixBuffer::MAX_BONES);
     }
 
     createCommandBuffers();

@@ -533,7 +533,7 @@ void SkinnedDescriptorManager::destroy() {
 void SkinnedDescriptorManager::updateUniformBuffer(uint32_t frameIndex, vk::Buffer buffer,
                                                    vk::DeviceSize size) {
   vk::DescriptorBufferInfo bufferInfo{buffer, 0, size};
-  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex], 0, 0,
+  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex],        0,  0,
                                          vk::DescriptorType::eUniformBuffer, {}, bufferInfo};
   device_.updateDescriptorSets(descriptorWrite, {});
 }
@@ -541,17 +541,15 @@ void SkinnedDescriptorManager::updateUniformBuffer(uint32_t frameIndex, vk::Buff
 void SkinnedDescriptorManager::updateBoneBuffer(uint32_t frameIndex, vk::Buffer buffer,
                                                 vk::DeviceSize size) {
   vk::DescriptorBufferInfo bufferInfo{buffer, 0, size};
-  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex], 2, 0,
+  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex],        2,  0,
                                          vk::DescriptorType::eStorageBuffer, {}, bufferInfo};
   device_.updateDescriptorSets(descriptorWrite, {});
 }
 
-vk::DescriptorSet SkinnedDescriptorManager::getDescriptorSet(uint32_t frameIndex,
-                                                             uint32_t textureIndex,
-                                                             vk::ImageView imageView,
-                                                             vk::Sampler sampler,
-                                                             vk::Buffer boneBuffer,
-                                                             vk::DeviceSize boneBufferSize) {
+vk::DescriptorSet
+SkinnedDescriptorManager::getDescriptorSet(uint32_t frameIndex, uint32_t textureIndex,
+                                           vk::ImageView imageView, vk::Sampler sampler,
+                                           vk::Buffer boneBuffer, vk::DeviceSize boneBufferSize) {
   // Check bounds
   if (textureIndex >= maxTextures_ || frameIndex >= frameCount_) {
     return descriptorSets_[frameIndex];

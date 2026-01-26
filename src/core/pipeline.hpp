@@ -42,7 +42,8 @@ struct SkinnedVertex {
   uint32_t boneIndex; // Single bone per vertex (W3D rigid skinning)
 
   static vk::VertexInputBindingDescription getBindingDescription() {
-    return vk::VertexInputBindingDescription{0, sizeof(SkinnedVertex), vk::VertexInputRate::eVertex};
+    return vk::VertexInputBindingDescription{0, sizeof(SkinnedVertex),
+                                             vk::VertexInputRate::eVertex};
   }
 
   static std::array<vk::VertexInputAttributeDescription, 5> getAttributeDescriptions() {
@@ -160,8 +161,8 @@ public:
   ~SkinnedDescriptorManager();
 
   // Create descriptor pool and sets for skinned rendering
-  void create(VulkanContext &context, vk::DescriptorSetLayout layout,
-              uint32_t frameCount, uint32_t maxTextures = 64);
+  void create(VulkanContext &context, vk::DescriptorSetLayout layout, uint32_t frameCount,
+              uint32_t maxTextures = 64);
   void destroy();
 
   // Update uniform buffer for a frame
