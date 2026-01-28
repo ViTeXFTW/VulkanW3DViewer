@@ -1,10 +1,12 @@
 #include "skeleton_renderer.hpp"
 
 #include "core/vulkan_context.hpp"
+#include "core/shader_loader.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <stdexcept>
@@ -37,19 +39,12 @@ void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
 }
 
 std::vector<char> readShaderFile(const std::string &filename) {
-  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+  // Extract just the filename from the path (e.g., "shaders/skeleton.vert.spv" -> "skeleton.vert.spv")
+  std::filesystem::path path(filename);
+  std::string shaderName = path.filename().string();
 
-  if (!file.is_open()) {
-    throw std::runtime_error("Failed to open shader file: " + filename);
-  }
-
-  size_t fileSize = static_cast<size_t>(file.tellg());
-  std::vector<char> buffer(fileSize);
-
-  file.seekg(0);
-  file.read(buffer.data(), static_cast<std::streamsize>(fileSize));
-
-  return buffer;
+  // Load from embedded shaders
+  return loadEmbeddedShader(shaderName);
 }
 
 vk::ShaderModule createShaderModule(vk::Device device, const std::vector<char> &code) {
