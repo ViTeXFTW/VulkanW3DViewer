@@ -199,7 +199,7 @@ jobs:
 
           # Generate changelog from commit messages
           # Looking for squashed merge commits which typically have format: "Title (#PR)"
-          CHANGELOG=$(git log $COMMIT_RANGE --oneline --grep="(#[0-9]*)" --pretty=format:"- %s" | head -n 50)
+          CHANGELOG=$(git log $COMMIT_RANGE --oneline --grep='(#[0-9]*)' --pretty=format:"- %s" | head -n 50)
 
           if [ -z "$CHANGELOG" ]; then
             CHANGELOG="- Initial release"
