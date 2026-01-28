@@ -1,12 +1,10 @@
 #include "pipeline.hpp"
 
+#include "shader_loader.hpp"
 #include "vulkan_context.hpp"
 
 #include <filesystem>
-#include <fstream>
 #include <stdexcept>
-
-#include "shader_loader.hpp"
 
 namespace w3d {
 
@@ -342,11 +340,12 @@ void Pipeline::destroy() {
 }
 
 std::vector<char> Pipeline::readFile(const std::string &filename) {
-  // Extract just the filename from the path (e.g., "shaders/basic.vert.spv" -> "basic.vert.spv")
+  // Extract filename from path for embedded shader lookup
+  // Allows backward compatibility with code that passes "shaders/basic.vert.spv"
+  // while shaders are now embedded and indexed by filename only
   std::filesystem::path path(filename);
   std::string shaderName = path.filename().string();
 
-  // Load from embedded shaders
   return loadEmbeddedShader(shaderName);
 }
 

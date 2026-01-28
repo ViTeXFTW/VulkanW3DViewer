@@ -1,16 +1,14 @@
 #include "skeleton_renderer.hpp"
 
+#include "core/shader_loader.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <filesystem>
-#include <fstream>
 #include <map>
 #include <stdexcept>
-
-#include "core/shader_loader.hpp"
 
 namespace w3d {
 
@@ -40,12 +38,12 @@ void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
 }
 
 std::vector<char> readShaderFile(const std::string &filename) {
-  // Extract just the filename from the path (e.g., "shaders/skeleton.vert.spv" ->
-  // "skeleton.vert.spv")
+  // Extract filename from path for embedded shader lookup
+  // Allows backward compatibility with code that passes "shaders/skeleton.vert.spv"
+  // while shaders are now embedded and indexed by filename only
   std::filesystem::path path(filename);
   std::string shaderName = path.filename().string();
 
-  // Load from embedded shaders
   return loadEmbeddedShader(shaderName);
 }
 
