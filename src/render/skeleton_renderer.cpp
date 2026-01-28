@@ -1,7 +1,6 @@
 #include "skeleton_renderer.hpp"
 
 #include "core/vulkan_context.hpp"
-#include "core/shader_loader.hpp"
 
 #include <algorithm>
 #include <array>
@@ -10,6 +9,8 @@
 #include <fstream>
 #include <map>
 #include <stdexcept>
+
+#include "core/shader_loader.hpp"
 
 namespace w3d {
 
@@ -39,7 +40,8 @@ void SkeletonRenderer::createDescriptorSetLayout(VulkanContext & /*context*/) {
 }
 
 std::vector<char> readShaderFile(const std::string &filename) {
-  // Extract just the filename from the path (e.g., "shaders/skeleton.vert.spv" -> "skeleton.vert.spv")
+  // Extract just the filename from the path (e.g., "shaders/skeleton.vert.spv" ->
+  // "skeleton.vert.spv")
   std::filesystem::path path(filename);
   std::string shaderName = path.filename().string();
 
