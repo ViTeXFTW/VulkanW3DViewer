@@ -110,8 +110,14 @@ void SkeletonRenderer::createPipeline(VulkanContext &context) {
   vk::PipelineColorBlendStateCreateInfo colorBlending{
       {}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
 
-  // Pipeline layout - use our descriptor set layout
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_};
+  // Pipeline layout - use our descriptor set layout with push constant for hover tint
+  vk::PushConstantRange pushConstantRange{
+      vk::ShaderStageFlagBits::eFragment,  // Stage flags
+      0,                                    // Offset
+      sizeof(glm::vec3)                     // Size (vec3 hoverTint)
+  };
+
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_, pushConstantRange};
   pipelineLayout_ = device_.createPipelineLayout(pipelineLayoutInfo);
 
   // Create LINE pipeline
@@ -295,7 +301,20 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
   if (!pose.isValid()) {
     lineVertexCount_ = 0;
     jointVertexCount_ = 0;
+    bonePositions_.clear();
+    parentIndices_.clear();
     return;
+  }
+
+  // Store bone data for hover detection
+  bonePositions_.clear();
+  parentIndices_.clear();
+  bonePositions_.reserve(pose.boneCount());
+  parentIndices_.reserve(pose.boneCount());
+
+  for (size_t i = 0; i < pose.boneCount(); ++i) {
+    bonePositions_.push_back(pose.bonePosition(i));
+    parentIndices_.push_back(pose.parentIndex(i));
   }
 
   // Calculate skeleton scale for joint size
@@ -317,8 +336,8 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
   }
 
   float skeletonSize = std::max({maxX - minX, maxY - minY, maxZ - minZ});
-  float jointRadius = skeletonSize * kJointSizeRatio;
-  jointRadius = std::max(jointRadius, 0.01f); // Minimum size
+  jointRadius_ = skeletonSize * kJointSizeRatio;
+  jointRadius_ = std::max(jointRadius_, 0.01f); // Minimum size
 
   // Generate line vertices (bone connections)
   std::vector<SkeletonVertex> lineVertices;
@@ -346,7 +365,7 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
     glm::vec3 pos = pose.bonePosition(i);
     glm::vec3 color = (pose.parentIndex(i) < 0) ? rootColor_ : jointColor_;
 
-    auto sphereVerts = generateJointSphere(pos, jointRadius, color);
+    auto sphereVerts = generateJointSphere(pos, jointRadius_, color);
     jointVertices.insert(jointVertices.end(), sphereVerts.begin(), sphereVerts.end());
   }
 
@@ -370,9 +389,17 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
 }
 
 void SkeletonRenderer::draw(vk::CommandBuffer cmd) const {
+  drawWithHover(cmd, glm::vec3(1.0f, 1.0f, 1.0f)); // No tint
+}
+
+void SkeletonRenderer::drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tintColor) const {
   if (!hasData()) {
     return;
   }
+
+  // Push hover tint constant
+  cmd.pushConstants(pipelineLayout_, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec3),
+                    &tintColor);
 
   // Draw bone lines
   if (lineVertexCount_ > 0) {
@@ -391,6 +418,33 @@ void SkeletonRenderer::draw(vk::CommandBuffer cmd) const {
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
     cmd.draw(jointVertexCount_, 1, 0, 0);
   }
+}
+
+bool SkeletonRenderer::getBoneSegment(size_t boneIndex, glm::vec3 &start,
+                                       glm::vec3 &end) const {
+  if (boneIndex >= bonePositions_.size()) {
+    return false;
+  }
+
+  int parentIdx = parentIndices_[boneIndex];
+  if (parentIdx < 0) {
+    return false; // Root bone has no parent, no segment to draw
+  }
+
+  start = bonePositions_[static_cast<size_t>(parentIdx)];
+  end = bonePositions_[boneIndex];
+  return true;
+}
+
+bool SkeletonRenderer::getJointSphere(size_t jointIndex, glm::vec3 &center,
+                                       float &radius) const {
+  if (jointIndex >= bonePositions_.size()) {
+    return false;
+  }
+
+  center = bonePositions_[jointIndex];
+  radius = jointRadius_;
+  return true;
 }
 
 void SkeletonRenderer::destroy() {

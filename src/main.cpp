@@ -20,6 +20,7 @@
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
+#include "render/hover_detector.hpp"
 #include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
@@ -110,6 +111,9 @@ private:
   w3d::AnimationPlayer animationPlayer_;
   float lastFrameTime_ = 0.0f;
   float lastAppliedFrame_ = -1.0f; // Track last frame applied to pose
+
+  // Hover detection
+  w3d::HoverDetector hoverDetector_;
 
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
@@ -714,6 +718,53 @@ private:
     ImGui::End();
   }
 
+  void updateHover() {
+    // Skip if ImGui wants mouse
+    if (ImGui::GetIO().WantCaptureMouse) {
+      hoverDetector_.state().reset();
+      return;
+    }
+
+    // Get mouse position
+    double mouseX, mouseY;
+    glfwGetCursorPos(window_, &mouseX, &mouseY);
+
+    // Get viewport dimensions
+    auto extent = context_.swapchainExtent();
+
+    // Get camera matrices
+    auto view = camera_.viewMatrix();
+    auto proj = glm::perspective(
+      glm::radians(45.0f),
+      static_cast<float>(extent.width) / static_cast<float>(extent.height),
+      0.01f, 10000.0f
+    );
+    proj[1][1] *= -1;  // Vulkan Y-flip
+
+    // Update hover detector with current ray
+    hoverDetector_.update(
+      glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
+      glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)),
+      view,
+      proj
+    );
+
+    // Test skeleton first (priority over meshes)
+    if (showSkeleton_ && skeletonRenderer_.hasData()) {
+      hoverDetector_.testSkeleton(skeletonRenderer_, 0.05f);
+    }
+
+    // Test meshes
+    if (showMesh_) {
+      if (useHLodModel_ && hlodModel_.hasData()) {
+        // TODO: Implement HLod hover detection
+        // For now, skip HLod models
+      } else if (renderableMesh_.hasData()) {
+        hoverDetector_.testMeshes(renderableMesh_);
+      }
+    }
+  }
+
   void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex) {
     vk::CommandBufferBeginInfo beginInfo{};
     cmd.begin(beginInfo);
@@ -767,6 +818,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.hoverTint = glm::vec3(1.0f);  // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -807,6 +859,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.hoverTint = glm::vec3(1.0f);  // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -849,10 +902,18 @@ private:
         materialData.alphaThreshold = 0.5f;
         materialData.useTexture = 0;
 
-        cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                          sizeof(w3d::MaterialPushConstant), &materialData);
+        // Use hover detection for simple meshes
+        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f);  // Warm highlight
+        const auto &hover = hoverDetector_.state();
 
-        renderableMesh_.draw(cmd);
+        renderableMesh_.drawWithHover(cmd,
+          hover.type == w3d::HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
+          hoverTint,
+          [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+            materialData.hoverTint = tint;
+            cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                              sizeof(w3d::MaterialPushConstant), &materialData);
+          });
       }
     }
 
@@ -861,7 +922,15 @@ private:
       // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
       cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer_.pipelineLayout(),
                              0, descriptorManager_.descriptorSet(currentFrame_), {});
-      skeletonRenderer_.draw(cmd);
+
+      // Apply hover tint if hovering over skeleton
+      const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f);  // Warm highlight
+      const auto &hover = hoverDetector_.state();
+      glm::vec3 skeletonTint = (hover.type == w3d::HoverType::Bone || hover.type == w3d::HoverType::Joint)
+                                ? hoverTint
+                                : glm::vec3(1.0f);
+
+      skeletonRenderer_.drawWithHover(cmd, skeletonTint);
     }
 
     // Draw ImGui
@@ -969,6 +1038,9 @@ private:
 
       // Update camera
       camera_.update(window_);
+
+      // Update hover detection
+      updateHover();
 
       // Update animation
       animationPlayer_.update(deltaTime);

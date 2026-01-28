@@ -15,10 +15,10 @@ layout(push_constant) uniform MaterialData {
   vec4 diffuseColor;   // RGB + alpha
   vec4 emissiveColor;  // RGB + intensity
   vec4 specularColor;  // RGB + shininess
+  vec3 hoverTint;      // RGB tint for hover highlighting (1,1,1 = no tint)
   uint flags;          // Material flags
   float alphaThreshold;
   uint useTexture;     // 1 = sample texture
-  float padding;
 } material;
 
 // Material flags
@@ -73,6 +73,9 @@ void main() {
     // Add emissive
     result += material.emissiveColor.rgb;
   }
+
+  // Apply hover tint
+  result *= material.hoverTint;
 
   outColor = vec4(result, baseColor.a);
 }
