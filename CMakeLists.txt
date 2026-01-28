@@ -93,34 +93,47 @@ if(NOT BUILD_TESTING)
         message(FATAL_ERROR "glslc not found! Make sure Vulkan SDK is installed.")
     endif()
 
-    # Shader compilation function
+    # Shader compilation and embedding function
     function(compile_shaders target)
         file(GLOB SHADER_SOURCES "${CMAKE_SOURCE_DIR}/shaders/*.vert" "${CMAKE_SOURCE_DIR}/shaders/*.frag")
         foreach(SHADER ${SHADER_SOURCES})
-            get_filename_component(SHADER_NAME ${SHADER} NAME)
+            get_filename_component(SHADER_NAME "${SHADER}" NAME)
             set(SPIRV_OUTPUT "${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME}.spv")
             add_custom_command(
-                OUTPUT ${SPIRV_OUTPUT}
+                OUTPUT "${SPIRV_OUTPUT}"
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
-                COMMAND ${GLSLC} ${SHADER} -o ${SPIRV_OUTPUT}
-                DEPENDS ${SHADER}
+                COMMAND "${GLSLC}" "${SHADER}" -o "${SPIRV_OUTPUT}"
+                DEPENDS "${SHADER}"
                 COMMENT "Compiling ${SHADER_NAME} to SPIR-V"
             )
-            list(APPEND SPIRV_OUTPUTS ${SPIRV_OUTPUT})
+            list(APPEND SPIRV_OUTPUTS "${SPIRV_OUTPUT}")
         endforeach()
-        add_custom_target(${target}_shaders DEPENDS ${SPIRV_OUTPUTS})
+
+        # Generate embedded shaders header
+        set(EMBEDDED_HEADER "${CMAKE_BINARY_DIR}/generated/embedded_shaders.hpp")
+
+        # Escape semicolons in the list for passing to cmake -P
+        string(REPLACE ";" "\\;" SPIRV_OUTPUTS_ESCAPED "${SPIRV_OUTPUTS}")
+
+        add_custom_command(
+            OUTPUT "${EMBEDDED_HEADER}"
+            COMMAND ${CMAKE_COMMAND}
+                "-DSHADER_FILES=${SPIRV_OUTPUTS_ESCAPED}"
+                "-DOUTPUT_FILE=${EMBEDDED_HEADER}"
+                -P "${CMAKE_SOURCE_DIR}/cmake/EmbedShaders.cmake"
+            DEPENDS ${SPIRV_OUTPUTS} "${CMAKE_SOURCE_DIR}/cmake/EmbedShaders.cmake"
+            COMMENT "Embedding shaders into C++ header"
+        )
+
+        add_custom_target(${target}_shaders DEPENDS ${SPIRV_OUTPUTS} "${EMBEDDED_HEADER}")
         add_dependencies(${target} ${target}_shaders)
+
+        # Add generated directory to include path
+        target_include_directories(${target} PRIVATE ${CMAKE_BINARY_DIR}/generated)
     endfunction()
 
-    # Compile shaders
+    # Compile and embed shaders
     compile_shaders(${PROJECT_NAME})
-
-    # Copy compiled shaders to output directory
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_BINARY_DIR}/shaders
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
-    )
 endif()
 
 # Testing with Google Test

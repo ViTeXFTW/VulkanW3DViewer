@@ -2,8 +2,10 @@
 
 #include "vulkan_context.hpp"
 
-#include <fstream>
+#include <filesystem>
 #include <stdexcept>
+
+#include "shader_loader.hpp"
 
 namespace w3d {
 
@@ -339,19 +341,13 @@ void Pipeline::destroy() {
 }
 
 std::vector<char> Pipeline::readFile(const std::string &filename) {
-  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+  // Extract filename from path for embedded shader lookup
+  // Allows backward compatibility with code that passes "shaders/basic.vert.spv"
+  // while shaders are now embedded and indexed by filename only
+  std::filesystem::path path(filename);
+  std::string shaderName = path.filename().string();
 
-  if (!file.is_open()) {
-    throw std::runtime_error("Failed to open file: " + filename);
-  }
-
-  size_t fileSize = static_cast<size_t>(file.tellg());
-  std::vector<char> buffer(fileSize);
-
-  file.seekg(0);
-  file.read(buffer.data(), static_cast<std::streamsize>(fileSize));
-
-  return buffer;
+  return loadEmbeddedShader(shaderName);
 }
 
 vk::ShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {
