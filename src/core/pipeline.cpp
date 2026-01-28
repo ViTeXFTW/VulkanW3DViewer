@@ -1,10 +1,11 @@
 #include "pipeline.hpp"
 
-#include "shader_loader.hpp"
 #include "vulkan_context.hpp"
 
 #include <filesystem>
 #include <stdexcept>
+
+#include "shader_loader.hpp"
 
 namespace w3d {
 

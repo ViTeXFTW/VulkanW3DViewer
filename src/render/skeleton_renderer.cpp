@@ -1,6 +1,5 @@
 #include "skeleton_renderer.hpp"
 
-#include "core/shader_loader.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <algorithm>
@@ -9,6 +8,8 @@
 #include <filesystem>
 #include <map>
 #include <stdexcept>
+
+#include "core/shader_loader.hpp"
 
 namespace w3d {
 
