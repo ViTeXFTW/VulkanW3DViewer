@@ -1,12 +1,18 @@
 # EmbedShaders.cmake - Generate C++ header with embedded SPIR-V shaders
-# Usage: cmake -DSHADER_FILES="file1;file2;..." -DOUTPUT_FILE="output.hpp" -P EmbedShaders.cmake
+# Usage: cmake -DSHADER_LIST_FILE="list.txt" -DOUTPUT_FILE="output.hpp" -P EmbedShaders.cmake
 
-if(NOT SHADER_FILES)
-  message(FATAL_ERROR "SHADER_FILES not specified")
+if(NOT SHADER_LIST_FILE)
+  message(FATAL_ERROR "SHADER_LIST_FILE not specified")
 endif()
 
 if(NOT OUTPUT_FILE)
   message(FATAL_ERROR "OUTPUT_FILE not specified")
+endif()
+
+# Read shader files from the list file
+file(STRINGS "${SHADER_LIST_FILE}" SHADER_FILES)
+if(NOT SHADER_FILES)
+  message(FATAL_ERROR "No shader files found in ${SHADER_LIST_FILE}")
 endif()
 
 # Ensure output directory exists
@@ -80,7 +86,7 @@ endforeach()
 
 # Create a getter function that returns shader data by name
 file(APPEND "${OUTPUT_FILE}" "// Get shader by name\n")
-file(APPEND "${OUTPUT_FILE}" "inline std::span<const uint8_t> getShader(std::string_view name) {\n")
+file(APPEND "${OUTPUT_FILE}" "inline std::span<const uint8_t> getShader([[maybe_unused]] std::string_view name) {\n")
 
 set(FIRST_SHADER TRUE)
 foreach(SHADER_NAME ${SHADER_NAMES})
