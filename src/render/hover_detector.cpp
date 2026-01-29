@@ -1,16 +1,14 @@
 #include "hover_detector.hpp"
+
+#include <algorithm>
+
 #include "renderable_mesh.hpp"
 #include "skeleton_renderer.hpp"
-#include <algorithm>
 
 namespace w3d {
 
-void HoverDetector::update(
-  const glm::vec2 &mousePos,
-  const glm::vec2 &screenSize,
-  const glm::mat4 &viewMatrix,
-  const glm::mat4 &projMatrix
-) {
+void HoverDetector::update(const glm::vec2 &mousePos, const glm::vec2 &screenSize,
+                           const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix) {
   // Reset state
   state_.reset();
 
@@ -63,10 +61,7 @@ void HoverDetector::testMeshes(const RenderableMesh &meshes) {
   }
 }
 
-void HoverDetector::testSkeleton(
-  const SkeletonRenderer &skeleton,
-  float boneThickness
-) {
+void HoverDetector::testSkeleton(const SkeletonRenderer &skeleton, float boneThickness) {
   if (!skeleton.hasData()) {
     return;
   }
@@ -124,4 +119,4 @@ void HoverDetector::testSkeleton(
   }
 }
 
-}  // namespace w3d
+} // namespace w3d

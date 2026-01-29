@@ -112,9 +112,9 @@ void SkeletonRenderer::createPipeline(VulkanContext &context) {
 
   // Pipeline layout - use our descriptor set layout with push constant for hover tint
   vk::PushConstantRange pushConstantRange{
-      vk::ShaderStageFlagBits::eFragment,  // Stage flags
-      0,                                    // Offset
-      sizeof(glm::vec3)                     // Size (vec3 hoverTint)
+      vk::ShaderStageFlagBits::eFragment, // Stage flags
+      0,                                  // Offset
+      sizeof(glm::vec3)                   // Size (vec3 hoverTint)
   };
 
   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_, pushConstantRange};
@@ -424,8 +424,7 @@ void SkeletonRenderer::drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tin
   }
 }
 
-bool SkeletonRenderer::getBoneSegment(size_t boneIndex, glm::vec3 &start,
-                                       glm::vec3 &end) const {
+bool SkeletonRenderer::getBoneSegment(size_t boneIndex, glm::vec3 &start, glm::vec3 &end) const {
   if (boneIndex >= bonePositions_.size()) {
     return false;
   }
@@ -440,8 +439,7 @@ bool SkeletonRenderer::getBoneSegment(size_t boneIndex, glm::vec3 &start,
   return true;
 }
 
-bool SkeletonRenderer::getJointSphere(size_t jointIndex, glm::vec3 &center,
-                                       float &radius) const {
+bool SkeletonRenderer::getJointSphere(size_t jointIndex, glm::vec3 &center, float &radius) const {
   if (jointIndex >= bonePositions_.size()) {
     return false;
   }

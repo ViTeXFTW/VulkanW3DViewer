@@ -49,8 +49,8 @@ void RenderableMesh::loadWithPose(VulkanContext &context, const W3DFile &file,
   }
 }
 
-bool RenderableMesh::getTriangle(size_t meshIndex, size_t triangleIndex,
-                                  glm::vec3 &v0, glm::vec3 &v1, glm::vec3 &v2) const {
+bool RenderableMesh::getTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0,
+                                 glm::vec3 &v1, glm::vec3 &v2) const {
   if (meshIndex >= meshes_.size()) {
     return false;
   }
