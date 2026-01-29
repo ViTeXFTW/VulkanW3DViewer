@@ -77,9 +77,20 @@ if(NOT BUILD_TESTING)
 
     # Compiler-specific flags
     if(MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            /W4 /permissive-
+            $<$<CONFIG:Debug>:/Od /Zi>
+            $<$<CONFIG:Release>:/O2 /GL>
+        )
+        target_link_options(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Release>:/LTCG>
+        )
     else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            -Wall -Wextra -Wpedantic -Werror
+            $<$<CONFIG:Debug>:-O0 -g>
+            $<$<CONFIG:Release>:-O3>
+        )
     endif()
 
     # Debug/Release definitions
