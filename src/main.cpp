@@ -523,23 +523,28 @@ private:
       ImGui::SetNextWindowPos(ImVec2(mousePos.x + 15, mousePos.y + 15));
 
       ImGui::Begin("##HoverTooltip", nullptr,
-                   ImGuiWindowFlags_NoTitleBar |
-                   ImGuiWindowFlags_NoResize |
-                   ImGuiWindowFlags_NoMove |
-                   ImGuiWindowFlags_AlwaysAutoResize |
-                   ImGuiWindowFlags_NoSavedSettings |
-                   ImGuiWindowFlags_NoFocusOnAppearing);
+                   ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
+                       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
 
       // Display object type and name
-      const char* typeStr = "";
+      const char *typeStr = "";
       switch (hover.type) {
-        case w3d::HoverType::Mesh: typeStr = "Mesh"; break;
-        case w3d::HoverType::Bone: typeStr = "Bone"; break;
-        case w3d::HoverType::Joint: typeStr = "Joint"; break;
-        default: break;
+      case w3d::HoverType::Mesh:
+        typeStr = "Mesh";
+        break;
+      case w3d::HoverType::Bone:
+        typeStr = "Bone";
+        break;
+      case w3d::HoverType::Joint:
+        typeStr = "Joint";
+        break;
+      default:
+        break;
       }
 
-      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr, hover.objectName.c_str());
+      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr,
+                         hover.objectName.c_str());
 
       ImGui::End();
     }
@@ -773,20 +778,15 @@ private:
     // Get camera matrices (must match rendering)
     auto view = camera_.viewMatrix();
     auto proj = glm::perspective(
-      glm::radians(45.0f),
-      static_cast<float>(extent.width) / static_cast<float>(extent.height),
-      0.01f, 10000.0f
-    );
-    proj[1][1] *= -1;  // Vulkan Y-flip
+        glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
+        0.01f, 10000.0f);
+    proj[1][1] *= -1; // Vulkan Y-flip
 
     // Update hover detector with ray using full window coordinates
     // Note: This assumes the viewport fills the entire window
     hoverDetector_.update(
-      glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
-      glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)),
-      view,
-      proj
-    );
+        glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
+        glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)), view, proj);
 
     // Test skeleton first (priority over meshes)
     if (showSkeleton_ && skeletonRenderer_.hasData()) {
@@ -857,7 +857,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
-            materialData.hoverTint = glm::vec3(1.0f);  // No tint for HLod (not yet implemented)
+            materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -898,7 +898,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
-            materialData.hoverTint = glm::vec3(1.0f);  // No tint for HLod (not yet implemented)
+            materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -942,17 +942,16 @@ private:
         materialData.useTexture = 0;
 
         // Use hover detection for simple meshes
-        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f);  // Warm highlight
+        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
         const auto &hover = hoverDetector_.state();
 
-        renderableMesh_.drawWithHover(cmd,
-          hover.type == w3d::HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
-          hoverTint,
-          [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
-            materialData.hoverTint = tint;
-            cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                              sizeof(w3d::MaterialPushConstant), &materialData);
-          });
+        renderableMesh_.drawWithHover(
+            cmd, hover.type == w3d::HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
+            hoverTint, [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+              materialData.hoverTint = tint;
+              cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                                sizeof(w3d::MaterialPushConstant), &materialData);
+            });
       }
     }
 
@@ -963,11 +962,12 @@ private:
                              0, descriptorManager_.descriptorSet(currentFrame_), {});
 
       // Apply hover tint if hovering over skeleton
-      const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f);  // Warm highlight
+      const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
       const auto &hover = hoverDetector_.state();
-      glm::vec3 skeletonTint = (hover.type == w3d::HoverType::Bone || hover.type == w3d::HoverType::Joint)
-                                ? hoverTint
-                                : glm::vec3(1.0f);
+      glm::vec3 skeletonTint =
+          (hover.type == w3d::HoverType::Bone || hover.type == w3d::HoverType::Joint)
+              ? hoverTint
+              : glm::vec3(1.0f);
 
       skeletonRenderer_.drawWithHover(cmd, skeletonTint);
     }

@@ -72,14 +72,15 @@ public:
 
   // Get triangle count for a specific mesh
   size_t triangleCount(size_t meshIndex) const {
-    if (meshIndex >= meshes_.size()) return 0;
+    if (meshIndex >= meshes_.size())
+      return 0;
     return meshes_[meshIndex].cpuIndices.size() / 3;
   }
 
   // Get triangle vertices for intersection testing
   // Returns false if meshIndex or triangleIndex is out of bounds
-  bool getTriangle(size_t meshIndex, size_t triangleIndex,
-                   glm::vec3 &v0, glm::vec3 &v1, glm::vec3 &v2) const;
+  bool getTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0, glm::vec3 &v1,
+                   glm::vec3 &v2) const;
 
   // Record draw commands for all meshes (simple version, no bone transforms)
   void draw(vk::CommandBuffer cmd) const;
@@ -128,8 +129,8 @@ void RenderableMesh::drawWithBoneTransforms(vk::CommandBuffer cmd, const Skeleto
 
 template <typename PushConstantFunc>
 void RenderableMesh::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
-                                    const glm::vec3 &tintColor,
-                                    PushConstantFunc pushConstantCallback) const {
+                                   const glm::vec3 &tintColor,
+                                   PushConstantFunc pushConstantCallback) const {
   for (size_t i = 0; i < meshes_.size(); ++i) {
     const auto &mesh = meshes_[i];
 
