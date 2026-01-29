@@ -3,6 +3,7 @@
 // Stub pipeline.hpp for tests - provides Vertex struct without Vulkan dependencies
 
 #include <glm/glm.hpp>
+
 #include <cstdint>
 
 namespace w3d {

@@ -1,7 +1,10 @@
-#include <gtest/gtest.h>
-#include "render/raycast.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+
 #include <cmath>
+
+#include "render/raycast.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace w3d;
 
@@ -191,17 +194,11 @@ TEST(RaycastTest, LineSegmentIntersectionAtEndpoint) {
 TEST(RaycastTest, ScreenToWorldRay) {
   // Setup simple camera
   glm::vec2 screenSize(800.0f, 600.0f);
-  glm::mat4 view = glm::lookAt(
-    glm::vec3(0.0f, 0.0f, 5.0f),  // Eye position
-    glm::vec3(0.0f, 0.0f, 0.0f),  // Look at origin
-    glm::vec3(0.0f, 1.0f, 0.0f)   // Up vector
+  glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), // Eye position
+                               glm::vec3(0.0f, 0.0f, 0.0f), // Look at origin
+                               glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
   );
-  glm::mat4 proj = glm::perspective(
-    glm::radians(45.0f),
-    800.0f / 600.0f,
-    0.1f,
-    100.0f
-  );
+  glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
   // Center of screen should produce ray along -Z axis
   glm::vec2 screenCenter(400.0f, 300.0f);
@@ -217,17 +214,9 @@ TEST(RaycastTest, ScreenToWorldRay) {
 TEST(RaycastTest, ScreenToWorldRayCorner) {
   // Setup simple camera
   glm::vec2 screenSize(800.0f, 600.0f);
-  glm::mat4 view = glm::lookAt(
-    glm::vec3(0.0f, 0.0f, 5.0f),
-    glm::vec3(0.0f, 0.0f, 0.0f),
-    glm::vec3(0.0f, 1.0f, 0.0f)
-  );
-  glm::mat4 proj = glm::perspective(
-    glm::radians(45.0f),
-    800.0f / 600.0f,
-    0.1f,
-    100.0f
-  );
+  glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                               glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
   // Top-left corner
   glm::vec2 screenTopLeft(0.0f, 0.0f);
