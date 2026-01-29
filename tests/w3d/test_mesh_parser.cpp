@@ -446,11 +446,16 @@ TEST_F(MeshParserTest, VertexColorsParsing) {
 // =============================================================================
 
 TEST_F(MeshParserTest, VertexInfluencesParsing) {
+  // W3dVertInfStruct: uint16 BoneIdx + uint8 Pad[6] = 8 bytes per vertex
   std::vector<uint8_t> influenceData;
-  appendUint16(influenceData, 0); // bone1
-  appendUint16(influenceData, 1); // bone2
-  appendUint16(influenceData, 5); // bone1
-  appendUint16(influenceData, 0); // bone2
+
+  // First vertex influence: BoneIdx=0, then 6 bytes padding
+  appendUint16(influenceData, 0);
+  influenceData.insert(influenceData.end(), 6, 0); // 6 bytes padding
+
+  // Second vertex influence: BoneIdx=5, then 6 bytes padding
+  appendUint16(influenceData, 5);
+  influenceData.insert(influenceData.end(), 6, 0); // 6 bytes padding
 
   std::vector<uint8_t> meshData;
   std::vector<uint8_t> headerData(116, 0);
@@ -469,9 +474,9 @@ TEST_F(MeshParserTest, VertexInfluencesParsing) {
 
   ASSERT_EQ(mesh.vertexInfluences.size(), 2);
   EXPECT_EQ(mesh.vertexInfluences[0].boneIndex, 0);
-  EXPECT_EQ(mesh.vertexInfluences[0].boneIndex2, 1);
+  EXPECT_EQ(mesh.vertexInfluences[0].weight, 1.0f);
   EXPECT_EQ(mesh.vertexInfluences[1].boneIndex, 5);
-  EXPECT_EQ(mesh.vertexInfluences[1].boneIndex2, 0);
+  EXPECT_EQ(mesh.vertexInfluences[1].weight, 1.0f);
 }
 
 // =============================================================================
