@@ -59,6 +59,7 @@ void HoverDetector::testMeshes(const RenderableMesh &meshes) {
     state_.triangleIndex = closestTriIndex;
     state_.hitPoint = closestMeshPoint;
     state_.distance = closestMeshDist;
+    state_.objectName = meshes.meshName(closestMeshIndex);
   }
 }
 
@@ -119,6 +120,7 @@ void HoverDetector::testSkeleton(
     state_.objectIndex = closestSkeletonIndex;
     state_.hitPoint = closestSkeletonPoint;
     state_.distance = closestSkeletonDist;
+    state_.objectName = skeleton.boneName(closestSkeletonIndex);
   }
 }
 

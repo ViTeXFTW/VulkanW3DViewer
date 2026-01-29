@@ -13,13 +13,14 @@ Ray screenToWorldRay(
 ) {
   // Convert screen coordinates to normalized device coordinates (NDC)
   // Screen space: (0,0) = top-left, (width, height) = bottom-right
-  // NDC: (-1,-1) = bottom-left, (1,1) = top-right
+  // Vulkan NDC: (-1,-1) = top-left, (1,1) = bottom-right (Y-down after proj flip)
+  // Note: projMatrix should already have the Vulkan Y-flip applied (proj[1][1] *= -1)
   float x = (2.0f * screenPos.x) / screenSize.x - 1.0f;
-  float y = 1.0f - (2.0f * screenPos.y) / screenSize.y;  // Flip Y
+  float y = (2.0f * screenPos.y) / screenSize.y - 1.0f;  // No Y-flip (Vulkan uses Y-down)
 
   // NDC coordinates (at near and far plane)
-  glm::vec4 rayNDC_near(x, y, -1.0f, 1.0f);  // Near plane in NDC
-  glm::vec4 rayNDC_far(x, y, 1.0f, 1.0f);    // Far plane in NDC
+  glm::vec4 rayNDC_near(x, y, 0.0f, 1.0f);  // Near plane in Vulkan NDC (depth = 0)
+  glm::vec4 rayNDC_far(x, y, 1.0f, 1.0f);   // Far plane in Vulkan NDC (depth = 1)
 
   // Transform to view space
   glm::mat4 invProj = glm::inverse(projMatrix);

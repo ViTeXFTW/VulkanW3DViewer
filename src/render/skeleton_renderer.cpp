@@ -303,18 +303,22 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
     jointVertexCount_ = 0;
     bonePositions_.clear();
     parentIndices_.clear();
+    boneNames_.clear();
     return;
   }
 
   // Store bone data for hover detection
   bonePositions_.clear();
   parentIndices_.clear();
+  boneNames_.clear();
   bonePositions_.reserve(pose.boneCount());
   parentIndices_.reserve(pose.boneCount());
+  boneNames_.reserve(pose.boneCount());
 
   for (size_t i = 0; i < pose.boneCount(); ++i) {
     bonePositions_.push_back(pose.bonePosition(i));
     parentIndices_.push_back(pose.parentIndex(i));
+    boneNames_.push_back(pose.boneName(i));
   }
 
   // Calculate skeleton scale for joint size

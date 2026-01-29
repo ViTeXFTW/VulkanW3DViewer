@@ -61,6 +61,15 @@ public:
   // Get bone index for a mesh
   int32_t meshBoneIndex(size_t index) const { return meshes_[index].boneIndex; }
 
+  // Get mesh name by index
+  const std::string &meshName(size_t index) const {
+    if (index < meshes_.size()) {
+      return meshes_[index].name;
+    }
+    static const std::string empty;
+    return empty;
+  }
+
   // Get triangle count for a specific mesh
   size_t triangleCount(size_t meshIndex) const {
     if (meshIndex >= meshes_.size()) return 0;

@@ -81,6 +81,15 @@ public:
   // Get joint sphere for ray intersection (returns false if index out of bounds)
   bool getJointSphere(size_t jointIndex, glm::vec3 &center, float &radius) const;
 
+  // Get bone/joint name by index
+  const std::string &boneName(size_t index) const {
+    if (index < boneNames_.size()) {
+      return boneNames_[index];
+    }
+    static const std::string empty;
+    return empty;
+  }
+
 private:
   void createPipeline(VulkanContext &context);
   void createDescriptorSetLayout(VulkanContext &context);
@@ -111,6 +120,7 @@ private:
   // Current pose data for hover detection
   std::vector<glm::vec3> bonePositions_;
   std::vector<int> parentIndices_;
+  std::vector<std::string> boneNames_;
   float jointRadius_ = 0.01f;
 
   // Joint sphere detail (number of subdivisions)

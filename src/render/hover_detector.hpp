@@ -4,6 +4,7 @@
 #include "raycast.hpp"
 #include <glm/glm.hpp>
 #include <limits>
+#include <string>
 
 namespace w3d {
 
@@ -23,6 +24,7 @@ struct HoverState {
   size_t triangleIndex = 0;    // For mesh triangles (debugging/future use)
   glm::vec3 hitPoint{0.0f};
   float distance = std::numeric_limits<float>::max();
+  std::string objectName;      // Name of hovered mesh/bone
 
   void reset() {
     type = HoverType::None;
@@ -30,6 +32,7 @@ struct HoverState {
     triangleIndex = 0;
     hitPoint = glm::vec3(0.0f);
     distance = std::numeric_limits<float>::max();
+    objectName.clear();
   }
 
   bool isHovering() const { return type != HoverType::None; }

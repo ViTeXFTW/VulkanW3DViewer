@@ -514,6 +514,35 @@ private:
       ImGui::ShowDemoWindow(&showDemoWindow_);
     }
 #endif
+
+    // Display hover name overlay
+    const auto &hover = hoverDetector_.state();
+    if (hover.isHovering() && !hover.objectName.empty()) {
+      // Position tooltip near mouse cursor
+      ImVec2 mousePos = ImGui::GetMousePos();
+      ImGui::SetNextWindowPos(ImVec2(mousePos.x + 15, mousePos.y + 15));
+
+      ImGui::Begin("##HoverTooltip", nullptr,
+                   ImGuiWindowFlags_NoTitleBar |
+                   ImGuiWindowFlags_NoResize |
+                   ImGuiWindowFlags_NoMove |
+                   ImGuiWindowFlags_AlwaysAutoResize |
+                   ImGuiWindowFlags_NoSavedSettings |
+                   ImGuiWindowFlags_NoFocusOnAppearing);
+
+      // Display object type and name
+      const char* typeStr = "";
+      switch (hover.type) {
+        case w3d::HoverType::Mesh: typeStr = "Mesh"; break;
+        case w3d::HoverType::Bone: typeStr = "Bone"; break;
+        case w3d::HoverType::Joint: typeStr = "Joint"; break;
+        default: break;
+      }
+
+      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr, hover.objectName.c_str());
+
+      ImGui::End();
+    }
   }
 
   void drawViewportWindow() {
@@ -719,20 +748,29 @@ private:
   }
 
   void updateHover() {
-    // Skip if ImGui wants mouse
+    // Reset hover state by default
+    hoverDetector_.state().reset();
+
+    // Skip if ImGui wants mouse (over UI elements)
     if (ImGui::GetIO().WantCaptureMouse) {
-      hoverDetector_.state().reset();
       return;
     }
 
-    // Get mouse position
+    // We need to check if mouse is over the viewport window and get its coordinates
+    // This must be done during ImGui frame, but we're outside of ImGui rendering here
+    // So we'll store viewport info during drawViewportWindow() and use it here
+
+    // For now, use a simpler approach: check if viewport is hovered during next frame
+    // We'll need to refactor to call this from within the viewport window context
+
+    // Get mouse position in window coordinates
     double mouseX, mouseY;
     glfwGetCursorPos(window_, &mouseX, &mouseY);
 
-    // Get viewport dimensions
+    // Get swapchain (full render target) dimensions
     auto extent = context_.swapchainExtent();
 
-    // Get camera matrices
+    // Get camera matrices (must match rendering)
     auto view = camera_.viewMatrix();
     auto proj = glm::perspective(
       glm::radians(45.0f),
@@ -741,7 +779,8 @@ private:
     );
     proj[1][1] *= -1;  // Vulkan Y-flip
 
-    // Update hover detector with current ray
+    // Update hover detector with ray using full window coordinates
+    // Note: This assumes the viewport fills the entire window
     hoverDetector_.update(
       glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
       glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)),
