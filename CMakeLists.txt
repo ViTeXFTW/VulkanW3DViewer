@@ -111,14 +111,18 @@ if(NOT BUILD_TESTING)
 
         # Generate embedded shaders header
         set(EMBEDDED_HEADER "${CMAKE_BINARY_DIR}/generated/embedded_shaders.hpp")
+        set(SHADER_LIST_FILE "${CMAKE_BINARY_DIR}/generated/shader_list.txt")
 
-        # Escape semicolons in the list for passing to cmake -P
-        string(REPLACE ";" "\\;" SPIRV_OUTPUTS_ESCAPED "${SPIRV_OUTPUTS}")
+        # Write shader list to a file (more reliable than command-line args)
+        file(WRITE "${SHADER_LIST_FILE}" "")
+        foreach(SHADER_FILE ${SPIRV_OUTPUTS})
+            file(APPEND "${SHADER_LIST_FILE}" "${SHADER_FILE}\n")
+        endforeach()
 
         add_custom_command(
             OUTPUT "${EMBEDDED_HEADER}"
             COMMAND ${CMAKE_COMMAND}
-                "-DSHADER_FILES=${SPIRV_OUTPUTS_ESCAPED}"
+                "-DSHADER_LIST_FILE=${SHADER_LIST_FILE}"
                 "-DOUTPUT_FILE=${EMBEDDED_HEADER}"
                 -P "${CMAKE_SOURCE_DIR}/cmake/EmbedShaders.cmake"
             DEPENDS ${SPIRV_OUTPUTS} "${CMAKE_SOURCE_DIR}/cmake/EmbedShaders.cmake"
