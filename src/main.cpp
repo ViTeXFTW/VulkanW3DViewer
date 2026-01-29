@@ -20,6 +20,7 @@
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
+#include "render/hover_detector.hpp"
 #include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
@@ -110,6 +111,9 @@ private:
   w3d::AnimationPlayer animationPlayer_;
   float lastFrameTime_ = 0.0f;
   float lastAppliedFrame_ = -1.0f; // Track last frame applied to pose
+
+  // Hover detection
+  w3d::HoverDetector hoverDetector_;
 
   static constexpr uint32_t WIDTH = 1280;
   static constexpr uint32_t HEIGHT = 720;
@@ -510,6 +514,40 @@ private:
       ImGui::ShowDemoWindow(&showDemoWindow_);
     }
 #endif
+
+    // Display hover name overlay
+    const auto &hover = hoverDetector_.state();
+    if (hover.isHovering() && !hover.objectName.empty()) {
+      // Position tooltip near mouse cursor
+      ImVec2 mousePos = ImGui::GetMousePos();
+      ImGui::SetNextWindowPos(ImVec2(mousePos.x + 15, mousePos.y + 15));
+
+      ImGui::Begin("##HoverTooltip", nullptr,
+                   ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
+                       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
+
+      // Display object type and name
+      const char *typeStr = "";
+      switch (hover.type) {
+      case w3d::HoverType::Mesh:
+        typeStr = "Mesh";
+        break;
+      case w3d::HoverType::Bone:
+        typeStr = "Bone";
+        break;
+      case w3d::HoverType::Joint:
+        typeStr = "Joint";
+        break;
+      default:
+        break;
+      }
+
+      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr,
+                         hover.objectName.c_str());
+
+      ImGui::End();
+    }
   }
 
   void drawViewportWindow() {
@@ -714,6 +752,58 @@ private:
     ImGui::End();
   }
 
+  void updateHover() {
+    // Reset hover state by default
+    hoverDetector_.state().reset();
+
+    // Skip if ImGui wants mouse (over UI elements)
+    if (ImGui::GetIO().WantCaptureMouse) {
+      return;
+    }
+
+    // We need to check if mouse is over the viewport window and get its coordinates
+    // This must be done during ImGui frame, but we're outside of ImGui rendering here
+    // So we'll store viewport info during drawViewportWindow() and use it here
+
+    // For now, use a simpler approach: check if viewport is hovered during next frame
+    // We'll need to refactor to call this from within the viewport window context
+
+    // Get mouse position in window coordinates
+    double mouseX, mouseY;
+    glfwGetCursorPos(window_, &mouseX, &mouseY);
+
+    // Get swapchain (full render target) dimensions
+    auto extent = context_.swapchainExtent();
+
+    // Get camera matrices (must match rendering)
+    auto view = camera_.viewMatrix();
+    auto proj = glm::perspective(
+        glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
+        0.01f, 10000.0f);
+    proj[1][1] *= -1; // Vulkan Y-flip
+
+    // Update hover detector with ray using full window coordinates
+    // Note: This assumes the viewport fills the entire window
+    hoverDetector_.update(
+        glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
+        glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)), view, proj);
+
+    // Test skeleton first (priority over meshes)
+    if (showSkeleton_ && skeletonRenderer_.hasData()) {
+      hoverDetector_.testSkeleton(skeletonRenderer_, 0.05f);
+    }
+
+    // Test meshes
+    if (showMesh_) {
+      if (useHLodModel_ && hlodModel_.hasData()) {
+        // TODO: Implement HLod hover detection
+        // For now, skip HLod models
+      } else if (renderableMesh_.hasData()) {
+        hoverDetector_.testMeshes(renderableMesh_);
+      }
+    }
+  }
+
   void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex) {
     vk::CommandBufferBeginInfo beginInfo{};
     cmd.begin(beginInfo);
@@ -767,6 +857,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -807,6 +898,7 @@ private:
             materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
             materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
             materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+            materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
             materialData.flags = 0;
             materialData.alphaThreshold = 0.5f;
 
@@ -849,10 +941,17 @@ private:
         materialData.alphaThreshold = 0.5f;
         materialData.useTexture = 0;
 
-        cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                          sizeof(w3d::MaterialPushConstant), &materialData);
+        // Use hover detection for simple meshes
+        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
+        const auto &hover = hoverDetector_.state();
 
-        renderableMesh_.draw(cmd);
+        renderableMesh_.drawWithHover(
+            cmd, hover.type == w3d::HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
+            hoverTint, [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+              materialData.hoverTint = tint;
+              cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                                sizeof(w3d::MaterialPushConstant), &materialData);
+            });
       }
     }
 
@@ -861,7 +960,16 @@ private:
       // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
       cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer_.pipelineLayout(),
                              0, descriptorManager_.descriptorSet(currentFrame_), {});
-      skeletonRenderer_.draw(cmd);
+
+      // Apply hover tint if hovering over skeleton
+      const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
+      const auto &hover = hoverDetector_.state();
+      glm::vec3 skeletonTint =
+          (hover.type == w3d::HoverType::Bone || hover.type == w3d::HoverType::Joint)
+              ? hoverTint
+              : glm::vec3(1.0f);
+
+      skeletonRenderer_.drawWithHover(cmd, skeletonTint);
     }
 
     // Draw ImGui
@@ -969,6 +1077,9 @@ private:
 
       // Update camera
       camera_.update(window_);
+
+      // Update hover detection
+      updateHover();
 
       // Update animation
       animationPlayer_.update(deltaTime);

@@ -63,10 +63,32 @@ public:
   // Record draw commands (call after binding descriptor set)
   void draw(vk::CommandBuffer cmd) const;
 
+  // Draw with optional hover tint (applies to all skeleton elements)
+  void drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tintColor) const;
+
   // Color configuration
   void setBoneColor(const glm::vec3 &color) { boneColor_ = color; }
   void setJointColor(const glm::vec3 &color) { jointColor_ = color; }
   void setRootColor(const glm::vec3 &color) { rootColor_ = color; }
+
+  // Geometry access for hover detection
+  size_t boneCount() const { return bonePositions_.size(); }
+  size_t jointCount() const { return bonePositions_.size(); }
+
+  // Get bone segment for ray intersection (returns false if index out of bounds or no parent)
+  bool getBoneSegment(size_t boneIndex, glm::vec3 &start, glm::vec3 &end) const;
+
+  // Get joint sphere for ray intersection (returns false if index out of bounds)
+  bool getJointSphere(size_t jointIndex, glm::vec3 &center, float &radius) const;
+
+  // Get bone/joint name by index
+  const std::string &boneName(size_t index) const {
+    if (index < boneNames_.size()) {
+      return boneNames_[index];
+    }
+    static const std::string empty;
+    return empty;
+  }
 
 private:
   void createPipeline(VulkanContext &context);
@@ -94,6 +116,12 @@ private:
   glm::vec3 boneColor_{0.8f, 0.8f, 0.2f};  // Yellow for bones
   glm::vec3 jointColor_{0.2f, 0.8f, 0.2f}; // Green for joints
   glm::vec3 rootColor_{1.0f, 0.2f, 0.2f};  // Red for root joint
+
+  // Current pose data for hover detection
+  std::vector<glm::vec3> bonePositions_;
+  std::vector<int> parentIndices_;
+  std::vector<std::string> boneNames_;
+  float jointRadius_ = 0.01f;
 
   // Joint sphere detail (number of subdivisions)
   static constexpr int kJointSphereDetail = 1;

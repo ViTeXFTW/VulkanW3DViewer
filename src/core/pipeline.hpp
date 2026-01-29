@@ -68,10 +68,10 @@ struct MaterialPushConstant {
   alignas(16) glm::vec4 diffuseColor;  // RGB + alpha
   alignas(16) glm::vec4 emissiveColor; // RGB + intensity
   alignas(16) glm::vec4 specularColor; // RGB + shininess
+  alignas(16) glm::vec3 hoverTint;     // RGB tint for hover highlighting (1,1,1 = no tint)
   alignas(4) uint32_t flags;           // Material flags
   alignas(4) float alphaThreshold;     // For alpha testing
   alignas(4) uint32_t useTexture;      // 1 = sample texture, 0 = use vertex color
-  alignas(4) float padding;
 };
 
 // Pipeline configuration for different blend modes
