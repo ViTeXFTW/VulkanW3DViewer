@@ -89,10 +89,7 @@ if(NOT BUILD_TESTING)
         target_compile_options(${PROJECT_NAME} PRIVATE
             -Wall -Wextra -Wpedantic -Werror
             $<$<CONFIG:Debug>:-O0 -g>
-            $<$<CONFIG:Release>:-O3 -flto>
-        )
-        target_link_options(${PROJECT_NAME} PRIVATE
-            $<$<CONFIG:Release>:-flto>
+            $<$<CONFIG:Release>:-O3>
         )
     endif()
 
