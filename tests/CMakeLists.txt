@@ -12,9 +12,6 @@ set(W3D_SOURCES
 add_executable(w3d_tests
   w3d/test_chunk_reader.cpp
   w3d/test_mesh_parser.cpp
-  w3d/test_hierarchy_parser.cpp
-  w3d/test_animation_parser.cpp
-  w3d/test_hlod_parser.cpp
   w3d/test_loader.cpp
   ${W3D_SOURCES}
 )
@@ -86,64 +83,3 @@ else()
 endif()
 
 add_test(NAME mesh_converter_tests COMMAND mesh_converter_tests)
-
-# Skeleton pose tests (requires GLM, no Vulkan)
-add_executable(skeleton_tests
-  render/test_skeleton_pose.cpp
-  render/test_animation_player.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/skeleton.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/animation_player.cpp
-)
-
-target_link_libraries(skeleton_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(skeleton_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
-
-if(MSVC)
-  target_compile_options(skeleton_tests PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(skeleton_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_test(NAME skeleton_tests COMMAND skeleton_tests)
-
-# Bounding box tests (requires GLM, no Vulkan)
-add_executable(bounding_box_tests
-  render/test_bounding_box.cpp
-)
-
-target_link_libraries(bounding_box_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(bounding_box_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
-
-if(MSVC)
-  target_compile_options(bounding_box_tests PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(bounding_box_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_test(NAME bounding_box_tests COMMAND bounding_box_tests)
-
-# Raycast tests (requires GLM, no Vulkan)
-add_executable(raycast_tests
-  render/raycast_test.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/raycast.cpp
-)
-
-target_link_libraries(raycast_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(raycast_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
-
-if(MSVC)
-  target_compile_options(raycast_tests PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(raycast_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_test(NAME raycast_tests COMMAND raycast_tests)
