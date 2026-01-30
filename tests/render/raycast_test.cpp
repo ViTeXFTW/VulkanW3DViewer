@@ -199,6 +199,7 @@ TEST(RaycastTest, ScreenToWorldRay) {
                                glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
   );
   glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+  proj[1][1] *= -1.0f; // Vulkan Y-flip
 
   // Center of screen should produce ray along -Z axis
   glm::vec2 screenCenter(400.0f, 300.0f);
@@ -217,6 +218,7 @@ TEST(RaycastTest, ScreenToWorldRayCorner) {
   glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                                glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+  proj[1][1] *= -1.0f; // Vulkan Y-flip
 
   // Top-left corner
   glm::vec2 screenTopLeft(0.0f, 0.0f);
