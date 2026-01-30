@@ -46,7 +46,8 @@ protected:
     vec.push_back((val >> 8) & 0xFF);
   }
 
-  static void appendFixedString(std::vector<uint8_t> &vec, const std::string &str, size_t len = 16) {
+  static void appendFixedString(std::vector<uint8_t> &vec, const std::string &str,
+                                size_t len = 16) {
     for (size_t i = 0; i < len; ++i) {
       vec.push_back(i < str.size() ? str[i] : '\0');
     }
@@ -54,7 +55,7 @@ protected:
 
   // Create animation header chunk data
   static std::vector<uint8_t> makeAnimHeader(const std::string &name, const std::string &hierName,
-                                              uint32_t numFrames, uint32_t frameRate) {
+                                             uint32_t numFrames, uint32_t frameRate) {
     std::vector<uint8_t> data;
     appendUint32(data, 1); // version
     appendFixedString(data, name, 16);
@@ -66,8 +67,8 @@ protected:
 
   // Create animation channel data
   static std::vector<uint8_t> makeAnimChannel(uint16_t firstFrame, uint16_t lastFrame,
-                                               uint16_t vectorLen, uint16_t flags, uint16_t pivot,
-                                               const std::vector<float> &values) {
+                                              uint16_t vectorLen, uint16_t flags, uint16_t pivot,
+                                              const std::vector<float> &values) {
     std::vector<uint8_t> data;
     appendUint16(data, firstFrame);
     appendUint16(data, lastFrame);
@@ -84,8 +85,8 @@ protected:
 
   // Create bit channel data
   static std::vector<uint8_t> makeBitChannel(uint16_t firstFrame, uint16_t lastFrame,
-                                              uint16_t flags, uint16_t pivot, float defaultVal,
-                                              const std::vector<uint8_t> &bits) {
+                                             uint16_t flags, uint16_t pivot, float defaultVal,
+                                             const std::vector<uint8_t> &bits) {
     std::vector<uint8_t> data;
     appendUint16(data, firstFrame);
     appendUint16(data, lastFrame);
@@ -287,7 +288,8 @@ TEST_F(AnimationParserTest, CompressedAnimationHeaderParsing) {
   data.insert(data.end(), headerChunk.begin(), headerChunk.end());
 
   ChunkReader reader(data);
-  CompressedAnimation anim = AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
+  CompressedAnimation anim =
+      AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
 
   EXPECT_EQ(anim.version, 1);
   EXPECT_EQ(anim.name, "CompAnim");
@@ -308,17 +310,17 @@ TEST_F(AnimationParserTest, CompressedChannelParsing) {
 
   // Compressed channel with 3 keyframes
   std::vector<uint8_t> channelData;
-  appendUint32(channelData, 3);     // numTimeCodes
-  appendUint16(channelData, 0);     // pivot
-  appendUint16(channelData, 1);     // vectorLen
+  appendUint32(channelData, 3);                            // numTimeCodes
+  appendUint16(channelData, 0);                            // pivot
+  appendUint16(channelData, 1);                            // vectorLen
   appendUint16(channelData, AnimChannelType::TIMECODED_X); // flags
-  appendUint16(channelData, 0);     // padding
-  appendUint16(channelData, 0);     // padding
+  appendUint16(channelData, 0);                            // padding
+  appendUint16(channelData, 0);                            // padding
   // Time codes (3 uint16s, padded to 4 bytes)
-  appendUint16(channelData, 0);     // frame 0
-  appendUint16(channelData, 50);    // frame 50
-  appendUint16(channelData, 99);    // frame 99
-  appendUint16(channelData, 0);     // padding for 4-byte alignment
+  appendUint16(channelData, 0);  // frame 0
+  appendUint16(channelData, 50); // frame 50
+  appendUint16(channelData, 99); // frame 99
+  appendUint16(channelData, 0);  // padding for 4-byte alignment
   // Data values (3 floats)
   appendFloat(channelData, 0.0f);
   appendFloat(channelData, 5.0f);
@@ -331,7 +333,8 @@ TEST_F(AnimationParserTest, CompressedChannelParsing) {
   data.insert(data.end(), channelChunk.begin(), channelChunk.end());
 
   ChunkReader reader(data);
-  CompressedAnimation anim = AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
+  CompressedAnimation anim =
+      AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
 
   ASSERT_EQ(anim.channels.size(), 1);
   EXPECT_EQ(anim.channels[0].numTimeCodes, 3);
@@ -361,9 +364,9 @@ TEST_F(AnimationParserTest, CompressedQuaternionChannel) {
 
   // Compressed quaternion channel with 2 keyframes
   std::vector<uint8_t> channelData;
-  appendUint32(channelData, 2);     // numTimeCodes
-  appendUint16(channelData, 1);     // pivot
-  appendUint16(channelData, 4);     // vectorLen (quaternion)
+  appendUint32(channelData, 2); // numTimeCodes
+  appendUint16(channelData, 1); // pivot
+  appendUint16(channelData, 4); // vectorLen (quaternion)
   appendUint16(channelData, AnimChannelType::TIMECODED_Q);
   appendUint16(channelData, 0);
   appendUint16(channelData, 0);
@@ -389,7 +392,8 @@ TEST_F(AnimationParserTest, CompressedQuaternionChannel) {
   data.insert(data.end(), channelChunk.begin(), channelChunk.end());
 
   ChunkReader reader(data);
-  CompressedAnimation anim = AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
+  CompressedAnimation anim =
+      AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
 
   ASSERT_EQ(anim.channels.size(), 1);
   EXPECT_EQ(anim.channels[0].vectorLen, 4);
@@ -421,7 +425,8 @@ TEST_F(AnimationParserTest, CompressedBitChannel) {
   data.insert(data.end(), bitChunk.begin(), bitChunk.end());
 
   ChunkReader reader(data);
-  CompressedAnimation anim = AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
+  CompressedAnimation anim =
+      AnimationParser::parseCompressed(reader, static_cast<uint32_t>(data.size()));
 
   ASSERT_EQ(anim.bitChannels.size(), 1);
   EXPECT_EQ(anim.bitChannels[0].pivot, 2);
@@ -438,9 +443,7 @@ TEST_F(AnimationParserTest, UnknownChunksInAnimationSkipped) {
 
   // Unknown chunk
   std::vector<uint8_t> unknownChunk = {
-      0xEF, 0xBE, 0xAD, 0xDE,
-      0x04, 0x00, 0x00, 0x00,
-      0x01, 0x02, 0x03, 0x04,
+      0xEF, 0xBE, 0xAD, 0xDE, 0x04, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
   };
   data.insert(data.end(), unknownChunk.begin(), unknownChunk.end());
 

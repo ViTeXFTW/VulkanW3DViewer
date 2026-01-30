@@ -49,16 +49,17 @@ protected:
   }
 
   // Helper to append a fixed-length string (W3D_NAME_LEN = 16)
-  static void appendFixedString(std::vector<uint8_t> &vec, const std::string &str, size_t len = 16) {
+  static void appendFixedString(std::vector<uint8_t> &vec, const std::string &str,
+                                size_t len = 16) {
     for (size_t i = 0; i < len; ++i) {
       vec.push_back(i < str.size() ? str[i] : '\0');
     }
   }
 
   // Helper to create a pivot (60 bytes total)
-  static std::vector<uint8_t> makePivot(const std::string &name, uint32_t parentIndex,
-                                        float tx, float ty, float tz,
-                                        float qx = 0.0f, float qy = 0.0f, float qz = 0.0f, float qw = 1.0f) {
+  static std::vector<uint8_t> makePivot(const std::string &name, uint32_t parentIndex, float tx,
+                                        float ty, float tz, float qx = 0.0f, float qy = 0.0f,
+                                        float qz = 0.0f, float qw = 1.0f) {
     std::vector<uint8_t> data;
     appendFixedString(data, name, 16);
     appendUint32(data, parentIndex);

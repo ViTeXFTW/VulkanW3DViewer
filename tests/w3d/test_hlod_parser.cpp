@@ -49,7 +49,7 @@ protected:
 
   // Create HLod header chunk data
   static std::vector<uint8_t> makeHLodHeader(const std::string &name, const std::string &hierName,
-                                              uint32_t lodCount) {
+                                             uint32_t lodCount) {
     std::vector<uint8_t> data;
     appendUint32(data, 1); // version
     appendUint32(data, lodCount);
@@ -272,8 +272,8 @@ TEST_F(HLodParserTest, ProxyArrayParsing) {
 
 TEST_F(HLodParserTest, BoxParsing) {
   std::vector<uint8_t> boxData;
-  appendUint32(boxData, 1); // version
-  appendUint32(boxData, 0); // attributes
+  appendUint32(boxData, 1);                      // version
+  appendUint32(boxData, 0);                      // attributes
   appendFixedString(boxData, "BOUNDINGBOX", 32); // name (32 chars)
   // RGB color + padding
   boxData.push_back(255); // r
@@ -341,9 +341,7 @@ TEST_F(HLodParserTest, UnknownChunksInHLodSkipped) {
 
   // Unknown chunk
   std::vector<uint8_t> unknownChunk = {
-      0xEF, 0xBE, 0xAD, 0xDE,
-      0x04, 0x00, 0x00, 0x00,
-      0x01, 0x02, 0x03, 0x04,
+      0xEF, 0xBE, 0xAD, 0xDE, 0x04, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
   };
   data.insert(data.end(), unknownChunk.begin(), unknownChunk.end());
 

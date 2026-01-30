@@ -9,7 +9,7 @@ class AnimationPlayerTest : public ::testing::Test {
 protected:
   // Create a simple W3D file with animations
   static W3DFile createFileWithAnimation(const std::string &name, uint32_t numFrames,
-                                          uint32_t frameRate = 30) {
+                                         uint32_t frameRate = 30) {
     W3DFile file;
     Animation anim;
     anim.version = 1;
@@ -23,7 +23,7 @@ protected:
 
   // Create a W3D file with a compressed animation
   static W3DFile createFileWithCompressedAnimation(const std::string &name, uint32_t numFrames,
-                                                    uint32_t frameRate = 30) {
+                                                   uint32_t frameRate = 30) {
     W3DFile file;
     CompressedAnimation anim;
     anim.version = 1;

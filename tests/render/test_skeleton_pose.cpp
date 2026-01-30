@@ -1,21 +1,20 @@
-#include "render/skeleton.hpp"
-#include "w3d/types.hpp"
-
-#include <gtest/gtest.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <cmath>
 
+#include "render/skeleton.hpp"
+#include "w3d/types.hpp"
+
+#include <gtest/gtest.h>
+
 using namespace w3d;
 
 class SkeletonPoseTest : public ::testing::Test {
 protected:
   // Create a simple hierarchy with the given pivots
-  static Hierarchy createHierarchy(const std::string &name,
-                                    const std::vector<Pivot> &pivots) {
+  static Hierarchy createHierarchy(const std::string &name, const std::vector<Pivot> &pivots) {
     Hierarchy h;
     h.version = 1;
     h.name = name;
@@ -25,8 +24,7 @@ protected:
   }
 
   // Create a pivot with identity rotation
-  static Pivot createPivot(const std::string &name, uint32_t parent,
-                            float tx, float ty, float tz) {
+  static Pivot createPivot(const std::string &name, uint32_t parent, float tx, float ty, float tz) {
     Pivot p;
     p.name = name;
     p.parentIndex = parent;
@@ -37,9 +35,8 @@ protected:
   }
 
   // Create a pivot with quaternion rotation
-  static Pivot createPivotWithRotation(const std::string &name, uint32_t parent,
-                                        float tx, float ty, float tz,
-                                        float qx, float qy, float qz, float qw) {
+  static Pivot createPivotWithRotation(const std::string &name, uint32_t parent, float tx, float ty,
+                                       float tz, float qx, float qy, float qz, float qw) {
     Pivot p;
     p.name = name;
     p.parentIndex = parent;
@@ -65,9 +62,7 @@ TEST_F(SkeletonPoseTest, EmptyHierarchyReturnsInvalidPose) {
 }
 
 TEST_F(SkeletonPoseTest, SingleRootBoneAtOrigin) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOTTRANSFORM", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOTTRANSFORM", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f)};
   Hierarchy h = createHierarchy("SingleBone", pivots);
 
   SkeletonPose pose;
@@ -83,9 +78,7 @@ TEST_F(SkeletonPoseTest, SingleRootBoneAtOrigin) {
 }
 
 TEST_F(SkeletonPoseTest, SingleBoneWithTranslation) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 5.0f, 10.0f, -3.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 5.0f, 10.0f, -3.0f)};
   Hierarchy h = createHierarchy("Translated", pivots);
 
   SkeletonPose pose;
@@ -101,10 +94,8 @@ TEST_F(SkeletonPoseTest, SingleBoneWithTranslation) {
 
 TEST_F(SkeletonPoseTest, TwoBoneChainPositions) {
   // Root at origin, child 2 units up on Y axis
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
-    createPivot("CHILD", 0, 0.0f, 2.0f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
+                               createPivot("CHILD", 0, 0.0f, 2.0f, 0.0f)};
   Hierarchy h = createHierarchy("Chain", pivots);
 
   SkeletonPose pose;
@@ -121,11 +112,9 @@ TEST_F(SkeletonPoseTest, TwoBoneChainPositions) {
 
 TEST_F(SkeletonPoseTest, ThreeBoneChainAccumulatesTranslation) {
   // Root -> Spine (1 unit up) -> Head (0.5 units up)
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
-    createPivot("SPINE", 0, 0.0f, 1.0f, 0.0f),
-    createPivot("HEAD", 1, 0.0f, 0.5f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
+                               createPivot("SPINE", 0, 0.0f, 1.0f, 0.0f),
+                               createPivot("HEAD", 1, 0.0f, 0.5f, 0.0f)};
   Hierarchy h = createHierarchy("Spine", pivots);
 
   SkeletonPose pose;
@@ -150,8 +139,8 @@ TEST_F(SkeletonPoseTest, RotatedParentAffectsChildPosition) {
   float qw = std::cos(angle / 2.0f);
 
   std::vector<Pivot> pivots = {
-    createPivotWithRotation("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f, 0.0f, qy, 0.0f, qw),
-    createPivot("CHILD", 0, 1.0f, 0.0f, 0.0f) // 1 unit in local X
+      createPivotWithRotation("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f, 0.0f, qy, 0.0f, qw),
+      createPivot("CHILD", 0, 1.0f, 0.0f, 0.0f) // 1 unit in local X
   };
   Hierarchy h = createHierarchy("Rotated", pivots);
 
@@ -169,11 +158,8 @@ TEST_F(SkeletonPoseTest, RotatedParentAffectsChildPosition) {
 
 TEST_F(SkeletonPoseTest, ParentIndicesPreserved) {
   std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
-    createPivot("CHILD1", 0, 1.0f, 0.0f, 0.0f),
-    createPivot("CHILD2", 0, -1.0f, 0.0f, 0.0f),
-    createPivot("GRANDCHILD", 1, 0.0f, 1.0f, 0.0f)
-  };
+      createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f), createPivot("CHILD1", 0, 1.0f, 0.0f, 0.0f),
+      createPivot("CHILD2", 0, -1.0f, 0.0f, 0.0f), createPivot("GRANDCHILD", 1, 0.0f, 1.0f, 0.0f)};
   Hierarchy h = createHierarchy("Branched", pivots);
 
   SkeletonPose pose;
@@ -186,11 +172,9 @@ TEST_F(SkeletonPoseTest, ParentIndicesPreserved) {
 }
 
 TEST_F(SkeletonPoseTest, BoneNamesPreserved) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOTTRANSFORM", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
-    createPivot("BSPINE", 0, 0.0f, 1.0f, 0.0f),
-    createPivot("BHEAD", 1, 0.0f, 0.5f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOTTRANSFORM", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
+                               createPivot("BSPINE", 0, 0.0f, 1.0f, 0.0f),
+                               createPivot("BHEAD", 1, 0.0f, 0.5f, 0.0f)};
   Hierarchy h = createHierarchy("Named", pivots);
 
   SkeletonPose pose;
@@ -202,10 +186,8 @@ TEST_F(SkeletonPoseTest, BoneNamesPreserved) {
 }
 
 TEST_F(SkeletonPoseTest, InverseBindPoseComputed) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
-    createPivot("CHILD", 0, 0.0f, 2.0f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
+                               createPivot("CHILD", 0, 0.0f, 2.0f, 0.0f)};
   Hierarchy h = createHierarchy("WithInverse", pivots);
 
   SkeletonPose pose;
@@ -230,7 +212,7 @@ TEST_F(SkeletonPoseTest, InverseBindPoseComputed) {
 
 TEST_F(SkeletonPoseTest, SkinningMatricesReturnsWorldTransforms) {
   std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 1.0f, 2.0f, 3.0f),
+      createPivot("ROOT", 0xFFFFFFFF, 1.0f, 2.0f, 3.0f),
   };
   Hierarchy h = createHierarchy("Skinning", pivots);
 
@@ -251,7 +233,7 @@ TEST_F(SkeletonPoseTest, SkinningMatricesReturnsWorldTransforms) {
 
 TEST_F(SkeletonPoseTest, BonePositionOutOfRangeReturnsZero) {
   std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 5.0f, 5.0f, 5.0f),
+      createPivot("ROOT", 0xFFFFFFFF, 5.0f, 5.0f, 5.0f),
   };
   Hierarchy h = createHierarchy("OutOfRange", pivots);
 
@@ -270,21 +252,14 @@ TEST_F(SkeletonPoseTest, BonePositionOutOfRangeReturnsZero) {
 // =============================================================================
 
 TEST_F(SkeletonPoseTest, AnimatedPoseWithIdentityAnimation) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 1.0f, 0.0f, 0.0f),
-    createPivot("CHILD", 0, 0.0f, 1.0f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 1.0f, 0.0f, 0.0f),
+                               createPivot("CHILD", 0, 0.0f, 1.0f, 0.0f)};
   Hierarchy h = createHierarchy("Animated", pivots);
 
   // Identity animation (no offset)
-  std::vector<glm::vec3> translations = {
-    glm::vec3(0.0f),
-    glm::vec3(0.0f)
-  };
-  std::vector<glm::quat> rotations = {
-    glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
-    glm::quat(1.0f, 0.0f, 0.0f, 0.0f)
-  };
+  std::vector<glm::vec3> translations = {glm::vec3(0.0f), glm::vec3(0.0f)};
+  std::vector<glm::quat> rotations = {glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
+                                      glm::quat(1.0f, 0.0f, 0.0f, 0.0f)};
 
   SkeletonPose pose;
   pose.computeAnimatedPose(h, translations, rotations);
@@ -299,17 +274,13 @@ TEST_F(SkeletonPoseTest, AnimatedPoseWithIdentityAnimation) {
 
 TEST_F(SkeletonPoseTest, AnimatedPoseWithTranslationOffset) {
   std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
+      createPivot("ROOT", 0xFFFFFFFF, 0.0f, 0.0f, 0.0f),
   };
   Hierarchy h = createHierarchy("Offset", pivots);
 
   // Add translation offset
-  std::vector<glm::vec3> translations = {
-    glm::vec3(5.0f, 10.0f, -3.0f)
-  };
-  std::vector<glm::quat> rotations = {
-    glm::quat(1.0f, 0.0f, 0.0f, 0.0f)
-  };
+  std::vector<glm::vec3> translations = {glm::vec3(5.0f, 10.0f, -3.0f)};
+  std::vector<glm::quat> rotations = {glm::quat(1.0f, 0.0f, 0.0f, 0.0f)};
 
   SkeletonPose pose;
   pose.computeAnimatedPose(h, translations, rotations);
@@ -321,10 +292,8 @@ TEST_F(SkeletonPoseTest, AnimatedPoseWithTranslationOffset) {
 }
 
 TEST_F(SkeletonPoseTest, AnimatedPoseMismatchedSizeFallsBackToRest) {
-  std::vector<Pivot> pivots = {
-    createPivot("ROOT", 0xFFFFFFFF, 1.0f, 2.0f, 3.0f),
-    createPivot("CHILD", 0, 0.0f, 1.0f, 0.0f)
-  };
+  std::vector<Pivot> pivots = {createPivot("ROOT", 0xFFFFFFFF, 1.0f, 2.0f, 3.0f),
+                               createPivot("CHILD", 0, 0.0f, 1.0f, 0.0f)};
   Hierarchy h = createHierarchy("Mismatched", pivots);
 
   // Wrong number of animation channels

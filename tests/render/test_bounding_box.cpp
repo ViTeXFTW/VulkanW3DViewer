@@ -1,9 +1,9 @@
+#include <cmath>
+#include <limits>
+
 #include "render/bounding_box.hpp"
 
 #include <gtest/gtest.h>
-
-#include <cmath>
-#include <limits>
 
 using namespace w3d;
 
