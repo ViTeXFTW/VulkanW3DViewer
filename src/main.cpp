@@ -82,9 +82,6 @@ private:
   bool showFileBrowser_ = false;
   bool showConsole_ = true;
   bool showViewport_ = true;
-#ifdef W3D_DEBUG
-  bool showDemoWindow_ = false;
-#endif
 
   // Loaded W3D data
   std::optional<w3d::W3DFile> loadedFile_;
@@ -476,10 +473,6 @@ private:
         ImGui::MenuItem("Viewport", nullptr, &showViewport_);
         ImGui::MenuItem("Console", nullptr, &showConsole_);
         ImGui::MenuItem("File Browser", nullptr, &showFileBrowser_);
-#ifdef W3D_DEBUG
-        ImGui::Separator();
-        ImGui::MenuItem("ImGui Demo", nullptr, &showDemoWindow_);
-#endif
         ImGui::EndMenu();
       }
 
@@ -508,12 +501,6 @@ private:
     if (showFileBrowser_) {
       fileBrowser_.draw(&showFileBrowser_);
     }
-
-#ifdef W3D_DEBUG
-    if (showDemoWindow_) {
-      ImGui::ShowDemoWindow(&showDemoWindow_);
-    }
-#endif
 
     // Display hover name overlay
     const auto &hover = hoverDetector_.state();
