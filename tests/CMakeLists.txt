@@ -37,7 +37,7 @@ add_test(NAME w3d_tests COMMAND w3d_tests)
 
 # Define path to test fixtures (real W3D files)
 target_compile_definitions(w3d_tests PRIVATE
-  W3D_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/legacy/models/W3D"
+  W3D_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/resources/models"
 )
 
 # Texture loading tests (no Vulkan dependencies)
@@ -60,7 +60,7 @@ endif()
 add_test(NAME texture_tests COMMAND texture_tests)
 
 target_compile_definitions(texture_tests PRIVATE
-  TEXTURE_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures"
+  TEXTURE_TEST_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/resources/textures"
 )
 
 # Mesh converter tests (requires GLM, no Vulkan)
