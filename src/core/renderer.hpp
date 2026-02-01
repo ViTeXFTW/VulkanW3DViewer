@@ -54,7 +54,15 @@ public:
   void recreateSwapchain(int width, int height);
 
   /**
-   * Draw a single frame.
+   * Wait for the current frame's fence to be signaled.
+   * Call this before updating any per-frame resources (e.g., bone matrices)
+   * to ensure the GPU is done reading from that frame's buffers.
+   */
+  void waitForCurrentFrame();
+
+  /**
+   * Draw a single frame. Call waitForCurrentFrame() first if you need to
+   * update per-frame resources before drawing.
    */
   void drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
                  SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
@@ -64,6 +72,11 @@ public:
    * Mark framebuffer as resized.
    */
   void setFramebufferResized(bool resized) { framebufferResized_ = resized; }
+
+  /**
+   * Get current frame index for double-buffered resources.
+   */
+  uint32_t currentFrame() const { return currentFrame_; }
 
   // Accessors
   Pipeline &pipeline() { return pipeline_; }
@@ -103,6 +116,7 @@ private:
 
   uint32_t currentFrame_ = 0;
   bool framebufferResized_ = false;
+  bool frameWaited_ = false; // Track if waitForCurrentFrame() was called this frame
 
   // Default material
   Material defaultMaterial_;

@@ -39,7 +39,7 @@ void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &im
     // Initialize skinned descriptor manager
     skinnedDescriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
                                                   sizeof(UniformBufferObject));
-    skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer.buffer(),
+    skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer.buffer(i),
                                                sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
   }
 
@@ -180,7 +180,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           if (texIdx > 0) {
             const auto &tex = textureManager_->texture(texIdx);
             vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler, boneMatrixBuffer_->buffer(),
+                currentFrame_, texIdx, tex.view, tex.sampler, boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    texDescSet, {});
@@ -188,7 +188,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           } else {
             const auto &defaultTex = textureManager_->texture(0);
             vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler, boneMatrixBuffer_->buffer(),
+                currentFrame_, 0, defaultTex.view, defaultTex.sampler, boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    defaultDescSet, {});
@@ -287,16 +287,27 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   cmd.end();
 }
 
+void Renderer::waitForCurrentFrame() {
+  if (frameWaited_) {
+    return; // Already waited this frame
+  }
+
+  auto device = context_->device();
+  auto waitResult = device.waitForFences(inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
+  if (waitResult != vk::Result::eSuccess) {
+    throw std::runtime_error("Failed waiting for fence");
+  }
+
+  frameWaited_ = true;
+}
+
 void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
                          SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
                          const RenderState &renderState) {
   auto device = context_->device();
 
-  // Wait for previous frame
-  auto waitResult = device.waitForFences(inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
-  if (waitResult != vk::Result::eSuccess) {
-    throw std::runtime_error("Failed waiting for fence");
-  }
+  // Wait for previous frame (skipped if waitForCurrentFrame() was already called)
+  waitForCurrentFrame();
 
   // Acquire next image
   uint32_t imageIndex;
@@ -360,6 +371,7 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
   }
 
   currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
+  frameWaited_ = false; // Reset for next frame
 }
 
 } // namespace w3d
