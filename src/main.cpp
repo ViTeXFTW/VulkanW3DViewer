@@ -1,12 +1,13 @@
+#include <cstdlib>
+#include <iostream>
+
 #include "core/application.hpp"
 
 #include <CLI/CLI.hpp>
 
-#include <cstdlib>
-#include <iostream>
-
 int main(int argc, char *argv[]) {
-  CLI::App app{"W3D Viewer - A Vulkan-based viewer for W3D 3D model files from Command & Conquer Generals"};
+  CLI::App app{
+      "W3D Viewer - A Vulkan-based viewer for W3D 3D model files from Command & Conquer Generals"};
 
   std::string modelPath;
   std::string texturePath;
