@@ -9,8 +9,8 @@
 
 namespace w3d {
 
-void ConsoleWindow::draw(bool *open) {
-  if (!ImGui::Begin("Console", open)) {
+void ConsoleWindow::draw(UIContext& /*ctx*/) {
+  if (!ImGui::Begin(name(), visiblePtr())) {
     ImGui::End();
     return;
   }
