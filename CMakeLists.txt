@@ -66,6 +66,7 @@ if(NOT BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/CLI11/include
     )
 
     # Link libraries
