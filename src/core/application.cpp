@@ -94,7 +94,7 @@ void Application::initVulkan() {
 #endif
 
   // Initialize renderer
-  renderer_.init(context_, imguiBackend_, textureManager_, boneMatrixBuffer_);
+  renderer_.init(window_, context_, imguiBackend_, textureManager_, boneMatrixBuffer_);
 }
 
 void Application::initUI() {

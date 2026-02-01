@@ -13,6 +13,7 @@
 #include "render/texture.hpp"
 #include "ui/imgui_backend.hpp"
 
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 
 #include <cstdint>
@@ -36,8 +37,8 @@ public:
   /**
    * Initialize the renderer with Vulkan context and window.
    */
-  void init(VulkanContext &context, ImGuiBackend &imguiBackend, TextureManager &textureManager,
-            BoneMatrixBuffer &boneMatrixBuffer);
+  void init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &imguiBackend,
+            TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer);
 
   /**
    * Clean up rendering resources.
@@ -78,7 +79,8 @@ private:
                            const HoverDetector &hoverDetector, bool useHLodModel,
                            bool useSkinnedRendering, bool showMesh, bool showSkeleton);
 
-  // Vulkan context (not owned)
+  // External resources (not owned)
+  GLFWwindow *window_ = nullptr;
   VulkanContext *context_ = nullptr;
   ImGuiBackend *imguiBackend_ = nullptr;
   TextureManager *textureManager_ = nullptr;

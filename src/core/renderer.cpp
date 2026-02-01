@@ -8,8 +8,9 @@
 
 namespace w3d {
 
-void Renderer::init(VulkanContext &context, ImGuiBackend &imguiBackend,
+void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &imguiBackend,
                     TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer) {
+  window_ = window;
   context_ = &context;
   imguiBackend_ = &imguiBackend;
   textureManager_ = &textureManager;
@@ -305,7 +306,7 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
 
   if (acquireResult.result == vk::Result::eErrorOutOfDateKHR) {
     int width, height;
-    glfwGetFramebufferSize(context_->window(), &width, &height);
+    glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
     return;
   } else if (acquireResult.result != vk::Result::eSuccess &&
@@ -354,7 +355,7 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
       presentResult == vk::Result::eSuboptimalKHR || framebufferResized_) {
     framebufferResized_ = false;
     int width, height;
-    glfwGetFramebufferSize(context_->window(), &width, &height);
+    glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
   } else if (presentResult != vk::Result::eSuccess) {
     throw std::runtime_error("Failed to present swap chain image");
