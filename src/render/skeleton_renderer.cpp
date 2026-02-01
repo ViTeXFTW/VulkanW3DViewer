@@ -297,10 +297,15 @@ std::vector<SkeletonVertex> SkeletonRenderer::generateJointSphere(const glm::vec
   return result;
 }
 
-void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose &pose) {
+void SkeletonRenderer::updateFromPose(VulkanContext &context, uint32_t frameIndex,
+                                      const SkeletonPose &pose) {
+  if (frameIndex >= FRAME_COUNT) {
+    return;
+  }
+
   if (!pose.isValid()) {
-    lineVertexCount_ = 0;
-    jointVertexCount_ = 0;
+    lineVertexCount_[frameIndex] = 0;
+    jointVertexCount_[frameIndex] = 0;
     bonePositions_.clear();
     parentIndices_.clear();
     boneNames_.clear();
@@ -373,31 +378,32 @@ void SkeletonRenderer::updateFromPose(VulkanContext &context, const SkeletonPose
     jointVertices.insert(jointVertices.end(), sphereVerts.begin(), sphereVerts.end());
   }
 
-  // Upload line buffer
+  // Upload line buffer for this frame
   if (!lineVertices.empty()) {
-    lineBuffer_.destroy();
-    lineBuffer_.create(context, lineVertices);
-    lineVertexCount_ = static_cast<uint32_t>(lineVertices.size());
+    lineBuffers_[frameIndex].destroy();
+    lineBuffers_[frameIndex].create(context, lineVertices);
+    lineVertexCount_[frameIndex] = static_cast<uint32_t>(lineVertices.size());
   } else {
-    lineVertexCount_ = 0;
+    lineVertexCount_[frameIndex] = 0;
   }
 
-  // Upload joint buffer
+  // Upload joint buffer for this frame
   if (!jointVertices.empty()) {
-    jointBuffer_.destroy();
-    jointBuffer_.create(context, jointVertices);
-    jointVertexCount_ = static_cast<uint32_t>(jointVertices.size());
+    jointBuffers_[frameIndex].destroy();
+    jointBuffers_[frameIndex].create(context, jointVertices);
+    jointVertexCount_[frameIndex] = static_cast<uint32_t>(jointVertices.size());
   } else {
-    jointVertexCount_ = 0;
+    jointVertexCount_[frameIndex] = 0;
   }
 }
 
-void SkeletonRenderer::draw(vk::CommandBuffer cmd) const {
-  drawWithHover(cmd, glm::vec3(1.0f, 1.0f, 1.0f)); // No tint
+void SkeletonRenderer::draw(vk::CommandBuffer cmd, uint32_t frameIndex) const {
+  drawWithHover(cmd, frameIndex, glm::vec3(1.0f, 1.0f, 1.0f)); // No tint
 }
 
-void SkeletonRenderer::drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tintColor) const {
-  if (!hasData()) {
+void SkeletonRenderer::drawWithHover(vk::CommandBuffer cmd, uint32_t frameIndex,
+                                     const glm::vec3 &tintColor) const {
+  if (frameIndex >= FRAME_COUNT || !hasData()) {
     return;
   }
 
@@ -406,21 +412,21 @@ void SkeletonRenderer::drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tin
                     &tintColor);
 
   // Draw bone lines
-  if (lineVertexCount_ > 0) {
+  if (lineVertexCount_[frameIndex] > 0) {
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, linePipeline_);
-    vk::Buffer vertexBuffers[] = {lineBuffer_.buffer()};
+    vk::Buffer vertexBuffers[] = {lineBuffers_[frameIndex].buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.draw(lineVertexCount_, 1, 0, 0);
+    cmd.draw(lineVertexCount_[frameIndex], 1, 0, 0);
   }
 
   // Draw joint spheres
-  if (jointVertexCount_ > 0) {
+  if (jointVertexCount_[frameIndex] > 0) {
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pointPipeline_);
-    vk::Buffer vertexBuffers[] = {jointBuffer_.buffer()};
+    vk::Buffer vertexBuffers[] = {jointBuffers_[frameIndex].buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.draw(jointVertexCount_, 1, 0, 0);
+    cmd.draw(jointVertexCount_[frameIndex], 1, 0, 0);
   }
 }
 
@@ -450,10 +456,12 @@ bool SkeletonRenderer::getJointSphere(size_t jointIndex, glm::vec3 &center, floa
 }
 
 void SkeletonRenderer::destroy() {
-  lineBuffer_.destroy();
-  jointBuffer_.destroy();
-  lineVertexCount_ = 0;
-  jointVertexCount_ = 0;
+  for (uint32_t i = 0; i < FRAME_COUNT; ++i) {
+    lineBuffers_[i].destroy();
+    jointBuffers_[i].destroy();
+    lineVertexCount_[i] = 0;
+    jointVertexCount_[i] = 0;
+  }
 
   if (device_) {
     if (linePipeline_) {

@@ -254,19 +254,17 @@ void Application::mainLoop() {
       if (currentFrame != renderState_.lastAppliedFrame || !animationPlayer_.isPlaying()) {
         animationPlayer_.applyToPose(skeletonPose_, modelLoader_.loadedFile()->hierarchies[0]);
 
-        // Update skeleton debug visualization
-        // The skeleton renderer is single-buffered, so we must wait for ALL GPU work
-        // to complete before updating its buffers. Double-buffering the skeleton
-        // renderer would allow us to avoid this stall.
-        context_.device().waitIdle();
-        skeletonRenderer_.updateFromPose(context_, skeletonPose_);
+        // Wait for current frame fence before updating any per-frame GPU resources
+        renderer_.waitForCurrentFrame();
+        uint32_t frameIndex = renderer_.currentFrame();
+
+        // Update skeleton debug visualization (double-buffered)
+        skeletonRenderer_.updateFromPose(context_, frameIndex, skeletonPose_);
 
         // Update bone matrix buffer for GPU skinning (double-buffered)
-        // Must wait for current frame fence before writing to avoid GPU race
         if (renderState_.useSkinnedRendering && skeletonPose_.isValid()) {
-          renderer_.waitForCurrentFrame();
           auto skinningMatrices = skeletonPose_.getSkinningMatrices();
-          boneMatrixBuffer_.update(renderer_.currentFrame(), skinningMatrices);
+          boneMatrixBuffer_.update(frameIndex, skinningMatrices);
         }
 
         renderState_.lastAppliedFrame = currentFrame;

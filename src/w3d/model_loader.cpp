@@ -102,7 +102,11 @@ ModelLoadResult ModelLoader::load(const std::filesystem::path &path, VulkanConte
   context.device().waitIdle();
   if (!loadedFile_->hierarchies.empty()) {
     skeletonPose.computeRestPose(loadedFile_->hierarchies[0]);
-    skeletonRenderer.updateFromPose(context, skeletonPose);
+
+    // Initialize skeleton renderer for all frames with rest pose
+    for (uint32_t i = 0; i < SkeletonRenderer::FRAME_COUNT; ++i) {
+      skeletonRenderer.updateFromPose(context, i, skeletonPose);
+    }
 
     // Initialize bone matrix buffer with rest pose transforms (all frames)
     if (skeletonPose.isValid()) {

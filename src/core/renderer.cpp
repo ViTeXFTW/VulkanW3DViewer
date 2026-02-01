@@ -274,7 +274,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
         (hover.type == HoverType::Bone || hover.type == HoverType::Joint) ? hoverTint
                                                                            : glm::vec3(1.0f);
 
-    ctx.skeletonRenderer.drawWithHover(cmd, skeletonTint);
+    ctx.skeletonRenderer.drawWithHover(cmd, currentFrame_, skeletonTint);
   }
 
   // Draw ImGui
