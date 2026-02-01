@@ -6,13 +6,11 @@
 
 namespace w3d {
 
-void DisplayPanel::draw(UIContext &ctx) {
-  if (ctx.showMesh) {
-    ImGui::Checkbox("Show Mesh", ctx.showMesh);
-  }
-  if (ctx.showSkeleton) {
-    ImGui::Checkbox("Show Skeleton", ctx.showSkeleton);
-  }
+void DisplayPanel::draw(UIContext& ctx) {
+  if (!ctx.renderState) return;
+
+  ImGui::Checkbox("Show Mesh", &ctx.renderState->showMesh);
+  ImGui::Checkbox("Show Skeleton", &ctx.renderState->showSkeleton);
 }
 
 } // namespace w3d

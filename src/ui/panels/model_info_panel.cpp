@@ -19,7 +19,7 @@ void ModelInfoPanel::draw(UIContext &ctx) {
 
   ImGui::Text("Loaded: %s", ctx.loadedFilePath.c_str());
 
-  if (ctx.useHLodModel && ctx.hlodModel) {
+  if (ctx.renderState && ctx.renderState->useHLodModel && ctx.hlodModel) {
     ImGui::Text("HLod: %s", ctx.hlodModel->name().c_str());
     ImGui::Text("Meshes: %zu (GPU: %zu)", ctx.loadedFile->meshes.size(),
                 ctx.hlodModel->totalMeshCount());

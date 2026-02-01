@@ -2,6 +2,7 @@
 
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
+#include "core/render_state.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <vulkan/vulkan.hpp>
@@ -57,7 +58,7 @@ public:
    */
   void drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
                  SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                 bool useHLodModel, bool useSkinnedRendering, bool showMesh, bool showSkeleton);
+                 const RenderState &renderState);
 
   /**
    * Mark framebuffer as resized.
@@ -76,11 +77,9 @@ private:
   void createCommandBuffers();
   void createSyncObjects();
   void updateUniformBuffer(uint32_t frameIndex, const Camera &camera);
-  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
-                           RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                           SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                           bool useHLodModel, bool useSkinnedRendering, bool showMesh,
-                           bool showSkeleton);
+  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, RenderableMesh &renderableMesh,
+                           HLodModel &hlodModel, SkeletonRenderer &skeletonRenderer,
+                           const HoverDetector &hoverDetector, const RenderState &renderState);
 
   // External resources (not owned)
   GLFWwindow *window_ = nullptr;

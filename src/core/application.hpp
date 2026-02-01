@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/render_state.hpp"
+#include "core/renderer.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <GLFW/glfw3.h>
@@ -99,8 +101,9 @@ private:
 
   // Loaded W3D data
   ModelLoader modelLoader_;
-  bool useHLodModel_ = false;
-  bool useSkinnedRendering_ = false;
+
+  // Centralized rendering state
+  RenderState renderState_;
 
   // Mesh rendering
   RenderableMesh renderableMesh_;
@@ -110,13 +113,10 @@ private:
   // Skeleton rendering
   SkeletonRenderer skeletonRenderer_;
   SkeletonPose skeletonPose_;
-  bool showSkeleton_ = true;
-  bool showMesh_ = true;
 
   // Animation playback
   AnimationPlayer animationPlayer_;
   float lastFrameTime_ = 0.0f;
-  float lastAppliedFrame_ = -1.0f;
 
   // Hover detection
   HoverDetector hoverDetector_;

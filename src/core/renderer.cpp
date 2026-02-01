@@ -114,8 +114,8 @@ void Renderer::recreateSwapchain(int width, int height) {
 void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                                    RenderableMesh &renderableMesh, HLodModel &hlodModel,
                                    SkeletonRenderer &skeletonRenderer,
-                                   const HoverDetector &hoverDetector, bool useHLodModel,
-                                   bool useSkinnedRendering, bool showMesh, bool showSkeleton) {
+                                   const HoverDetector &hoverDetector,
+                                   const RenderState &renderState) {
   vk::CommandBufferBeginInfo beginInfo{};
   cmd.begin(beginInfo);
 
@@ -156,9 +156,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                          descriptorManager_.descriptorSet(currentFrame_), {});
 
   // Draw loaded mesh (either HLod model or simple renderable mesh)
-  if (showMesh) {
-    if (useHLodModel && hlodModel.hasData()) {
-      if (useSkinnedRendering && hlodModel.hasSkinning()) {
+  if (renderState.showMesh) {
+    if (renderState.useHLodModel && hlodModel.hasData()) {
+      if (renderState.useSkinnedRendering && hlodModel.hasSkinning()) {
         // Draw with skinned pipeline (GPU skinning)
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.pipeline());
 
@@ -265,7 +265,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   }
 
   // Draw skeleton overlay
-  if (showSkeleton && skeletonRenderer.hasData()) {
+  if (renderState.showSkeleton && skeletonRenderer.hasData()) {
     // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer.pipelineLayout(), 0,
                            descriptorManager_.descriptorSet(currentFrame_), {});
@@ -289,8 +289,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
 
 void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
                          SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                         bool useHLodModel, bool useSkinnedRendering, bool showMesh,
-                         bool showSkeleton) {
+                         const RenderState &renderState) {
   auto device = context_->device();
 
   // Wait for previous frame
@@ -323,8 +322,7 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
   // Record command buffer
   commandBuffers_[currentFrame_].reset();
   recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex, renderableMesh, hlodModel,
-                      skeletonRenderer, hoverDetector, useHLodModel, useSkinnedRendering, showMesh,
-                      showSkeleton);
+                      skeletonRenderer, hoverDetector, renderState);
 
   // Submit
   vk::PipelineStageFlags waitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
