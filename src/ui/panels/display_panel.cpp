@@ -6,8 +6,9 @@
 
 namespace w3d {
 
-void DisplayPanel::draw(UIContext& ctx) {
-  if (!ctx.renderState) return;
+void DisplayPanel::draw(UIContext &ctx) {
+  if (!ctx.renderState)
+    return;
 
   ImGui::Checkbox("Show Mesh", &ctx.renderState->showMesh);
   ImGui::Checkbox("Show Skeleton", &ctx.renderState->showSkeleton);

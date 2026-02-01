@@ -2,7 +2,6 @@
 
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
-#include "core/render_state.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <vulkan/vulkan.hpp>
@@ -12,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "core/render_state.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"

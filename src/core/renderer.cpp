@@ -177,7 +177,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           if (texIdx > 0) {
             const auto &tex = textureManager_->texture(texIdx);
             vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler, boneMatrixBuffer_->buffer(currentFrame_),
+                currentFrame_, texIdx, tex.view, tex.sampler,
+                boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    texDescSet, {});
@@ -185,7 +186,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           } else {
             const auto &defaultTex = textureManager_->texture(0);
             vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler, boneMatrixBuffer_->buffer(currentFrame_),
+                currentFrame_, 0, defaultTex.view, defaultTex.sampler,
+                boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    defaultDescSet, {});
@@ -252,8 +254,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
       const auto &hover = ctx.hoverDetector.state();
 
       ctx.renderableMesh.drawWithHover(
-          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
-          hoverTint, [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1, hoverTint,
+          [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
             materialData.hoverTint = tint;
             cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
                               sizeof(MaterialPushConstant), &materialData);
@@ -264,15 +266,15 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   // Draw skeleton overlay
   if (ctx.renderState.showSkeleton && ctx.skeletonRenderer.hasData()) {
     // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, ctx.skeletonRenderer.pipelineLayout(), 0,
-                           descriptorManager_.descriptorSet(currentFrame_), {});
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, ctx.skeletonRenderer.pipelineLayout(),
+                           0, descriptorManager_.descriptorSet(currentFrame_), {});
 
     // Apply hover tint if hovering over skeleton
     const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
     const auto &hover = ctx.hoverDetector.state();
-    glm::vec3 skeletonTint =
-        (hover.type == HoverType::Bone || hover.type == HoverType::Joint) ? hoverTint
-                                                                           : glm::vec3(1.0f);
+    glm::vec3 skeletonTint = (hover.type == HoverType::Bone || hover.type == HoverType::Joint)
+                                 ? hoverTint
+                                 : glm::vec3(1.0f);
 
     ctx.skeletonRenderer.drawWithHover(cmd, currentFrame_, skeletonTint);
   }

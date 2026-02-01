@@ -286,8 +286,8 @@ void Application::mainLoop() {
     drawUI();
 
     // Draw frame
-    FrameContext frameCtx{camera_, renderableMesh_, hlodModel_, skeletonRenderer_, hoverDetector_,
-                          renderState_};
+    FrameContext frameCtx{camera_,           renderableMesh_, hlodModel_,
+                          skeletonRenderer_, hoverDetector_,  renderState_};
     renderer_.drawFrame(frameCtx);
   }
 

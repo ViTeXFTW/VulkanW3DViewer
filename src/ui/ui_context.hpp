@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/render_state.hpp"
-
 #include <functional>
 #include <string>
+
+#include "core/render_state.hpp"
 
 // Forward declarations to avoid header dependencies
 struct GLFWwindow;
@@ -42,7 +42,7 @@ struct UIContext {
 
   // === Render State ===
   /// Centralized rendering state (display toggles, rendering modes)
-  RenderState* renderState = nullptr;
+  RenderState *renderState = nullptr;
 
   // === Rendering Objects ===
   /// HLod model for complex models with LOD
@@ -92,7 +92,8 @@ struct UIContext {
 
 // Inline implementations
 inline bool UIContext::hasMeshData() const {
-  if (!renderState) return false;
+  if (!renderState)
+    return false;
   if (renderState->useHLodModel && hlodModel) {
     // HLodModel::hasData() check - we can't call it directly without including header
     return true; // Assume true if hlodModel is set

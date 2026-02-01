@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/render_state.hpp"
-#include "core/renderer.hpp"
 #include "core/vulkan_context.hpp"
 
 #include <GLFW/glfw3.h>
@@ -9,6 +7,7 @@
 #include <optional>
 #include <string>
 
+#include "core/render_state.hpp"
 #include "core/renderer.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
