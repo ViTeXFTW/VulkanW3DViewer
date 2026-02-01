@@ -25,6 +25,19 @@
 namespace w3d {
 
 /**
+ * Context object that bundles all data needed for rendering a frame.
+ * This reduces coupling by grouping related parameters together.
+ */
+struct FrameContext {
+  Camera &camera;
+  RenderableMesh &renderableMesh;
+  HLodModel &hlodModel;
+  SkeletonRenderer &skeletonRenderer;
+  const HoverDetector &hoverDetector;
+  const RenderState &renderState;
+};
+
+/**
  * Manages all Vulkan rendering operations including command buffers,
  * pipelines, and frame rendering.
  */
@@ -64,9 +77,7 @@ public:
    * Draw a single frame. Call waitForCurrentFrame() first if you need to
    * update per-frame resources before drawing.
    */
-  void drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                 SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                 const RenderState &renderState);
+  void drawFrame(const FrameContext &ctx);
 
   /**
    * Mark framebuffer as resized.
@@ -90,9 +101,7 @@ private:
   void createCommandBuffers();
   void createSyncObjects();
   void updateUniformBuffer(uint32_t frameIndex, const Camera &camera);
-  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, RenderableMesh &renderableMesh,
-                           HLodModel &hlodModel, SkeletonRenderer &skeletonRenderer,
-                           const HoverDetector &hoverDetector, const RenderState &renderState);
+  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, const FrameContext &ctx);
 
   // External resources (not owned)
   GLFWwindow *window_ = nullptr;

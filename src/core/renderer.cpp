@@ -112,10 +112,7 @@ void Renderer::recreateSwapchain(int width, int height) {
 }
 
 void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
-                                   RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                                   SkeletonRenderer &skeletonRenderer,
-                                   const HoverDetector &hoverDetector,
-                                   const RenderState &renderState) {
+                                   const FrameContext &ctx) {
   vk::CommandBufferBeginInfo beginInfo{};
   cmd.begin(beginInfo);
 
@@ -156,13 +153,13 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                          descriptorManager_.descriptorSet(currentFrame_), {});
 
   // Draw loaded mesh (either HLod model or simple renderable mesh)
-  if (renderState.showMesh) {
-    if (renderState.useHLodModel && hlodModel.hasData()) {
-      if (renderState.useSkinnedRendering && hlodModel.hasSkinning()) {
+  if (ctx.renderState.showMesh) {
+    if (ctx.renderState.useHLodModel && ctx.hlodModel.hasData()) {
+      if (ctx.renderState.useSkinnedRendering && ctx.hlodModel.hasSkinning()) {
         // Draw with skinned pipeline (GPU skinning)
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.pipeline());
 
-        hlodModel.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
+        ctx.hlodModel.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
           MaterialPushConstant materialData{};
           materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
           materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -203,7 +200,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
       } else {
         // Draw with regular pipeline (CPU-transformed vertices)
-        hlodModel.drawWithTextures(cmd, [&](const std::string &textureName) {
+        ctx.hlodModel.drawWithTextures(cmd, [&](const std::string &textureName) {
           MaterialPushConstant materialData{};
           materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
           materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -240,7 +237,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                             sizeof(MaterialPushConstant), &materialData);
         });
       }
-    } else if (renderableMesh.hasData()) {
+    } else if (ctx.renderableMesh.hasData()) {
       // Simple mesh without textures
       MaterialPushConstant materialData{};
       materialData.diffuseColor = glm::vec4(defaultMaterial_.diffuse, defaultMaterial_.opacity);
@@ -252,11 +249,11 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
 
       // Use hover detection for simple meshes
       const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
-      const auto &hover = hoverDetector.state();
+      const auto &hover = ctx.hoverDetector.state();
 
-      renderableMesh.drawWithHover(
-          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1, hoverTint,
-          [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+      ctx.renderableMesh.drawWithHover(
+          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
+          hoverTint, [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
             materialData.hoverTint = tint;
             cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
                               sizeof(MaterialPushConstant), &materialData);
@@ -265,19 +262,19 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   }
 
   // Draw skeleton overlay
-  if (renderState.showSkeleton && skeletonRenderer.hasData()) {
+  if (ctx.renderState.showSkeleton && ctx.skeletonRenderer.hasData()) {
     // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer.pipelineLayout(), 0,
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, ctx.skeletonRenderer.pipelineLayout(), 0,
                            descriptorManager_.descriptorSet(currentFrame_), {});
 
     // Apply hover tint if hovering over skeleton
     const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
-    const auto &hover = hoverDetector.state();
-    glm::vec3 skeletonTint = (hover.type == HoverType::Bone || hover.type == HoverType::Joint)
-                                 ? hoverTint
-                                 : glm::vec3(1.0f);
+    const auto &hover = ctx.hoverDetector.state();
+    glm::vec3 skeletonTint =
+        (hover.type == HoverType::Bone || hover.type == HoverType::Joint) ? hoverTint
+                                                                           : glm::vec3(1.0f);
 
-    skeletonRenderer.drawWithHover(cmd, skeletonTint);
+    ctx.skeletonRenderer.drawWithHover(cmd, skeletonTint);
   }
 
   // Draw ImGui
@@ -301,9 +298,7 @@ void Renderer::waitForCurrentFrame() {
   frameWaited_ = true;
 }
 
-void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                         SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                         const RenderState &renderState) {
+void Renderer::drawFrame(const FrameContext &ctx) {
   auto device = context_->device();
 
   // Wait for previous frame (skipped if waitForCurrentFrame() was already called)
@@ -328,12 +323,11 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
   device.resetFences(inFlightFences_[currentFrame_]);
 
   // Update uniform buffer
-  updateUniformBuffer(currentFrame_, camera);
+  updateUniformBuffer(currentFrame_, ctx.camera);
 
   // Record command buffer
   commandBuffers_[currentFrame_].reset();
-  recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex, renderableMesh, hlodModel,
-                      skeletonRenderer, hoverDetector, renderState);
+  recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex, ctx);
 
   // Submit
   vk::PipelineStageFlags waitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;

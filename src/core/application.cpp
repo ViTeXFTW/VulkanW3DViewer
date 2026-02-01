@@ -288,8 +288,9 @@ void Application::mainLoop() {
     drawUI();
 
     // Draw frame
-    renderer_.drawFrame(camera_, renderableMesh_, hlodModel_, skeletonRenderer_, hoverDetector_,
-                        renderState_);
+    FrameContext frameCtx{camera_, renderableMesh_, hlodModel_, skeletonRenderer_, hoverDetector_,
+                          renderState_};
+    renderer_.drawFrame(frameCtx);
   }
 
   context_.device().waitIdle();
