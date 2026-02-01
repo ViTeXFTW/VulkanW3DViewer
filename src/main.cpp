@@ -1,12 +1,12 @@
-#include "core/application.hpp"
-#include "w3d/loader.hpp"
-
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <set>
 #include <stdexcept>
+
+#include "core/application.hpp"
+#include "w3d/loader.hpp"
 
 void printUsage(const char *programName) {
   std::cout << "Usage: " << programName << " [options] [model.w3d]\n"

@@ -1,6 +1,12 @@
 #pragma once
 
 #include "core/vulkan_context.hpp"
+
+#include <filesystem>
+#include <functional>
+#include <optional>
+#include <string>
+
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
@@ -10,11 +16,6 @@
 #include "render/skeleton_renderer.hpp"
 #include "render/texture.hpp"
 #include "w3d/loader.hpp"
-
-#include <filesystem>
-#include <functional>
-#include <optional>
-#include <string>
 
 namespace w3d {
 

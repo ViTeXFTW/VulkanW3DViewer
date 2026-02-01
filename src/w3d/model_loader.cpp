@@ -7,7 +7,9 @@
 
 namespace w3d {
 
-void ModelLoader::setTexturePath(const std::string &path) { customTexturePath_ = path; }
+void ModelLoader::setTexturePath(const std::string &path) {
+  customTexturePath_ = path;
+}
 
 void ModelLoader::loadTextures(const W3DFile &file, TextureManager &textureManager,
                                LogCallback logCallback) {
@@ -61,7 +63,8 @@ void ModelLoader::loadTextures(const W3DFile &file, TextureManager &textureManag
 }
 
 ModelLoadResult ModelLoader::load(const std::filesystem::path &path, VulkanContext &context,
-                                  TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer,
+                                  TextureManager &textureManager,
+                                  BoneMatrixBuffer &boneMatrixBuffer,
                                   RenderableMesh &renderableMesh, HLodModel &hlodModel,
                                   SkeletonPose &skeletonPose, SkeletonRenderer &skeletonRenderer,
                                   AnimationPlayer &animationPlayer, Camera &camera,
@@ -188,8 +191,8 @@ ModelLoadResult ModelLoader::load(const std::filesystem::path &path, VulkanConte
   }
 
   // Center on skeleton if no mesh data
-  bool hasMeshData =
-      (result.useHLodModel && hlodModel.hasData()) || (!result.useHLodModel && renderableMesh.hasData());
+  bool hasMeshData = (result.useHLodModel && hlodModel.hasData()) ||
+                     (!result.useHLodModel && renderableMesh.hasData());
   if (!hasMeshData && skeletonPose.isValid()) {
     glm::vec3 center(0.0f);
     float maxDist = 1.0f;

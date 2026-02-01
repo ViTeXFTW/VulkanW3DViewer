@@ -1,7 +1,13 @@
 #pragma once
 
-#include "core/renderer.hpp"
 #include "core/vulkan_context.hpp"
+
+#include <GLFW/glfw3.h>
+
+#include <optional>
+#include <string>
+
+#include "core/renderer.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
@@ -17,11 +23,6 @@
 #include "ui/ui_manager.hpp"
 #include "w3d/loader.hpp"
 #include "w3d/model_loader.hpp"
-
-#include <GLFW/glfw3.h>
-
-#include <optional>
-#include <string>
 
 namespace w3d {
 

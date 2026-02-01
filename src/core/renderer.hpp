@@ -3,6 +3,14 @@
 #include "core/buffer.hpp"
 #include "core/pipeline.hpp"
 #include "core/vulkan_context.hpp"
+
+#include <vulkan/vulkan.hpp>
+
+#include <GLFW/glfw3.h>
+
+#include <cstdint>
+#include <vector>
+
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
@@ -12,12 +20,6 @@
 #include "render/skeleton_renderer.hpp"
 #include "render/texture.hpp"
 #include "ui/imgui_backend.hpp"
-
-#include <GLFW/glfw3.h>
-#include <vulkan/vulkan.hpp>
-
-#include <cstdint>
-#include <vector>
 
 namespace w3d {
 
@@ -74,10 +76,11 @@ private:
   void createCommandBuffers();
   void createSyncObjects();
   void updateUniformBuffer(uint32_t frameIndex, const Camera &camera);
-  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, RenderableMesh &renderableMesh,
-                           HLodModel &hlodModel, SkeletonRenderer &skeletonRenderer,
-                           const HoverDetector &hoverDetector, bool useHLodModel,
-                           bool useSkinnedRendering, bool showMesh, bool showSkeleton);
+  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
+                           RenderableMesh &renderableMesh, HLodModel &hlodModel,
+                           SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
+                           bool useHLodModel, bool useSkinnedRendering, bool showMesh,
+                           bool showSkeleton);
 
   // External resources (not owned)
   GLFWwindow *window_ = nullptr;

@@ -1,17 +1,18 @@
 #include "application.hpp"
 
-#include "ui/hover_tooltip.hpp"
-#include "ui/ui_context.hpp"
-#include "ui/viewport_window.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <imgui.h>
 
 #include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
+
+#include "ui/hover_tooltip.hpp"
+#include "ui/ui_context.hpp"
+#include "ui/viewport_window.hpp"
+
+#include <imgui.h>
 
 namespace w3d {
 
@@ -25,7 +26,9 @@ void Application::setDebugMode(bool debug) {
   modelLoader_.setDebugMode(debug);
 }
 
-void Application::setInitialModel(const std::string &path) { initialModelPath_ = path; }
+void Application::setInitialModel(const std::string &path) {
+  initialModelPath_ = path;
+}
 
 void Application::framebufferResizeCallback(GLFWwindow *window, int /*width*/, int /*height*/) {
   auto *app = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
@@ -167,15 +170,15 @@ void Application::updateHover() {
 
   // Get camera matrices (must match rendering)
   auto view = camera_.viewMatrix();
-  auto proj = glm::perspective(
-      glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
-      0.01f, 10000.0f);
+  auto proj = glm::perspective(glm::radians(45.0f),
+                               static_cast<float>(extent.width) / static_cast<float>(extent.height),
+                               0.01f, 10000.0f);
   proj[1][1] *= -1; // Vulkan Y-flip
 
   // Update hover detector with ray
-  hoverDetector_.update(glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
-                        glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)),
-                        view, proj);
+  hoverDetector_.update(
+      glm::vec2(static_cast<float>(mouseX), static_cast<float>(mouseY)),
+      glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)), view, proj);
 
   // Test skeleton first (priority over meshes)
   if (showSkeleton_ && skeletonRenderer_.hasData()) {

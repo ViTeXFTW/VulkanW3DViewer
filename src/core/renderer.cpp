@@ -68,8 +68,8 @@ void Renderer::cleanup() {
 }
 
 void Renderer::createCommandBuffers() {
-  vk::CommandBufferAllocateInfo allocInfo{context_->commandPool(),
-                                          vk::CommandBufferLevel::ePrimary, MAX_FRAMES_IN_FLIGHT};
+  vk::CommandBufferAllocateInfo allocInfo{context_->commandPool(), vk::CommandBufferLevel::ePrimary,
+                                          MAX_FRAMES_IN_FLIGHT};
 
   commandBuffers_ = context_->device().allocateCommandBuffers(allocInfo);
 }
@@ -97,9 +97,9 @@ void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
   ubo.view = camera.viewMatrix();
 
   auto extent = context_->swapchainExtent();
-  ubo.proj = glm::perspective(
-      glm::radians(45.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height),
-      0.01f, 10000.0f);
+  ubo.proj = glm::perspective(glm::radians(45.0f),
+                              static_cast<float>(extent.width) / static_cast<float>(extent.height),
+                              0.01f, 10000.0f);
   ubo.proj[1][1] *= -1; // Flip Y for Vulkan
 
   uniformBuffers_.update(frameIndex, ubo);
@@ -123,7 +123,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
 
   // Clear values for color and depth attachments
   std::array<vk::ClearValue, 2> clearValues{};
-  clearValues[0].color = vk::ClearColorValue{std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}};
+  clearValues[0].color = vk::ClearColorValue{
+      std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}
+  };
   clearValues[1].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
 
   // Begin render pass
@@ -140,15 +142,14 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   // Draw 3D content
   cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
 
-  vk::Viewport viewport{0.0f,
-                        0.0f,
-                        static_cast<float>(extent.width),
-                        static_cast<float>(extent.height),
-                        0.0f,
-                        1.0f};
+  vk::Viewport viewport{
+      0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f};
   cmd.setViewport(0, viewport);
 
-  vk::Rect2D scissor{{0, 0}, extent};
+  vk::Rect2D scissor{
+      {0, 0},
+      extent
+  };
   cmd.setScissor(0, scissor);
 
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
@@ -244,8 +245,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
       MaterialPushConstant materialData{};
       materialData.diffuseColor = glm::vec4(defaultMaterial_.diffuse, defaultMaterial_.opacity);
       materialData.emissiveColor = glm::vec4(defaultMaterial_.emissive, 1.0f);
-      materialData.specularColor =
-          glm::vec4(defaultMaterial_.specular, defaultMaterial_.shininess);
+      materialData.specularColor = glm::vec4(defaultMaterial_.specular, defaultMaterial_.shininess);
       materialData.flags = 0;
       materialData.alphaThreshold = 0.5f;
       materialData.useTexture = 0;
@@ -255,8 +255,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
       const auto &hover = hoverDetector.state();
 
       renderableMesh.drawWithHover(
-          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1,
-          hoverTint, [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
+          cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1, hoverTint,
+          [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
             materialData.hoverTint = tint;
             cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
                               sizeof(MaterialPushConstant), &materialData);
@@ -273,9 +273,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
     // Apply hover tint if hovering over skeleton
     const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
     const auto &hover = hoverDetector.state();
-    glm::vec3 skeletonTint =
-        (hover.type == HoverType::Bone || hover.type == HoverType::Joint) ? hoverTint
-                                                                           : glm::vec3(1.0f);
+    glm::vec3 skeletonTint = (hover.type == HoverType::Bone || hover.type == HoverType::Joint)
+                                 ? hoverTint
+                                 : glm::vec3(1.0f);
 
     skeletonRenderer.drawWithHover(cmd, skeletonTint);
   }
