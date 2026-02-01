@@ -14,26 +14,26 @@ public:
   ConsoleWindow() = default;
 
   // UIWindow interface
-  void draw(UIContext& ctx) override;
-  const char* name() const override { return "Console"; }
+  void draw(UIContext &ctx) override;
+  const char *name() const override { return "Console"; }
 
   // Clear all messages
   void clear();
 
   // Add a message (no timestamp, no level)
-  void addMessage(const std::string& message);
+  void addMessage(const std::string &message);
 
   // Add message with timestamp
-  void log(const std::string& message);
+  void log(const std::string &message);
 
   // Add an info message (green)
-  void info(const std::string& message);
+  void info(const std::string &message);
 
   // Add a warning message (yellow)
-  void warning(const std::string& message);
+  void warning(const std::string &message);
 
   // Add an error message (red)
-  void error(const std::string& message);
+  void error(const std::string &message);
 
 private:
   struct LogEntry {

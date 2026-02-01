@@ -8,8 +8,8 @@ namespace w3d {
 /// Controls visibility of mesh and skeleton.
 class DisplayPanel : public UIPanel {
 public:
-  const char* title() const override { return "Display Options"; }
-  void draw(UIContext& ctx) override;
+  const char *title() const override { return "Display Options"; }
+  void draw(UIContext &ctx) override;
 };
 
 } // namespace w3d

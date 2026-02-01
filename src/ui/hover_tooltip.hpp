@@ -17,8 +17,8 @@ public:
   HoverTooltip();
 
   // UIWindow interface
-  void draw(UIContext& ctx) override;
-  const char* name() const override { return "##HoverTooltip"; }
+  void draw(UIContext &ctx) override;
+  const char *name() const override { return "##HoverTooltip"; }
 };
 
 } // namespace w3d

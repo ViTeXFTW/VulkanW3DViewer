@@ -19,10 +19,10 @@ public:
 
   /// Draw the panel contents
   /// @param ctx Shared UI context containing application state
-  virtual void draw(UIContext& ctx) = 0;
+  virtual void draw(UIContext &ctx) = 0;
 
   /// Get the title of this panel (displayed in collapsing header)
-  virtual const char* title() const = 0;
+  virtual const char *title() const = 0;
 
   /// Check if panel is expanded
   bool isExpanded() const { return expanded_; }

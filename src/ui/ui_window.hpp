@@ -20,10 +20,10 @@ public:
 
   /// Draw the window contents. Called every frame when visible.
   /// @param ctx Shared UI context containing application state
-  virtual void draw(UIContext& ctx) = 0;
+  virtual void draw(UIContext &ctx) = 0;
 
   /// Get the unique name of this window (used for ImGui window ID)
-  virtual const char* name() const = 0;
+  virtual const char *name() const = 0;
 
   /// Check if window is visible
   bool isVisible() const { return visible_; }
@@ -35,13 +35,13 @@ public:
   void toggleVisible() { visible_ = !visible_; }
 
   /// Get mutable visibility pointer (for ImGui::MenuItem binding)
-  bool* visiblePtr() { return &visible_; }
+  bool *visiblePtr() { return &visible_; }
 
   /// Called at the start of each frame (before draw)
-  virtual void onFrameBegin(UIContext& /*ctx*/) {}
+  virtual void onFrameBegin(UIContext & /*ctx*/) {}
 
   /// Called at the end of each frame (after draw)
-  virtual void onFrameEnd(UIContext& /*ctx*/) {}
+  virtual void onFrameEnd(UIContext & /*ctx*/) {}
 
 protected:
   bool visible_ = true;

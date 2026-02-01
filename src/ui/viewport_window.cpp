@@ -19,13 +19,13 @@ ViewportWindow::ViewportWindow() {
   addPanel<CameraPanel>();
 }
 
-void ViewportWindow::draw(UIContext& ctx) {
+void ViewportWindow::draw(UIContext &ctx) {
   if (!ImGui::Begin(name(), visiblePtr())) {
     ImGui::End();
     return;
   }
 
-  for (auto& panel : panels_) {
+  for (auto &panel : panels_) {
     if (!panel->isEnabled()) {
       continue;
     }

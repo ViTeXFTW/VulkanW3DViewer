@@ -13,13 +13,13 @@ namespace w3d {
 /// Supports directory navigation, file filtering, and double-click selection.
 class FileBrowser : public UIWindow {
 public:
-  using FileSelectedCallback = std::function<void(const std::filesystem::path&)>;
+  using FileSelectedCallback = std::function<void(const std::filesystem::path &)>;
 
   FileBrowser();
 
   // UIWindow interface
-  void draw(UIContext& ctx) override;
-  const char* name() const override { return "File Browser"; }
+  void draw(UIContext &ctx) override;
+  const char *name() const override { return "File Browser"; }
 
   // Set callback for when a file is selected
   void setFileSelectedCallback(FileSelectedCallback callback) {
@@ -27,15 +27,15 @@ public:
   }
 
   // Set the file extension filter (e.g., ".w3d")
-  void setFilter(const std::string& extension) { filterExtension_ = extension; }
+  void setFilter(const std::string &extension) { filterExtension_ = extension; }
 
   // Open the browser at a specific path
-  void openAt(const std::filesystem::path& path);
+  void openAt(const std::filesystem::path &path);
 
 private:
   void refreshDirectory();
   void navigateUp();
-  void navigateTo(const std::filesystem::path& path);
+  void navigateTo(const std::filesystem::path &path);
 
   struct FileEntry {
     std::string name;

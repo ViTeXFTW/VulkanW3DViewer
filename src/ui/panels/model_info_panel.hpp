@@ -8,8 +8,8 @@ namespace w3d {
 /// Shows file path, mesh counts, hierarchy info, and skeleton details.
 class ModelInfoPanel : public UIPanel {
 public:
-  const char* title() const override { return "Model Info"; }
-  void draw(UIContext& ctx) override;
+  const char *title() const override { return "Model Info"; }
+  void draw(UIContext &ctx) override;
 };
 
 } // namespace w3d

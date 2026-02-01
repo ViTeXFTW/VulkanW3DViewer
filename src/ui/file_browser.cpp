@@ -16,7 +16,7 @@ FileBrowser::FileBrowser() {
   visible_ = false;
 }
 
-void FileBrowser::draw(UIContext& /*ctx*/) {
+void FileBrowser::draw(UIContext & /*ctx*/) {
   if (!ImGui::Begin(name(), visiblePtr())) {
     ImGui::End();
     return;

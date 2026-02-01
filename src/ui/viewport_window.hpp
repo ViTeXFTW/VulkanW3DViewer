@@ -24,17 +24,17 @@ public:
   ViewportWindow();
 
   // UIWindow interface
-  void draw(UIContext& ctx) override;
-  const char* name() const override { return "Viewport"; }
+  void draw(UIContext &ctx) override;
+  const char *name() const override { return "Viewport"; }
 
   /// Add a panel to this window
   /// Returns pointer to the created panel for further configuration
   template <typename T, typename... Args>
-  T* addPanel(Args&&... args);
+  T *addPanel(Args &&...args);
 
   /// Get a panel by type (returns nullptr if not found)
   template <typename T>
-  T* getPanel();
+  T *getPanel();
 
   /// Get number of panels
   size_t panelCount() const { return panels_.size(); }
@@ -46,21 +46,21 @@ private:
 // Template implementations
 
 template <typename T, typename... Args>
-T* ViewportWindow::addPanel(Args&&... args) {
+T *ViewportWindow::addPanel(Args &&...args) {
   static_assert(std::is_base_of_v<UIPanel, T>, "T must derive from UIPanel");
 
   auto panel = std::make_unique<T>(std::forward<Args>(args)...);
-  T* ptr = panel.get();
+  T *ptr = panel.get();
   panels_.push_back(std::move(panel));
   return ptr;
 }
 
 template <typename T>
-T* ViewportWindow::getPanel() {
+T *ViewportWindow::getPanel() {
   static_assert(std::is_base_of_v<UIPanel, T>, "T must derive from UIPanel");
 
-  for (auto& panel : panels_) {
-    if (T* p = dynamic_cast<T*>(panel.get())) {
+  for (auto &panel : panels_) {
+    if (T *p = dynamic_cast<T *>(panel.get())) {
       return p;
     }
   }

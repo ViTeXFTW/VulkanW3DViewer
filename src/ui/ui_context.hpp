@@ -30,21 +30,21 @@ struct W3DFile;
 /// 3. Panels read/write through the context references
 struct UIContext {
   // === Window Reference ===
-  GLFWwindow* window = nullptr;
+  GLFWwindow *window = nullptr;
 
   // === Loaded Model Data ===
   /// Currently loaded W3D file (null if nothing loaded)
-  const W3DFile* loadedFile = nullptr;
+  const W3DFile *loadedFile = nullptr;
 
   /// Path to the loaded file
   std::string loadedFilePath;
 
   // === Rendering Objects ===
   /// HLod model for complex models with LOD
-  HLodModel* hlodModel = nullptr;
+  HLodModel *hlodModel = nullptr;
 
   /// Simple renderable mesh (when no HLod present)
-  RenderableMesh* renderableMesh = nullptr;
+  RenderableMesh *renderableMesh = nullptr;
 
   /// Whether to use HLod model (vs simple mesh)
   bool useHLodModel = false;
@@ -53,25 +53,25 @@ struct UIContext {
   bool useSkinnedRendering = false;
 
   // === Camera ===
-  Camera* camera = nullptr;
+  Camera *camera = nullptr;
 
   // === Skeleton & Animation ===
   /// Current skeleton pose
-  SkeletonPose* skeletonPose = nullptr;
+  SkeletonPose *skeletonPose = nullptr;
 
   /// Animation player for playback control
-  AnimationPlayer* animationPlayer = nullptr;
+  AnimationPlayer *animationPlayer = nullptr;
 
   // === Display Toggles ===
   /// Show mesh geometry
-  bool* showMesh = nullptr;
+  bool *showMesh = nullptr;
 
   /// Show skeleton overlay
-  bool* showSkeleton = nullptr;
+  bool *showSkeleton = nullptr;
 
   // === Hover Detection ===
   /// Current hover state (read-only for UI display)
-  const HoverState* hoverState = nullptr;
+  const HoverState *hoverState = nullptr;
 
   // === Actions/Callbacks ===
   /// Callback to request camera reset

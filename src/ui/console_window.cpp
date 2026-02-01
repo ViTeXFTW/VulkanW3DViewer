@@ -9,7 +9,7 @@
 
 namespace w3d {
 
-void ConsoleWindow::draw(UIContext& /*ctx*/) {
+void ConsoleWindow::draw(UIContext & /*ctx*/) {
   if (!ImGui::Begin(name(), visiblePtr())) {
     ImGui::End();
     return;

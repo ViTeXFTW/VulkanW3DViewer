@@ -7,13 +7,13 @@
 
 namespace w3d {
 
-void AnimationPanel::draw(UIContext& ctx) {
+void AnimationPanel::draw(UIContext &ctx) {
   if (!ctx.animationPlayer || ctx.animationPlayer->animationCount() == 0) {
     ImGui::TextDisabled("No animations available");
     return;
   }
 
-  auto& player = *ctx.animationPlayer;
+  auto &player = *ctx.animationPlayer;
 
   // Animation dropdown
   if (ImGui::BeginCombo("##animation",
@@ -56,7 +56,7 @@ void AnimationPanel::draw(UIContext& ctx) {
 
   // Playback mode
   ImGui::SameLine();
-  const char* modeStr = "Loop";
+  const char *modeStr = "Loop";
   switch (player.playbackMode()) {
   case PlaybackMode::Once:
     modeStr = "Once";

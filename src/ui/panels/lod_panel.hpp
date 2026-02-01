@@ -8,8 +8,8 @@ namespace w3d {
 /// Shows current LOD level, auto/manual selection mode, and LOD details.
 class LODPanel : public UIPanel {
 public:
-  const char* title() const override { return "LOD Controls"; }
-  void draw(UIContext& ctx) override;
+  const char *title() const override { return "LOD Controls"; }
+  void draw(UIContext &ctx) override;
 };
 
 } // namespace w3d

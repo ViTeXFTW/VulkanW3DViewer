@@ -6,7 +6,7 @@
 
 namespace w3d {
 
-void DisplayPanel::draw(UIContext& ctx) {
+void DisplayPanel::draw(UIContext &ctx) {
   if (ctx.showMesh) {
     ImGui::Checkbox("Show Mesh", ctx.showMesh);
   }

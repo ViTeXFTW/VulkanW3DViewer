@@ -30,29 +30,29 @@ public:
   UIManager() = default;
   ~UIManager() = default;
 
-  UIManager(const UIManager&) = delete;
-  UIManager& operator=(const UIManager&) = delete;
+  UIManager(const UIManager &) = delete;
+  UIManager &operator=(const UIManager &) = delete;
 
   /// Add a window by constructing it in place
   /// Returns pointer to the created window for further configuration
   template <typename T, typename... Args>
-  T* addWindow(Args&&... args);
+  T *addWindow(Args &&...args);
 
   /// Add an already-constructed window
   /// Returns pointer to the added window
-  UIWindow* addWindow(std::unique_ptr<UIWindow> window);
+  UIWindow *addWindow(std::unique_ptr<UIWindow> window);
 
   /// Get a window by type (returns nullptr if not found)
   template <typename T>
-  T* getWindow();
+  T *getWindow();
 
   /// Get a window by type (const version)
   template <typename T>
-  const T* getWindow() const;
+  const T *getWindow() const;
 
   /// Draw all UI: dockspace, menu bar, and windows
   /// @param ctx Shared context to pass to windows
-  void draw(UIContext& ctx);
+  void draw(UIContext &ctx);
 
   /// Get number of registered windows
   size_t windowCount() const { return windows_.size(); }
@@ -66,10 +66,10 @@ private:
   void drawDockspace();
 
   /// Draw the main menu bar
-  void drawMenuBar(UIContext& ctx);
+  void drawMenuBar(UIContext &ctx);
 
   std::vector<std::unique_ptr<UIWindow>> windows_;
-  std::unordered_map<std::type_index, UIWindow*> windowsByType_;
+  std::unordered_map<std::type_index, UIWindow *> windowsByType_;
 
   bool showDemoWindow_ = false;
 };
@@ -77,11 +77,11 @@ private:
 // Template implementations
 
 template <typename T, typename... Args>
-T* UIManager::addWindow(Args&&... args) {
+T *UIManager::addWindow(Args &&...args) {
   static_assert(std::is_base_of_v<UIWindow, T>, "T must derive from UIWindow");
 
   auto window = std::make_unique<T>(std::forward<Args>(args)...);
-  T* ptr = window.get();
+  T *ptr = window.get();
 
   windowsByType_[std::type_index(typeid(T))] = ptr;
   windows_.push_back(std::move(window));
@@ -90,23 +90,23 @@ T* UIManager::addWindow(Args&&... args) {
 }
 
 template <typename T>
-T* UIManager::getWindow() {
+T *UIManager::getWindow() {
   static_assert(std::is_base_of_v<UIWindow, T>, "T must derive from UIWindow");
 
   auto it = windowsByType_.find(std::type_index(typeid(T)));
   if (it != windowsByType_.end()) {
-    return static_cast<T*>(it->second);
+    return static_cast<T *>(it->second);
   }
   return nullptr;
 }
 
 template <typename T>
-const T* UIManager::getWindow() const {
+const T *UIManager::getWindow() const {
   static_assert(std::is_base_of_v<UIWindow, T>, "T must derive from UIWindow");
 
   auto it = windowsByType_.find(std::type_index(typeid(T)));
   if (it != windowsByType_.end()) {
-    return static_cast<const T*>(it->second);
+    return static_cast<const T *>(it->second);
   }
   return nullptr;
 }

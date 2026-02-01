@@ -10,7 +10,7 @@
 
 namespace w3d {
 
-void ModelInfoPanel::draw(UIContext& ctx) {
+void ModelInfoPanel::draw(UIContext &ctx) {
   if (!ctx.loadedFile) {
     ImGui::Text("No model loaded");
     ImGui::Text("Use File > Open to load a W3D model");

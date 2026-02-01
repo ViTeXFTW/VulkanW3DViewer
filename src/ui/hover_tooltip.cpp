@@ -12,13 +12,13 @@ HoverTooltip::HoverTooltip() {
   visible_ = true;
 }
 
-void HoverTooltip::draw(UIContext& ctx) {
+void HoverTooltip::draw(UIContext &ctx) {
   // Only show when something is being hovered
   if (!ctx.hoverState || !ctx.hoverState->isHovering() || ctx.hoverState->objectName.empty()) {
     return;
   }
 
-  const auto& hover = *ctx.hoverState;
+  const auto &hover = *ctx.hoverState;
 
   // Position tooltip near mouse cursor
   ImVec2 mousePos = ImGui::GetMousePos();
@@ -31,7 +31,7 @@ void HoverTooltip::draw(UIContext& ctx) {
   ImGui::Begin(name(), nullptr, flags);
 
   // Determine type string
-  const char* typeStr = "";
+  const char *typeStr = "";
   switch (hover.type) {
   case HoverType::Mesh:
     typeStr = "Mesh";

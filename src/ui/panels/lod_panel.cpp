@@ -7,13 +7,13 @@
 
 namespace w3d {
 
-void LODPanel::draw(UIContext& ctx) {
+void LODPanel::draw(UIContext &ctx) {
   if (!ctx.useHLodModel || !ctx.hlodModel || ctx.hlodModel->lodCount() <= 1) {
     ImGui::TextDisabled("No LOD levels available");
     return;
   }
 
-  auto& model = *ctx.hlodModel;
+  auto &model = *ctx.hlodModel;
 
   // LOD mode selector
   bool autoMode = model.selectionMode() == LODSelectionMode::Auto;
@@ -39,14 +39,14 @@ void LODPanel::draw(UIContext& ctx) {
   // Show LOD level details
   if (ImGui::TreeNode("LOD Details")) {
     for (size_t i = 0; i < model.lodCount(); ++i) {
-      const auto& level = model.lodLevel(i);
+      const auto &level = model.lodLevel(i);
       bool isCurrent = (i == model.currentLOD());
 
-      ImGui::PushStyleColor(ImGuiCol_Text,
-                            isCurrent ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
-                                      : ImGui::GetStyleColorVec4(ImGuiCol_Text));
+      ImGui::PushStyleColor(ImGuiCol_Text, isCurrent ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
+                                                     : ImGui::GetStyleColorVec4(ImGuiCol_Text));
 
-      ImGui::Text("LOD %zu: %zu meshes (maxSize=%.0f)", i, level.meshes.size(), level.maxScreenSize);
+      ImGui::Text("LOD %zu: %zu meshes (maxSize=%.0f)", i, level.meshes.size(),
+                  level.maxScreenSize);
 
       ImGui::PopStyleColor();
     }

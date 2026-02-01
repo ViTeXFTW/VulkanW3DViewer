@@ -4,15 +4,15 @@
 
 namespace w3d {
 
-UIWindow* UIManager::addWindow(std::unique_ptr<UIWindow> window) {
-  UIWindow* ptr = window.get();
+UIWindow *UIManager::addWindow(std::unique_ptr<UIWindow> window) {
+  UIWindow *ptr = window.get();
   windows_.push_back(std::move(window));
   return ptr;
 }
 
-void UIManager::draw(UIContext& ctx) {
+void UIManager::draw(UIContext &ctx) {
   // Call frame begin hooks
-  for (auto& window : windows_) {
+  for (auto &window : windows_) {
     window->onFrameBegin(ctx);
   }
 
@@ -24,7 +24,7 @@ void UIManager::draw(UIContext& ctx) {
   ImGui::End();
 
   // Draw all visible windows
-  for (auto& window : windows_) {
+  for (auto &window : windows_) {
     if (window->isVisible()) {
       window->draw(ctx);
     }
@@ -38,14 +38,14 @@ void UIManager::draw(UIContext& ctx) {
 #endif
 
   // Call frame end hooks
-  for (auto& window : windows_) {
+  for (auto &window : windows_) {
     window->onFrameEnd(ctx);
   }
 }
 
 void UIManager::drawDockspace() {
   // Create dockspace over the entire window
-  ImGuiViewport* viewport = ImGui::GetMainViewport();
+  ImGuiViewport *viewport = ImGui::GetMainViewport();
   ImGui::SetNextWindowPos(viewport->Pos);
   ImGui::SetNextWindowSize(viewport->Size);
   ImGui::SetNextWindowViewport(viewport->ID);
@@ -68,7 +68,7 @@ void UIManager::drawDockspace() {
   ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
-void UIManager::drawMenuBar(UIContext& ctx) {
+void UIManager::drawMenuBar(UIContext &ctx) {
   if (!ImGui::BeginMenuBar()) {
     return;
   }
@@ -92,7 +92,7 @@ void UIManager::drawMenuBar(UIContext& ctx) {
   // View menu
   if (ImGui::BeginMenu("View")) {
     // Add menu items for all registered windows
-    for (auto& window : windows_) {
+    for (auto &window : windows_) {
       ImGui::MenuItem(window->name(), nullptr, window->visiblePtr());
     }
 

@@ -8,8 +8,8 @@ namespace w3d {
 /// Includes animation selection, play/pause/stop buttons, frame slider, and playback mode.
 class AnimationPanel : public UIPanel {
 public:
-  const char* title() const override { return "Animation"; }
-  void draw(UIContext& ctx) override;
+  const char *title() const override { return "Animation"; }
+  void draw(UIContext &ctx) override;
 };
 
 } // namespace w3d

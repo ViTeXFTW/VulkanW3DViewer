@@ -8,8 +8,8 @@ namespace w3d {
 /// Shows yaw, pitch, distance sliders and reset button.
 class CameraPanel : public UIPanel {
 public:
-  const char* title() const override { return "Camera Controls"; }
-  void draw(UIContext& ctx) override;
+  const char *title() const override { return "Camera Controls"; }
+  void draw(UIContext &ctx) override;
 };
 
 } // namespace w3d

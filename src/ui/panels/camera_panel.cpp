@@ -1,21 +1,22 @@
 #include "camera_panel.hpp"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
 #include "../ui_context.hpp"
 #include "render/camera.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 #include <imgui.h>
 
 namespace w3d {
 
-void CameraPanel::draw(UIContext& ctx) {
+void CameraPanel::draw(UIContext &ctx) {
   if (!ctx.camera) {
     ImGui::TextDisabled("No camera available");
     return;
   }
 
-  auto& camera = *ctx.camera;
+  auto &camera = *ctx.camera;
 
   ImGui::Text("Left-drag to orbit, scroll to zoom");
 
