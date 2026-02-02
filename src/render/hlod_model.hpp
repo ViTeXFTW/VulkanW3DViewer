@@ -161,6 +161,12 @@ private:
   // Calculate screen size from world-space bounding sphere
   float calculateScreenSize(float radius, float distance, float screenHeight, float fovY) const;
 
+  // Unified mesh drawing helper - iterates meshes and calls beforeDraw callback
+  // Template works with both HLodMeshGPU and HLodSkinnedMeshGPU
+  template <typename MeshT, typename BeforeDrawFunc>
+  void drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
+                      size_t aggregateCount, BeforeDrawFunc beforeDraw) const;
+
   std::string name_;
   std::string hierarchyName_;
 
@@ -177,14 +183,14 @@ private:
   BoundingBox combinedBounds_;     // Combined bounds of all meshes
 };
 
-// Template implementation
-template <typename BindTextureFunc>
-void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
+// Template implementation - unified mesh drawing helper
+template <typename MeshT, typename BeforeDrawFunc>
+void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
+                               size_t aggregateCount, BeforeDrawFunc beforeDraw) const {
   // Draw aggregates first (always rendered)
-  for (size_t i = 0; i < aggregateCount_; ++i) {
-    const auto &mesh = meshGPU_[i];
-
-    bindTexture(mesh.textureName);
+  for (size_t i = 0; i < aggregateCount; ++i) {
+    const auto &mesh = meshes[i];
+    beforeDraw(mesh);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
@@ -194,15 +200,15 @@ void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindText
   }
 
   // Draw current LOD level meshes
-  for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
-    const auto &mesh = meshGPU_[i];
+  for (size_t i = aggregateCount; i < meshes.size(); ++i) {
+    const auto &mesh = meshes[i];
 
     // Skip if not in current LOD level
     if (mesh.lodLevel != currentLOD_) {
       continue;
     }
 
-    bindTexture(mesh.textureName);
+    beforeDraw(mesh);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
@@ -210,85 +216,30 @@ void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindText
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
   }
+}
+
+template <typename BindTextureFunc>
+void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
+  drawMeshesImpl(cmd, meshGPU_, aggregateCount_,
+                 [&](const HLodMeshGPU &mesh) { bindTexture(mesh.textureName); });
 }
 
 template <typename UpdateModelMatrixFunc>
 void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
                                        UpdateModelMatrixFunc updateModelMatrix) const {
-  // Draw aggregates first (always rendered)
-  for (size_t i = 0; i < aggregateCount_; ++i) {
-    const auto &mesh = meshGPU_[i];
-
+  drawMeshesImpl(cmd, meshGPU_, aggregateCount_, [&](const HLodMeshGPU &mesh) {
     glm::mat4 boneTransform(1.0f);
     if (pose && mesh.boneIndex >= 0 && static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
       boneTransform = pose->boneTransform(static_cast<size_t>(mesh.boneIndex));
     }
-
     updateModelMatrix(boneTransform);
-
-    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
-    vk::DeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-  }
-
-  // Draw current LOD level meshes
-  for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
-    const auto &mesh = meshGPU_[i];
-
-    // Skip if not in current LOD level
-    if (mesh.lodLevel != currentLOD_) {
-      continue;
-    }
-
-    glm::mat4 boneTransform(1.0f);
-    if (pose && mesh.boneIndex >= 0 && static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
-      boneTransform = pose->boneTransform(static_cast<size_t>(mesh.boneIndex));
-    }
-
-    updateModelMatrix(boneTransform);
-
-    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
-    vk::DeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-  }
+  });
 }
 
 template <typename BindTextureFunc>
 void HLodModel::drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
-  // Draw skinned aggregates first (always rendered)
-  for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
-    const auto &mesh = skinnedMeshGPU_[i];
-
-    bindTexture(mesh.textureName);
-
-    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
-    vk::DeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-  }
-
-  // Draw current LOD level skinned meshes
-  for (size_t i = skinnedAggregateCount_; i < skinnedMeshGPU_.size(); ++i) {
-    const auto &mesh = skinnedMeshGPU_[i];
-
-    // Skip if not in current LOD level
-    if (mesh.lodLevel != currentLOD_) {
-      continue;
-    }
-
-    bindTexture(mesh.textureName);
-
-    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
-    vk::DeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-  }
+  drawMeshesImpl(cmd, skinnedMeshGPU_, skinnedAggregateCount_,
+                 [&](const HLodSkinnedMeshGPU &mesh) { bindTexture(mesh.textureName); });
 }
 
 } // namespace w3d
