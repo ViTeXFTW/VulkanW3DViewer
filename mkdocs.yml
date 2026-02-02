@@ -1,0 +1,149 @@
+# MkDocs configuration for VulkanW3DViewer
+site_name: VulkanW3DViewer
+site_description: Modern Vulkan-based renderer for W3D format files from Command & Conquer Generals
+site_author: ViTeXFTW
+site_url: https://vitexftw.github.io/VulkanW3DViewer/
+
+# Repository
+repo_name: ViTeXFTW/VulkanW3DViewer
+repo_url: https://github.com/ViTeXFTW/VulkanW3DViewer
+
+# Copyright
+copyright: Copyright &copy; 2026 ViTeXFTW - MIT License
+
+# Theme configuration
+theme:
+  name: material
+
+  # Color palette - Vulkan-inspired red/dark theme
+  palette:
+    # Dark mode (default)
+    - scheme: slate
+      primary: red
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+    # Light mode
+    - scheme: default
+      primary: red
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+  # Features
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+
+  # Icons
+  icon:
+    repo: fontawesome/brands/github
+
+  # Custom fonts
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Plugins
+plugins:
+  - search
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Building: getting-started/building.md
+    - Quick Start: getting-started/quick-start.md
+  - User Guide:
+    - user-guide/index.md
+    - Loading Models: user-guide/loading-models.md
+    - Navigation Controls: user-guide/navigation-controls.md
+    - User Interface: user-guide/user-interface.md
+    - Command Line: user-guide/command-line.md
+  - Architecture:
+    - architecture/index.md
+    - Project Structure: architecture/project-structure.md
+    - Core Layer: architecture/core-layer.md
+    - W3D Parser: architecture/w3d-parser.md
+    - Rendering: architecture/rendering.md
+    - UI System: architecture/ui-system.md
+  - W3D Format:
+    - w3d-format/index.md
+    - Overview: w3d-format/overview.md
+    - Chunk Types: w3d-format/chunk-types.md
+    - Meshes: w3d-format/meshes.md
+    - Hierarchies: w3d-format/hierarchies.md
+    - Animations: w3d-format/animations.md
+    - HLod: w3d-format/hlod.md
+  - Development:
+    - development/index.md
+    - Code Style: development/code-style.md
+    - Testing: development/testing.md
+    - Contributing: development/contributing.md
+  - API Reference:
+    - api/index.md
+
+# Extra configuration
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/ViTeXFTW/VulkanW3DViewer
+
+  generator: false
+
+# Extra CSS for custom styling
+extra_css:
+  - stylesheets/extra.css
