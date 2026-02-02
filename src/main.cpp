@@ -2,8 +2,6 @@
 #include <iostream>
 
 #include "core/application.hpp"
-
-#include "core/application.hpp"
 #include "w3d/loader.hpp"
 
 void printUsage(const char *programName) {
