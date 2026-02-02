@@ -47,7 +47,11 @@ void Application::initWindow() {
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  window_ = glfwCreateWindow(WIDTH, HEIGHT, "W3D Viewer", nullptr, nullptr);
+  // Use window size from settings, or defaults
+  int width = appSettings_.windowWidth > 0 ? appSettings_.windowWidth : WIDTH;
+  int height = appSettings_.windowHeight > 0 ? appSettings_.windowHeight : HEIGHT;
+
+  window_ = glfwCreateWindow(width, height, "W3D Viewer", nullptr, nullptr);
   if (!window_) {
     glfwTerminate();
     throw std::runtime_error("Failed to create GLFW window");
@@ -74,10 +78,12 @@ void Application::initVulkan() {
   // Initialize texture manager and create default texture
   textureManager_.init(context_);
 
-  // Set texture path - use command line override if provided
+  // Set texture path - priority: CLI arg > settings > default
   std::filesystem::path texturePath;
   if (!customTexturePath_.empty()) {
     texturePath = customTexturePath_;
+  } else if (!appSettings_.texturePath.empty()) {
+    texturePath = appSettings_.texturePath;
   } else {
     // Default: relative to working directory
     texturePath = "resources/textures";
@@ -295,6 +301,14 @@ void Application::mainLoop() {
 }
 
 void Application::cleanup() {
+  // Save window size to settings before cleanup
+  if (window_) {
+    int width, height;
+    glfwGetWindowSize(window_, &width, &height);
+    appSettings_.windowWidth = width;
+    appSettings_.windowHeight = height;
+  }
+
   imguiBackend_.cleanup();
   renderer_.cleanup();
 
@@ -312,6 +326,9 @@ void Application::cleanup() {
 }
 
 void Application::run() {
+  // Load settings first (before any initialization)
+  appSettings_ = Settings::loadDefault();
+
   initWindow();
   initVulkan();
   initUI();
@@ -322,6 +339,10 @@ void Application::run() {
   }
 
   mainLoop();
+
+  // Save settings before cleanup
+  appSettings_.saveDefault();
+
   cleanup();
 }
 

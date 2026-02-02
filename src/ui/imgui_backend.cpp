@@ -1,10 +1,12 @@
-#include "imgui_backend.hpp"
-
 #include "core/vulkan_context.hpp"
+#include "core/app_paths.hpp"
+
+#include "imgui_backend.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
+
 
 namespace w3d {
 
@@ -22,6 +24,15 @@ void ImGuiBackend::init(GLFWwindow *window, VulkanContext &context) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
+
+  // Set custom ImGui.ini path in app data directory
+  // Static storage ensures the string outlives ImGui's usage
+  static std::string imguiIniPath;
+  if (auto path = AppPaths::imguiIniPath()) {
+    AppPaths::ensureAppDataDir();
+    imguiIniPath = path->string();
+    io.IniFilename = imguiIniPath.c_str();
+  }
 
   // Enable docking
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
