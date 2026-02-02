@@ -147,3 +147,26 @@ else()
 endif()
 
 add_test(NAME raycast_tests COMMAND raycast_tests)
+
+# Core module tests (app paths and settings)
+add_executable(core_tests
+  core/test_app_paths.cpp
+  core/test_settings.cpp
+  ${CMAKE_SOURCE_DIR}/src/core/app_paths.cpp
+  ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
+)
+
+target_link_libraries(core_tests PRIVATE gtest gtest_main)
+
+target_include_directories(core_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/lib/json/include
+)
+
+if(MSVC)
+  target_compile_options(core_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(core_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME core_tests COMMAND core_tests)
