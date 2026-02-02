@@ -28,7 +28,11 @@
 #include "render/texture.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
+#include "ui/hover_tooltip.hpp"
 #include "ui/imgui_backend.hpp"
+#include "ui/ui_context.hpp"
+#include "ui/ui_manager.hpp"
+#include "ui/viewport_window.hpp"
 #include "w3d/loader.hpp"
 
 #include <imgui.h>
@@ -77,11 +81,9 @@ private:
 
   // UI components
   w3d::ImGuiBackend imguiBackend_;
-  w3d::ConsoleWindow console_;
-  w3d::FileBrowser fileBrowser_;
-  bool showFileBrowser_ = false;
-  bool showConsole_ = true;
-  bool showViewport_ = true;
+  w3d::UIManager uiManager_;
+  w3d::ConsoleWindow *console_ = nullptr;   // Owned by uiManager_
+  w3d::FileBrowser *fileBrowser_ = nullptr; // Owned by uiManager_
 
   // Loaded W3D data
   std::optional<w3d::W3DFile> loadedFile_;
@@ -213,33 +215,44 @@ private:
   void initUI() {
     imguiBackend_.init(window_, context_);
 
+    // Register windows with UI manager
+    auto *viewport = uiManager_.addWindow<w3d::ViewportWindow>();
+    console_ = uiManager_.addWindow<w3d::ConsoleWindow>();
+    fileBrowser_ = uiManager_.addWindow<w3d::FileBrowser>();
+    uiManager_.addWindow<w3d::HoverTooltip>();
+
+    // Set initial visibility
+    viewport->setVisible(true);
+    console_->setVisible(true);
+    fileBrowser_->setVisible(false);
+
     // Configure file browser
-    fileBrowser_.setFilter(".w3d");
-    fileBrowser_.setFileSelectedCallback([this](const std::filesystem::path &path) {
+    fileBrowser_->setFilter(".w3d");
+    fileBrowser_->setFileSelectedCallback([this](const std::filesystem::path &path) {
       loadW3DFile(path);
-      showFileBrowser_ = false;
+      fileBrowser_->setVisible(false);
     });
 
     // Welcome message
-    console_.info("W3D Viewer initialized");
-    console_.log("Use File > Open to load a W3D model");
+    console_->info("W3D Viewer initialized");
+    console_->log("Use File > Open to load a W3D model");
   }
 
   void loadW3DFile(const std::filesystem::path &path) {
-    console_.info("Loading: " + path.string());
+    console_->info("Loading: " + path.string());
 
     std::string error;
     auto file = w3d::Loader::load(path, &error);
 
     if (!file) {
-      console_.error("Failed to load: " + error);
+      console_->error("Failed to load: " + error);
       return;
     }
 
     loadedFile_ = std::move(file);
     loadedFilePath_ = path.string();
 
-    console_.info("Successfully loaded: " + path.filename().string());
+    console_->info("Successfully loaded: " + path.filename().string());
 
     // Output the description to console
     std::string description = w3d::Loader::describe(*loadedFile_);
@@ -248,7 +261,7 @@ private:
     std::istringstream stream(description);
     std::string line;
     while (std::getline(stream, line)) {
-      console_.addMessage(line);
+      console_->addMessage(line);
     }
 
     // Compute skeleton pose first (needed for mesh positioning)
@@ -264,15 +277,16 @@ private:
         boneMatrixBuffer_.update(skinningMatrices);
       }
 
-      console_.info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) + " bones");
+      console_->info("Loaded skeleton with " + std::to_string(skeletonPose_.boneCount()) +
+                     " bones");
     }
 
     // Load animations if present
     animationPlayer_.clear();
     if (!loadedFile_->animations.empty() || !loadedFile_->compressedAnimations.empty()) {
       animationPlayer_.load(*loadedFile_);
-      console_.info("Loaded " + std::to_string(animationPlayer_.animationCount()) +
-                    " animation(s)");
+      console_->info("Loaded " + std::to_string(animationPlayer_.animationCount()) +
+                     " animation(s)");
     }
 
     const w3d::SkeletonPose *posePtr = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
@@ -315,8 +329,8 @@ private:
       }
     }
 
-    console_.info("Textures: " + std::to_string(texturesLoaded) + " loaded, " +
-                  std::to_string(texturesMissing) + " missing");
+    console_->info("Textures: " + std::to_string(texturesLoaded) + " loaded, " +
+                   std::to_string(texturesMissing) + " missing");
 
 #ifdef W3D_DEBUG
     if (debugMode_) {
@@ -334,20 +348,20 @@ private:
       if (!loadedFile_->hierarchies.empty()) {
         useSkinnedRendering_ = true;
         hlodModel_.loadSkinned(context_, *loadedFile_);
-        console_.info("Using GPU skinned rendering");
+        console_->info("Using GPU skinned rendering");
       } else {
         useSkinnedRendering_ = false;
         hlodModel_.load(context_, *loadedFile_, nullptr);
-        console_.info("Using static rendering (no skeleton)");
+        console_->info("Using static rendering (no skeleton)");
       }
 
       const auto &hlod = loadedFile_->hlods[0];
-      console_.info("Loaded HLod: " + hlod.name);
-      console_.info("  LOD levels: " + std::to_string(hlodModel_.lodCount()));
-      console_.info("  Aggregates: " + std::to_string(hlodModel_.aggregateCount()));
-      console_.info("  Total GPU meshes: " + std::to_string(hlodModel_.totalMeshCount()));
+      console_->info("Loaded HLod: " + hlod.name);
+      console_->info("  LOD levels: " + std::to_string(hlodModel_.lodCount()));
+      console_->info("  Aggregates: " + std::to_string(hlodModel_.aggregateCount()));
+      console_->info("  Total GPU meshes: " + std::to_string(hlodModel_.totalMeshCount()));
       if (useSkinnedRendering_) {
-        console_.info("  Skinned meshes: " + std::to_string(hlodModel_.skinnedMeshCount()));
+        console_->info("  Skinned meshes: " + std::to_string(hlodModel_.skinnedMeshCount()));
       }
 
       // Log LOD level details
@@ -356,7 +370,7 @@ private:
         std::string lodInfo =
             "  LOD " + std::to_string(i) + ": " + std::to_string(level.meshes.size()) +
             " meshes, maxScreenSize=" + std::to_string(static_cast<int>(level.maxScreenSize));
-        console_.log(lodInfo);
+        console_->log(lodInfo);
       }
 
       if (hlodModel_.hasData()) {
@@ -373,8 +387,8 @@ private:
       if (renderableMesh_.hasData()) {
         const auto &bounds = renderableMesh_.bounds();
         camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
-        console_.info("Uploaded " + std::to_string(renderableMesh_.meshCount()) +
-                      " meshes to GPU (no HLod)");
+        console_->info("Uploaded " + std::to_string(renderableMesh_.meshCount()) +
+                       " meshes to GPU (no HLod)");
       }
     }
 
@@ -433,310 +447,37 @@ private:
   }
 
   void drawUI() {
-    // Create dockspace over the entire window
-    ImGuiViewport *viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
+    // Build UI context with current application state
+    w3d::UIContext ctx;
+    ctx.window = window_;
+    ctx.loadedFile = loadedFile_ ? &*loadedFile_ : nullptr;
+    ctx.loadedFilePath = loadedFilePath_;
+    ctx.hlodModel = &hlodModel_;
+    ctx.renderableMesh = &renderableMesh_;
+    ctx.useHLodModel = useHLodModel_;
+    ctx.useSkinnedRendering = useSkinnedRendering_;
+    ctx.camera = &camera_;
+    ctx.skeletonPose = &skeletonPose_;
+    ctx.animationPlayer = &animationPlayer_;
+    ctx.showMesh = &showMesh_;
+    ctx.showSkeleton = &showSkeleton_;
+    ctx.hoverState = &hoverDetector_.state();
 
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-    windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-    windowFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-    windowFlags |= ImGuiWindowFlags_NoBackground;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-    ImGui::Begin("DockSpace", nullptr, windowFlags);
-    ImGui::PopStyleVar(3);
-
-    // DockSpace
-    ImGuiID dockspaceId = ImGui::GetID("MainDockSpace");
-    ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-    // Menu bar
-    if (ImGui::BeginMenuBar()) {
-      if (ImGui::BeginMenu("File")) {
-        if (ImGui::MenuItem("Open W3D...", "Ctrl+O")) {
-          showFileBrowser_ = true;
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Exit", "Alt+F4")) {
-          glfwSetWindowShouldClose(window_, GLFW_TRUE);
-        }
-        ImGui::EndMenu();
+    // Set up callbacks
+    ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
+    ctx.onExit = [this]() { glfwSetWindowShouldClose(window_, GLFW_TRUE); };
+    ctx.onResetCamera = [this]() {
+      if (useHLodModel_ && hlodModel_.hasData()) {
+        const auto &bounds = hlodModel_.bounds();
+        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
+      } else if (renderableMesh_.hasData()) {
+        const auto &bounds = renderableMesh_.bounds();
+        camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
       }
+    };
 
-      if (ImGui::BeginMenu("View")) {
-        ImGui::MenuItem("Viewport", nullptr, &showViewport_);
-        ImGui::MenuItem("Console", nullptr, &showConsole_);
-        ImGui::MenuItem("File Browser", nullptr, &showFileBrowser_);
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About")) {
-          console_.info("W3D Viewer - Vulkan-based W3D model viewer");
-          console_.info("Phase 6: Materials & Textures");
-        }
-        ImGui::EndMenu();
-      }
-
-      ImGui::EndMenuBar();
-    }
-
-    ImGui::End();
-
-    // Draw windows
-    if (showViewport_) {
-      drawViewportWindow();
-    }
-
-    if (showConsole_) {
-      console_.draw(&showConsole_);
-    }
-
-    if (showFileBrowser_) {
-      fileBrowser_.draw(&showFileBrowser_);
-    }
-
-    // Display hover name overlay
-    const auto &hover = hoverDetector_.state();
-    if (hover.isHovering() && !hover.objectName.empty()) {
-      // Position tooltip near mouse cursor
-      ImVec2 mousePos = ImGui::GetMousePos();
-      ImGui::SetNextWindowPos(ImVec2(mousePos.x + 15, mousePos.y + 15));
-
-      ImGui::Begin("##HoverTooltip", nullptr,
-                   ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize |
-                       ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
-
-      // Display object type and name
-      const char *typeStr = "";
-      switch (hover.type) {
-      case w3d::HoverType::Mesh:
-        typeStr = "Mesh";
-        break;
-      case w3d::HoverType::Bone:
-        typeStr = "Bone";
-        break;
-      case w3d::HoverType::Joint:
-        typeStr = "Joint";
-        break;
-      default:
-        break;
-      }
-
-      ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr,
-                         hover.objectName.c_str());
-
-      ImGui::End();
-    }
-  }
-
-  void drawViewportWindow() {
-    ImGui::Begin("Viewport", &showViewport_);
-
-    // Display loaded file info
-    if (loadedFile_) {
-      ImGui::Text("Loaded: %s", loadedFilePath_.c_str());
-
-      if (useHLodModel_) {
-        ImGui::Text("HLod: %s", hlodModel_.name().c_str());
-        ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
-                    hlodModel_.totalMeshCount());
-      } else {
-        ImGui::Text("Meshes: %zu (GPU: %zu)", loadedFile_->meshes.size(),
-                    renderableMesh_.meshCount());
-      }
-
-      ImGui::Text("Hierarchies: %zu", loadedFile_->hierarchies.size());
-      ImGui::Text("Animations: %zu",
-                  loadedFile_->animations.size() + loadedFile_->compressedAnimations.size());
-
-      // Skeleton info
-      if (skeletonPose_.isValid()) {
-        ImGui::Text("Skeleton bones: %zu", skeletonPose_.boneCount());
-      }
-
-      // Animation controls
-      if (animationPlayer_.animationCount() > 0) {
-        ImGui::Separator();
-        ImGui::Text("Animation");
-
-        // Animation dropdown
-        if (ImGui::BeginCombo(
-                "##animation",
-                animationPlayer_.animationName(animationPlayer_.currentAnimationIndex()).c_str())) {
-          for (size_t i = 0; i < animationPlayer_.animationCount(); ++i) {
-            bool isSelected = (i == animationPlayer_.currentAnimationIndex());
-            if (ImGui::Selectable(animationPlayer_.animationName(i).c_str(), isSelected)) {
-              animationPlayer_.selectAnimation(i);
-            }
-            if (isSelected) {
-              ImGui::SetItemDefaultFocus();
-            }
-          }
-          ImGui::EndCombo();
-        }
-
-        // Frame slider
-        float frame = animationPlayer_.currentFrame();
-        float maxFrame = animationPlayer_.maxFrame();
-        if (ImGui::SliderFloat("Frame", &frame, 0.0f, maxFrame)) {
-          animationPlayer_.pause();
-          animationPlayer_.setFrame(frame);
-        }
-
-        // Play/Pause and Stop buttons
-        if (animationPlayer_.isPlaying()) {
-          if (ImGui::Button("Pause")) {
-            animationPlayer_.pause();
-          }
-        } else {
-          if (ImGui::Button("Play")) {
-            animationPlayer_.play();
-          }
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Stop")) {
-          animationPlayer_.stop();
-        }
-
-        // Playback mode
-        ImGui::SameLine();
-        const char *modeStr = "Loop";
-        switch (animationPlayer_.playbackMode()) {
-        case w3d::PlaybackMode::Once:
-          modeStr = "Once";
-          break;
-        case w3d::PlaybackMode::Loop:
-          modeStr = "Loop";
-          break;
-        case w3d::PlaybackMode::PingPong:
-          modeStr = "PingPong";
-          break;
-        }
-
-        if (ImGui::BeginCombo("Mode", modeStr)) {
-          if (ImGui::Selectable("Once",
-                                animationPlayer_.playbackMode() == w3d::PlaybackMode::Once)) {
-            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Once);
-          }
-          if (ImGui::Selectable("Loop",
-                                animationPlayer_.playbackMode() == w3d::PlaybackMode::Loop)) {
-            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::Loop);
-          }
-          if (ImGui::Selectable("PingPong",
-                                animationPlayer_.playbackMode() == w3d::PlaybackMode::PingPong)) {
-            animationPlayer_.setPlaybackMode(w3d::PlaybackMode::PingPong);
-          }
-          ImGui::EndCombo();
-        }
-
-        // Info display
-        ImGui::Text("Frame: %.1f / %u @ %u FPS", animationPlayer_.currentFrame(),
-                    animationPlayer_.numFrames() > 0 ? animationPlayer_.numFrames() - 1 : 0,
-                    animationPlayer_.frameRate());
-      }
-
-      // Display toggles
-      ImGui::Separator();
-      ImGui::Text("Display Options");
-      ImGui::Checkbox("Show Mesh", &showMesh_);
-      ImGui::Checkbox("Show Skeleton", &showSkeleton_);
-
-      // LOD controls (only shown when HLod is present)
-      if (useHLodModel_ && hlodModel_.lodCount() > 1) {
-        ImGui::Separator();
-        ImGui::Text("LOD Controls");
-
-        // LOD mode selector
-        bool autoMode = hlodModel_.selectionMode() == w3d::LODSelectionMode::Auto;
-        if (ImGui::Checkbox("Auto LOD Selection", &autoMode)) {
-          hlodModel_.setSelectionMode(autoMode ? w3d::LODSelectionMode::Auto
-                                               : w3d::LODSelectionMode::Manual);
-        }
-
-        // Show current LOD info
-        ImGui::Text("Current LOD: %zu / %zu", hlodModel_.currentLOD() + 1, hlodModel_.lodCount());
-
-        if (hlodModel_.selectionMode() == w3d::LODSelectionMode::Auto) {
-          ImGui::Text("Screen size: %.1f px", hlodModel_.currentScreenSize());
-        }
-
-        // Manual LOD selector
-        if (hlodModel_.selectionMode() == w3d::LODSelectionMode::Manual) {
-          int currentLod = static_cast<int>(hlodModel_.currentLOD());
-          if (ImGui::SliderInt("LOD Level", &currentLod, 0,
-                               static_cast<int>(hlodModel_.lodCount()) - 1)) {
-            hlodModel_.setCurrentLOD(static_cast<size_t>(currentLod));
-          }
-        }
-
-        // Show LOD level details
-        if (ImGui::TreeNode("LOD Details")) {
-          for (size_t i = 0; i < hlodModel_.lodCount(); ++i) {
-            const auto &level = hlodModel_.lodLevel(i);
-            bool isCurrent = (i == hlodModel_.currentLOD());
-
-            ImGui::PushStyleColor(ImGuiCol_Text, isCurrent
-                                                     ? ImVec4(0.0f, 1.0f, 0.0f, 1.0f)
-                                                     : ImGui::GetStyleColorVec4(ImGuiCol_Text));
-
-            ImGui::Text("LOD %zu: %zu meshes (maxSize=%.0f)", i, level.meshes.size(),
-                        level.maxScreenSize);
-
-            ImGui::PopStyleColor();
-          }
-
-          if (hlodModel_.aggregateCount() > 0) {
-            ImGui::Text("Aggregates: %zu (always rendered)", hlodModel_.aggregateCount());
-          }
-
-          ImGui::TreePop();
-        }
-      }
-
-      // Camera controls
-      ImGui::Separator();
-      ImGui::Text("Camera Controls");
-      ImGui::Text("Left-drag to orbit, scroll to zoom");
-
-      float yaw = glm::degrees(camera_.yaw());
-      float pitch = glm::degrees(camera_.pitch());
-      float dist = camera_.distance();
-
-      if (ImGui::SliderFloat("Yaw", &yaw, -180.0f, 180.0f)) {
-        camera_.setYaw(glm::radians(yaw));
-      }
-      if (ImGui::SliderFloat("Pitch", &pitch, -85.0f, 85.0f)) {
-        camera_.setPitch(glm::radians(pitch));
-      }
-      if (ImGui::SliderFloat("Distance", &dist, 0.1f, 1000.0f, "%.1f",
-                             ImGuiSliderFlags_Logarithmic)) {
-        camera_.setDistance(dist);
-      }
-
-      if (ImGui::Button("Reset Camera")) {
-        if (useHLodModel_ && hlodModel_.hasData()) {
-          const auto &bounds = hlodModel_.bounds();
-          camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
-        } else if (renderableMesh_.hasData()) {
-          const auto &bounds = renderableMesh_.bounds();
-          camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
-        }
-      }
-    } else {
-      ImGui::Text("No model loaded");
-      ImGui::Text("Use File > Open to load a W3D model");
-    }
-
-    ImGui::End();
+    // Draw all UI through the manager
+    uiManager_.draw(ctx);
   }
 
   void updateHover() {

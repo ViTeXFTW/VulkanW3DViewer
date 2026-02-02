@@ -5,16 +5,21 @@
 #include <string>
 #include <vector>
 
+#include "ui_window.hpp"
+
 namespace w3d {
 
-class FileBrowser {
+/// File browser window for selecting W3D files.
+/// Supports directory navigation, file filtering, and double-click selection.
+class FileBrowser : public UIWindow {
 public:
   using FileSelectedCallback = std::function<void(const std::filesystem::path &)>;
 
   FileBrowser();
 
-  // Draw the file browser window
-  void draw(bool *open = nullptr);
+  // UIWindow interface
+  void draw(UIContext &ctx) override;
+  const char *name() const override { return "File Browser"; }
 
   // Set callback for when a file is selected
   void setFileSelectedCallback(FileSelectedCallback callback) {

@@ -11,10 +11,13 @@ FileBrowser::FileBrowser() {
   // Start at current working directory
   currentPath_ = std::filesystem::current_path();
   refreshDirectory();
+
+  // Start hidden by default
+  visible_ = false;
 }
 
-void FileBrowser::draw(bool *open) {
-  if (!ImGui::Begin("File Browser", open)) {
+void FileBrowser::draw(UIContext & /*ctx*/) {
+  if (!ImGui::Begin(name(), visiblePtr())) {
     ImGui::End();
     return;
   }
@@ -103,8 +106,8 @@ void FileBrowser::draw(bool *open) {
     }
   }
   ImGui::SameLine();
-  if (ImGui::Button("Cancel") && open) {
-    *open = false;
+  if (ImGui::Button("Cancel")) {
+    setVisible(false);
   }
 
   ImGui::End();
