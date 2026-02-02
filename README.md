@@ -26,6 +26,7 @@ VulkanW3DViewer is a high-performance 3D model viewer designed to load and rende
 - **Vulkan-Hpp**: C++ bindings for Vulkan
 - **GLM**: OpenGL Mathematics library
 - **ImGui**: Immediate mode GUI (integrated in `src/ui/`)
+- **CLI11**: Command line argument parser
 - **GoogleTest**: Testing framework
 
 ## Building
@@ -90,12 +91,43 @@ Future development will include terrain rendering to as a baseline render a map 
 
 ## Usage
 
-1. Launch the application
-2. Use the file browser UI to load `.w3d` files
-3. Navigate with mouse:
+### Command Line Options
+
+```bash
+VulkanW3DViewer [model] [OPTIONS]
+
+Arguments:
+  model                    W3D model file to load on startup
+
+Options:
+  -h,--help               Display help message and exit
+  -t,--textures PATH      Set custom texture search path
+  -d,--debug              Enable verbose debug output
+```
+
+### Examples
+
+```bash
+# Launch with GUI file browser
+./VulkanW3DViewer
+
+# Load a model directly
+./VulkanW3DViewer model.w3d
+
+# Load a model with custom texture path
+./VulkanW3DViewer model.w3d -t /path/to/textures
+
+# Enable debug output
+./VulkanW3DViewer model.w3d --debug
+```
+
+### Navigation
+
+1. Use the file browser UI to load `.w3d` files (or pass a model on the command line)
+2. Navigate with mouse:
    - **Left drag**: Rotate camera
    - **Scroll**: Zoom in/out
-4. View debug information in the console window
+3. View debug information in the console window
 
 ## License
 
