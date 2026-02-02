@@ -31,7 +31,7 @@ This is a **W3D format renderer** - a modern Vulkan-based tool for loading and r
 
 - **Vulkan 1.3+** GPU (uses dynamic rendering, no VkRenderPass)
 - Vulkan SDK installed system-wide (`C:/VulkanSDK/`)
-- GLFW, Vulkan-Hpp, ImGui, GLM and googletest are git submodules in `lib/`
+- GLFW, Vulkan-Hpp, ImGui, GLM, CLI11, and GoogleTest are git submodules in `lib/`
 
 ## Architecture
 
@@ -41,7 +41,7 @@ This is a **W3D format renderer** - a modern Vulkan-based tool for loading and r
 
 ```
 src/
-  main.cpp                    # Application entry, render loop
+  main.cpp                    # Application entry, CLI argument parsing (CLI11)
   core/
     vulkan_context.hpp/cpp    # Device, swapchain, queues, depth buffer
     buffer.hpp/cpp            # GPU buffer management with staging
