@@ -38,10 +38,6 @@ public:
   template <typename T, typename... Args>
   T *addWindow(Args &&...args);
 
-  /// Add an already-constructed window
-  /// Returns pointer to the added window
-  UIWindow *addWindow(std::unique_ptr<UIWindow> window);
-
   /// Get a window by type (returns nullptr if not found)
   template <typename T>
   T *getWindow();

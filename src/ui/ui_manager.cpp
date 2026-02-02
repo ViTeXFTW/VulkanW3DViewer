@@ -4,12 +4,6 @@
 
 namespace w3d {
 
-UIWindow *UIManager::addWindow(std::unique_ptr<UIWindow> window) {
-  UIWindow *ptr = window.get();
-  windows_.push_back(std::move(window));
-  return ptr;
-}
-
 void UIManager::draw(UIContext &ctx) {
   // Call frame begin hooks
   for (auto &window : windows_) {
