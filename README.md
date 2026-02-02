@@ -2,6 +2,18 @@
 
 Modern renderer for Electronic Arts W3D format using Vulkan, GLFW and GLM.
 
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://vitexftw.github.io/VulkanW3DViewer/)
+
+## Documentation
+
+Full documentation is available at **[vitexftw.github.io/VulkanW3DViewer](https://vitexftw.github.io/VulkanW3DViewer/)**
+
+- [Getting Started](https://vitexftw.github.io/VulkanW3DViewer/getting-started/) - Installation and build instructions
+- [User Guide](https://vitexftw.github.io/VulkanW3DViewer/user-guide/) - How to use the viewer
+- [W3D Format](https://vitexftw.github.io/VulkanW3DViewer/w3d-format/) - Technical format documentation
+- [Architecture](https://vitexftw.github.io/VulkanW3DViewer/architecture/) - Codebase overview
+- [Development](https://vitexftw.github.io/VulkanW3DViewer/development/) - Contributing guidelines
+
 ## Disclaimer
 
 **EA has not endorsed and does not support this product.**  
