@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 
+#include <array>
 #include <vector>
 
 #include "skeleton.hpp"
@@ -34,8 +35,11 @@ struct SkeletonVertex {
 };
 
 // Renders a skeleton as lines and joint spheres
+// Double-buffered to allow CPU updates while GPU is reading previous frame.
 class SkeletonRenderer {
 public:
+  static constexpr uint32_t FRAME_COUNT = 2; // Double-buffering
+
   SkeletonRenderer() = default;
   ~SkeletonRenderer();
 
@@ -45,14 +49,14 @@ public:
   // Create pipeline and resources
   void create(VulkanContext &context);
 
-  // Update skeleton geometry from pose
-  void updateFromPose(VulkanContext &context, const SkeletonPose &pose);
+  // Update skeleton geometry from pose for a specific frame
+  void updateFromPose(VulkanContext &context, uint32_t frameIndex, const SkeletonPose &pose);
 
   // Free resources
   void destroy();
 
   // Check if skeleton is loaded
-  bool hasData() const { return lineVertexCount_ > 0 || jointVertexCount_ > 0; }
+  bool hasData() const { return lineVertexCount_[0] > 0 || jointVertexCount_[0] > 0; }
 
   // Get pipeline for drawing
   vk::Pipeline linePipeline() const { return linePipeline_; }
@@ -60,11 +64,11 @@ public:
   vk::PipelineLayout pipelineLayout() const { return pipelineLayout_; }
   vk::DescriptorSetLayout descriptorSetLayout() const { return descriptorSetLayout_; }
 
-  // Record draw commands (call after binding descriptor set)
-  void draw(vk::CommandBuffer cmd) const;
+  // Record draw commands for a specific frame (call after binding descriptor set)
+  void draw(vk::CommandBuffer cmd, uint32_t frameIndex) const;
 
-  // Draw with optional hover tint (applies to all skeleton elements)
-  void drawWithHover(vk::CommandBuffer cmd, const glm::vec3 &tintColor) const;
+  // Draw with optional hover tint for a specific frame (applies to all skeleton elements)
+  void drawWithHover(vk::CommandBuffer cmd, uint32_t frameIndex, const glm::vec3 &tintColor) const;
 
   // Color configuration
   void setBoneColor(const glm::vec3 &color) { boneColor_ = color; }
@@ -106,11 +110,11 @@ private:
   vk::PipelineLayout pipelineLayout_;
   vk::DescriptorSetLayout descriptorSetLayout_;
 
-  // Geometry buffers
-  VertexBuffer<SkeletonVertex> lineBuffer_;
-  VertexBuffer<SkeletonVertex> jointBuffer_;
-  uint32_t lineVertexCount_ = 0;
-  uint32_t jointVertexCount_ = 0;
+  // Geometry buffers (double-buffered)
+  std::array<VertexBuffer<SkeletonVertex>, FRAME_COUNT> lineBuffers_;
+  std::array<VertexBuffer<SkeletonVertex>, FRAME_COUNT> jointBuffers_;
+  std::array<uint32_t, FRAME_COUNT> lineVertexCount_ = {};
+  std::array<uint32_t, FRAME_COUNT> jointVertexCount_ = {};
 
   // Colors
   glm::vec3 boneColor_{0.8f, 0.8f, 0.2f};  // Yellow for bones

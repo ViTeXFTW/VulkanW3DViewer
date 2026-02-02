@@ -148,8 +148,9 @@ void Application::loadW3DFile(const std::filesystem::path &path) {
     return;
   }
 
-  useHLodModel_ = result.useHLodModel;
-  useSkinnedRendering_ = result.useSkinnedRendering;
+  renderState_.useHLodModel = result.useHLodModel;
+  renderState_.useSkinnedRendering = result.useSkinnedRendering;
+  renderState_.lastAppliedFrame = -1.0f; // Reset animation state for new model
 }
 
 void Application::updateHover() {
@@ -181,13 +182,13 @@ void Application::updateHover() {
       glm::vec2(static_cast<float>(extent.width), static_cast<float>(extent.height)), view, proj);
 
   // Test skeleton first (priority over meshes)
-  if (showSkeleton_ && skeletonRenderer_.hasData()) {
+  if (renderState_.showSkeleton && skeletonRenderer_.hasData()) {
     hoverDetector_.testSkeleton(skeletonRenderer_, 0.05f);
   }
 
   // Test meshes
-  if (showMesh_) {
-    if (useHLodModel_ && hlodModel_.hasData()) {
+  if (renderState_.showMesh) {
+    if (renderState_.useHLodModel && hlodModel_.hasData()) {
       // TODO: Implement HLod hover detection
     } else if (renderableMesh_.hasData()) {
       hoverDetector_.testMeshes(renderableMesh_);
@@ -201,22 +202,19 @@ void Application::drawUI() {
   ctx.window = window_;
   ctx.loadedFile = modelLoader_.loadedFile() ? &*modelLoader_.loadedFile() : nullptr;
   ctx.loadedFilePath = modelLoader_.loadedFilePath();
+  ctx.renderState = &renderState_;
   ctx.hlodModel = &hlodModel_;
   ctx.renderableMesh = &renderableMesh_;
-  ctx.useHLodModel = useHLodModel_;
-  ctx.useSkinnedRendering = useSkinnedRendering_;
   ctx.camera = &camera_;
   ctx.skeletonPose = &skeletonPose_;
   ctx.animationPlayer = &animationPlayer_;
-  ctx.showMesh = &showMesh_;
-  ctx.showSkeleton = &showSkeleton_;
   ctx.hoverState = &hoverDetector_.state();
 
   // Set up callbacks
   ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
   ctx.onExit = [this]() { glfwSetWindowShouldClose(window_, GLFW_TRUE); };
   ctx.onResetCamera = [this]() {
-    if (useHLodModel_ && hlodModel_.hasData()) {
+    if (renderState_.useHLodModel && hlodModel_.hasData()) {
       const auto &bounds = hlodModel_.bounds();
       camera_.setTarget(bounds.center(), bounds.radius() * 2.5f);
     } else if (renderableMesh_.hasData()) {
@@ -253,24 +251,28 @@ void Application::mainLoop() {
     if (modelLoader_.loadedFile() && animationPlayer_.animationCount() > 0 &&
         !modelLoader_.loadedFile()->hierarchies.empty()) {
       float currentFrame = animationPlayer_.currentFrame();
-      if (currentFrame != lastAppliedFrame_ || !animationPlayer_.isPlaying()) {
+      if (currentFrame != renderState_.lastAppliedFrame || !animationPlayer_.isPlaying()) {
         animationPlayer_.applyToPose(skeletonPose_, modelLoader_.loadedFile()->hierarchies[0]);
-        // Wait for GPU to finish before updating skeleton buffers
-        context_.device().waitIdle();
-        skeletonRenderer_.updateFromPose(context_, skeletonPose_);
 
-        // Update bone matrix buffer for GPU skinning
-        if (useSkinnedRendering_ && skeletonPose_.isValid()) {
+        // Wait for current frame fence before updating any per-frame GPU resources
+        renderer_.waitForCurrentFrame();
+        uint32_t frameIndex = renderer_.currentFrame();
+
+        // Update skeleton debug visualization (double-buffered)
+        skeletonRenderer_.updateFromPose(context_, frameIndex, skeletonPose_);
+
+        // Update bone matrix buffer for GPU skinning (double-buffered)
+        if (renderState_.useSkinnedRendering && skeletonPose_.isValid()) {
           auto skinningMatrices = skeletonPose_.getSkinningMatrices();
-          boneMatrixBuffer_.update(skinningMatrices);
+          boneMatrixBuffer_.update(frameIndex, skinningMatrices);
         }
 
-        lastAppliedFrame_ = currentFrame;
+        renderState_.lastAppliedFrame = currentFrame;
       }
     }
 
     // Update LOD selection based on camera distance
-    if (useHLodModel_ && hlodModel_.hasData()) {
+    if (renderState_.useHLodModel && hlodModel_.hasData()) {
       auto extent = context_.swapchainExtent();
       float screenHeight = static_cast<float>(extent.height);
       float fovY = glm::radians(45.0f); // Must match projection FOV
@@ -284,8 +286,9 @@ void Application::mainLoop() {
     drawUI();
 
     // Draw frame
-    renderer_.drawFrame(camera_, renderableMesh_, hlodModel_, skeletonRenderer_, hoverDetector_,
-                        useHLodModel_, useSkinnedRendering_, showMesh_, showSkeleton_);
+    FrameContext frameCtx{camera_,           renderableMesh_, hlodModel_,
+                          skeletonRenderer_, hoverDetector_,  renderState_};
+    renderer_.drawFrame(frameCtx);
   }
 
   context_.device().waitIdle();

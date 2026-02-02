@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "core/render_state.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
 #include "render/hlod_model.hpp"
@@ -22,6 +23,19 @@
 #include "ui/imgui_backend.hpp"
 
 namespace w3d {
+
+/**
+ * Context object that bundles all data needed for rendering a frame.
+ * This reduces coupling by grouping related parameters together.
+ */
+struct FrameContext {
+  Camera &camera;
+  RenderableMesh &renderableMesh;
+  HLodModel &hlodModel;
+  SkeletonRenderer &skeletonRenderer;
+  const HoverDetector &hoverDetector;
+  const RenderState &renderState;
+};
 
 /**
  * Manages all Vulkan rendering operations including command buffers,
@@ -53,16 +67,27 @@ public:
   void recreateSwapchain(int width, int height);
 
   /**
-   * Draw a single frame.
+   * Wait for the current frame's fence to be signaled.
+   * Call this before updating any per-frame resources (e.g., bone matrices)
+   * to ensure the GPU is done reading from that frame's buffers.
    */
-  void drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                 SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                 bool useHLodModel, bool useSkinnedRendering, bool showMesh, bool showSkeleton);
+  void waitForCurrentFrame();
+
+  /**
+   * Draw a single frame. Call waitForCurrentFrame() first if you need to
+   * update per-frame resources before drawing.
+   */
+  void drawFrame(const FrameContext &ctx);
 
   /**
    * Mark framebuffer as resized.
    */
   void setFramebufferResized(bool resized) { framebufferResized_ = resized; }
+
+  /**
+   * Get current frame index for double-buffered resources.
+   */
+  uint32_t currentFrame() const { return currentFrame_; }
 
   // Accessors
   Pipeline &pipeline() { return pipeline_; }
@@ -76,11 +101,7 @@ private:
   void createCommandBuffers();
   void createSyncObjects();
   void updateUniformBuffer(uint32_t frameIndex, const Camera &camera);
-  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
-                           RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                           SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                           bool useHLodModel, bool useSkinnedRendering, bool showMesh,
-                           bool showSkeleton);
+  void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, const FrameContext &ctx);
 
   // External resources (not owned)
   GLFWwindow *window_ = nullptr;
@@ -104,6 +125,7 @@ private:
 
   uint32_t currentFrame_ = 0;
   bool framebufferResized_ = false;
+  bool frameWaited_ = false; // Track if waitForCurrentFrame() was called this frame
 
   // Default material
   Material defaultMaterial_;

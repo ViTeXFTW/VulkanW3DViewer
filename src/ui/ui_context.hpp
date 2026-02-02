@@ -1,8 +1,9 @@
 #pragma once
 
 #include <functional>
-#include <optional>
 #include <string>
+
+#include "core/render_state.hpp"
 
 // Forward declarations to avoid header dependencies
 struct GLFWwindow;
@@ -39,18 +40,16 @@ struct UIContext {
   /// Path to the loaded file
   std::string loadedFilePath;
 
+  // === Render State ===
+  /// Centralized rendering state (display toggles, rendering modes)
+  RenderState *renderState = nullptr;
+
   // === Rendering Objects ===
   /// HLod model for complex models with LOD
   HLodModel *hlodModel = nullptr;
 
   /// Simple renderable mesh (when no HLod present)
   RenderableMesh *renderableMesh = nullptr;
-
-  /// Whether to use HLod model (vs simple mesh)
-  bool useHLodModel = false;
-
-  /// Whether skinned rendering is active
-  bool useSkinnedRendering = false;
 
   // === Camera ===
   Camera *camera = nullptr;
@@ -61,13 +60,6 @@ struct UIContext {
 
   /// Animation player for playback control
   AnimationPlayer *animationPlayer = nullptr;
-
-  // === Display Toggles ===
-  /// Show mesh geometry
-  bool *showMesh = nullptr;
-
-  /// Show skeleton overlay
-  bool *showSkeleton = nullptr;
 
   // === Hover Detection ===
   /// Current hover state (read-only for UI display)
@@ -100,11 +92,13 @@ struct UIContext {
 
 // Inline implementations
 inline bool UIContext::hasMeshData() const {
-  if (useHLodModel && hlodModel) {
+  if (!renderState)
+    return false;
+  if (renderState->useHLodModel && hlodModel) {
     // HLodModel::hasData() check - we can't call it directly without including header
     return true; // Assume true if hlodModel is set
   }
-  if (!useHLodModel && renderableMesh) {
+  if (!renderState->useHLodModel && renderableMesh) {
     return true; // Assume true if renderableMesh is set
   }
   return false;

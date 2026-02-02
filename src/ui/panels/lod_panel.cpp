@@ -8,7 +8,8 @@
 namespace w3d {
 
 void LODPanel::draw(UIContext &ctx) {
-  if (!ctx.useHLodModel || !ctx.hlodModel || ctx.hlodModel->lodCount() <= 1) {
+  if (!ctx.renderState || !ctx.renderState->useHLodModel || !ctx.hlodModel ||
+      ctx.hlodModel->lodCount() <= 1) {
     ImGui::TextDisabled("No LOD levels available");
     return;
   }

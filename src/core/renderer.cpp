@@ -39,7 +39,7 @@ void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &im
     // Initialize skinned descriptor manager
     skinnedDescriptorManager_.updateUniformBuffer(i, uniformBuffers_.buffer(i),
                                                   sizeof(UniformBufferObject));
-    skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer.buffer(),
+    skinnedDescriptorManager_.updateBoneBuffer(i, boneMatrixBuffer.buffer(i),
                                                sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
   }
 
@@ -112,10 +112,7 @@ void Renderer::recreateSwapchain(int width, int height) {
 }
 
 void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
-                                   RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                                   SkeletonRenderer &skeletonRenderer,
-                                   const HoverDetector &hoverDetector, bool useHLodModel,
-                                   bool useSkinnedRendering, bool showMesh, bool showSkeleton) {
+                                   const FrameContext &ctx) {
   vk::CommandBufferBeginInfo beginInfo{};
   cmd.begin(beginInfo);
 
@@ -156,13 +153,13 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                          descriptorManager_.descriptorSet(currentFrame_), {});
 
   // Draw loaded mesh (either HLod model or simple renderable mesh)
-  if (showMesh) {
-    if (useHLodModel && hlodModel.hasData()) {
-      if (useSkinnedRendering && hlodModel.hasSkinning()) {
+  if (ctx.renderState.showMesh) {
+    if (ctx.renderState.useHLodModel && ctx.hlodModel.hasData()) {
+      if (ctx.renderState.useSkinnedRendering && ctx.hlodModel.hasSkinning()) {
         // Draw with skinned pipeline (GPU skinning)
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.pipeline());
 
-        hlodModel.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
+        ctx.hlodModel.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
           MaterialPushConstant materialData{};
           materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
           materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -180,7 +177,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           if (texIdx > 0) {
             const auto &tex = textureManager_->texture(texIdx);
             vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler, boneMatrixBuffer_->buffer(),
+                currentFrame_, texIdx, tex.view, tex.sampler,
+                boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    texDescSet, {});
@@ -188,7 +186,8 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
           } else {
             const auto &defaultTex = textureManager_->texture(0);
             vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler, boneMatrixBuffer_->buffer(),
+                currentFrame_, 0, defaultTex.view, defaultTex.sampler,
+                boneMatrixBuffer_->buffer(currentFrame_),
                 sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
             cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
                                    defaultDescSet, {});
@@ -203,7 +202,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
       } else {
         // Draw with regular pipeline (CPU-transformed vertices)
-        hlodModel.drawWithTextures(cmd, [&](const std::string &textureName) {
+        ctx.hlodModel.drawWithTextures(cmd, [&](const std::string &textureName) {
           MaterialPushConstant materialData{};
           materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
           materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -240,7 +239,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
                             sizeof(MaterialPushConstant), &materialData);
         });
       }
-    } else if (renderableMesh.hasData()) {
+    } else if (ctx.renderableMesh.hasData()) {
       // Simple mesh without textures
       MaterialPushConstant materialData{};
       materialData.diffuseColor = glm::vec4(defaultMaterial_.diffuse, defaultMaterial_.opacity);
@@ -252,9 +251,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
 
       // Use hover detection for simple meshes
       const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
-      const auto &hover = hoverDetector.state();
+      const auto &hover = ctx.hoverDetector.state();
 
-      renderableMesh.drawWithHover(
+      ctx.renderableMesh.drawWithHover(
           cmd, hover.type == HoverType::Mesh ? static_cast<int>(hover.objectIndex) : -1, hoverTint,
           [&](size_t /*meshIndex*/, const glm::vec3 &tint) {
             materialData.hoverTint = tint;
@@ -265,19 +264,19 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   }
 
   // Draw skeleton overlay
-  if (showSkeleton && skeletonRenderer.hasData()) {
+  if (ctx.renderState.showSkeleton && ctx.skeletonRenderer.hasData()) {
     // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skeletonRenderer.pipelineLayout(), 0,
-                           descriptorManager_.descriptorSet(currentFrame_), {});
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, ctx.skeletonRenderer.pipelineLayout(),
+                           0, descriptorManager_.descriptorSet(currentFrame_), {});
 
     // Apply hover tint if hovering over skeleton
     const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
-    const auto &hover = hoverDetector.state();
+    const auto &hover = ctx.hoverDetector.state();
     glm::vec3 skeletonTint = (hover.type == HoverType::Bone || hover.type == HoverType::Joint)
                                  ? hoverTint
                                  : glm::vec3(1.0f);
 
-    skeletonRenderer.drawWithHover(cmd, skeletonTint);
+    ctx.skeletonRenderer.drawWithHover(cmd, currentFrame_, skeletonTint);
   }
 
   // Draw ImGui
@@ -287,17 +286,25 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   cmd.end();
 }
 
-void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodModel &hlodModel,
-                         SkeletonRenderer &skeletonRenderer, const HoverDetector &hoverDetector,
-                         bool useHLodModel, bool useSkinnedRendering, bool showMesh,
-                         bool showSkeleton) {
-  auto device = context_->device();
+void Renderer::waitForCurrentFrame() {
+  if (frameWaited_) {
+    return; // Already waited this frame
+  }
 
-  // Wait for previous frame
+  auto device = context_->device();
   auto waitResult = device.waitForFences(inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
   if (waitResult != vk::Result::eSuccess) {
     throw std::runtime_error("Failed waiting for fence");
   }
+
+  frameWaited_ = true;
+}
+
+void Renderer::drawFrame(const FrameContext &ctx) {
+  auto device = context_->device();
+
+  // Wait for previous frame (skipped if waitForCurrentFrame() was already called)
+  waitForCurrentFrame();
 
   // Acquire next image
   uint32_t imageIndex;
@@ -318,13 +325,11 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
   device.resetFences(inFlightFences_[currentFrame_]);
 
   // Update uniform buffer
-  updateUniformBuffer(currentFrame_, camera);
+  updateUniformBuffer(currentFrame_, ctx.camera);
 
   // Record command buffer
   commandBuffers_[currentFrame_].reset();
-  recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex, renderableMesh, hlodModel,
-                      skeletonRenderer, hoverDetector, useHLodModel, useSkinnedRendering, showMesh,
-                      showSkeleton);
+  recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex, ctx);
 
   // Submit
   vk::PipelineStageFlags waitStages = vk::PipelineStageFlagBits::eColorAttachmentOutput;
@@ -362,6 +367,7 @@ void Renderer::drawFrame(Camera &camera, RenderableMesh &renderableMesh, HLodMod
   }
 
   currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
+  frameWaited_ = false; // Reset for next frame
 }
 
 } // namespace w3d
