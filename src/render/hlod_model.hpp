@@ -283,20 +283,18 @@ void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindText
 template <typename BeforeDrawFunc>
 void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
                               const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
-  size_t meshIdx = 0;
-
   // Draw aggregates first (always rendered)
   for (size_t i = 0; i < aggregateCount_; ++i) {
     const auto &mesh = meshGPU_[i];
-    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
-    beforeDraw(meshIdx, mesh.textureName, tint);
+    // Compare against actual array index (i), not a sequential counter
+    glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(i, mesh.textureName, tint);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-    ++meshIdx;
   }
 
   // Draw current LOD level meshes
@@ -308,15 +306,15 @@ void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
       continue;
     }
 
-    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
-    beforeDraw(meshIdx, mesh.textureName, tint);
+    // Compare against actual array index (i), not a sequential counter
+    glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(i, mesh.textureName, tint);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-    ++meshIdx;
   }
 }
 
@@ -341,20 +339,18 @@ void HLodModel::drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc b
 template <typename BeforeDrawFunc>
 void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
                                      const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
-  size_t meshIdx = 0;
-
   // Draw aggregates first (always rendered)
   for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
     const auto &mesh = skinnedMeshGPU_[i];
-    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
-    beforeDraw(meshIdx, mesh.textureName, tint);
+    // Compare against actual array index (i), not a sequential counter
+    glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(i, mesh.textureName, tint);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-    ++meshIdx;
   }
 
   // Draw current LOD level meshes
@@ -366,15 +362,15 @@ void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
       continue;
     }
 
-    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
-    beforeDraw(meshIdx, mesh.textureName, tint);
+    // Compare against actual array index (i), not a sequential counter
+    glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(i, mesh.textureName, tint);
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
     vk::DeviceSize offsets[] = {0};
     cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
-    ++meshIdx;
   }
 }
 
