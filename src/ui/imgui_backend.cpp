@@ -1,12 +1,12 @@
-#include "core/vulkan_context.hpp"
-#include "core/app_paths.hpp"
-
 #include "imgui_backend.hpp"
+
+#include "core/vulkan_context.hpp"
+
+#include "core/app_paths.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
-
 
 namespace w3d {
 

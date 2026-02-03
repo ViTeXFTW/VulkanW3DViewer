@@ -1,13 +1,15 @@
 #include "settings.hpp"
-#include "app_paths.hpp"
 
 #include <fstream>
 #include <iostream>
+
+#include "app_paths.hpp"
+
 #include <nlohmann/json.hpp>
 
 namespace w3d {
 
-Settings Settings::load(const std::filesystem::path& path) {
+Settings Settings::load(const std::filesystem::path &path) {
   Settings settings; // Start with defaults
 
   if (!std::filesystem::exists(path)) {
@@ -16,8 +18,7 @@ Settings Settings::load(const std::filesystem::path& path) {
 
   std::ifstream file(path);
   if (!file) {
-    std::cerr << "Warning: Could not open settings file: " << path.string()
-              << "\n";
+    std::cerr << "Warning: Could not open settings file: " << path.string() << "\n";
     return settings;
   }
 
@@ -27,19 +28,18 @@ Settings Settings::load(const std::filesystem::path& path) {
 
     // Parse paths section
     if (json.contains("paths")) {
-      auto& paths = json["paths"];
+      auto &paths = json["paths"];
       if (paths.contains("texture_path")) {
         settings.texturePath = paths["texture_path"].get<std::string>();
       }
       if (paths.contains("last_browsed_directory")) {
-        settings.lastBrowsedDirectory =
-            paths["last_browsed_directory"].get<std::string>();
+        settings.lastBrowsedDirectory = paths["last_browsed_directory"].get<std::string>();
       }
     }
 
     // Parse window section
     if (json.contains("window")) {
-      auto& window = json["window"];
+      auto &window = json["window"];
       if (window.contains("width")) {
         settings.windowWidth = window["width"].get<int>();
       }
@@ -50,7 +50,7 @@ Settings Settings::load(const std::filesystem::path& path) {
 
     // Parse display section
     if (json.contains("display")) {
-      auto& display = json["display"];
+      auto &display = json["display"];
       if (display.contains("show_mesh")) {
         settings.showMesh = display["show_mesh"].get<bool>();
       }
@@ -58,7 +58,7 @@ Settings Settings::load(const std::filesystem::path& path) {
         settings.showSkeleton = display["show_skeleton"].get<bool>();
       }
     }
-  } catch (const nlohmann::json::exception& e) {
+  } catch (const nlohmann::json::exception &e) {
     std::cerr << "Warning: Error parsing settings file: " << e.what() << "\n";
     // Return partially loaded settings or defaults
   }
@@ -74,22 +74,21 @@ Settings Settings::loadDefault() {
   return load(*path);
 }
 
-bool Settings::save(const std::filesystem::path& path) const {
+bool Settings::save(const std::filesystem::path &path) const {
   // Ensure parent directory exists
   auto parent = path.parent_path();
   if (!parent.empty() && !std::filesystem::exists(parent)) {
     std::error_code ec;
     if (!std::filesystem::create_directories(parent, ec)) {
-      std::cerr << "Warning: Could not create settings directory: "
-                << parent.string() << " (" << ec.message() << ")\n";
+      std::cerr << "Warning: Could not create settings directory: " << parent.string() << " ("
+                << ec.message() << ")\n";
       return false;
     }
   }
 
   std::ofstream file(path);
   if (!file) {
-    std::cerr << "Warning: Could not open settings file for writing: "
-              << path.string() << "\n";
+    std::cerr << "Warning: Could not open settings file for writing: " << path.string() << "\n";
     return false;
   }
 
@@ -109,7 +108,7 @@ bool Settings::save(const std::filesystem::path& path) const {
     json["display"]["show_skeleton"] = showSkeleton;
 
     file << json.dump(2); // Pretty print with 2-space indent
-  } catch (const nlohmann::json::exception& e) {
+  } catch (const nlohmann::json::exception &e) {
     std::cerr << "Warning: Error serializing settings: " << e.what() << "\n";
     return false;
   }

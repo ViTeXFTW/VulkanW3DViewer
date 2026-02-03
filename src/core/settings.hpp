@@ -30,7 +30,7 @@ struct Settings {
 
   /// Load settings from a file.
   /// Returns default settings if file doesn't exist or is invalid.
-  static Settings load(const std::filesystem::path& path);
+  static Settings load(const std::filesystem::path &path);
 
   /// Load settings from the default location.
   /// Uses AppPaths::settingsFilePath() to determine the path.
@@ -38,7 +38,7 @@ struct Settings {
 
   /// Save settings to a file.
   /// Returns true on success, false on failure.
-  bool save(const std::filesystem::path& path) const;
+  bool save(const std::filesystem::path &path) const;
 
   /// Save settings to the default location.
   /// Uses AppPaths::settingsFilePath() to determine the path.
