@@ -32,6 +32,9 @@ void ImGuiBackend::init(GLFWwindow *window, VulkanContext &context) {
     AppPaths::ensureAppDataDir();
     imguiIniPath = path->string();
     io.IniFilename = imguiIniPath.c_str();
+  } else {
+    // Disable ini persistence if path determination fails
+    io.IniFilename = nullptr;
   }
 
   // Enable docking
