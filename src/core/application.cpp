@@ -340,10 +340,10 @@ void Application::run() {
 
   mainLoop();
 
-  // Save settings before cleanup
-  appSettings_.saveDefault();
-
   cleanup();
+
+  // Save settings after cleanup (which captures final window size)
+  appSettings_.saveDefault();
 }
 
 } // namespace w3d
