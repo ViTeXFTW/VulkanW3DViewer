@@ -9,6 +9,7 @@
 
 #include "core/render_state.hpp"
 #include "core/renderer.hpp"
+#include "core/settings.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/camera.hpp"
@@ -125,6 +126,9 @@ private:
   UIManager uiManager_;
   ConsoleWindow *console_ = nullptr;   // Owned by uiManager_
   FileBrowser *fileBrowser_ = nullptr; // Owned by uiManager_
+
+  // Setting Management
+  Settings appSettings_;
 };
 
 } // namespace w3d
