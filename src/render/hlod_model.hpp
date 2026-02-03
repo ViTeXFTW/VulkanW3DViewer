@@ -40,6 +40,15 @@ struct HLodMeshGPU {
   int32_t boneIndex = -1;
   size_t lodLevel = 0;      // Which LOD level this mesh belongs to
   bool isAggregate = false; // True if this is an always-rendered aggregate
+
+  // CPU-side copies for ray-triangle intersection
+  std::vector<Vertex> cpuVertices;
+  std::vector<uint32_t> cpuIndices;
+
+  // Sub-mesh metadata for hover display
+  std::string baseName;      // Base mesh name without _subN suffix
+  size_t subMeshIndex = 0;   // Which sub-mesh (0-indexed)
+  size_t subMeshTotal = 1;   // Total sub-meshes for this base mesh
 };
 
 // GPU resources for a skinned mesh (with per-vertex bone indices)
@@ -52,6 +61,15 @@ struct HLodSkinnedMeshGPU {
   size_t lodLevel = 0;
   bool isAggregate = false;
   bool hasSkinning = false; // True if mesh has per-vertex bone indices
+
+  // CPU-side copies for ray-triangle intersection
+  std::vector<SkinnedVertex> cpuVertices;
+  std::vector<uint32_t> cpuIndices;
+
+  // Sub-mesh metadata for hover display
+  std::string baseName;
+  size_t subMeshIndex = 0;
+  size_t subMeshTotal = 1;
 };
 
 // LOD selection mode
@@ -134,8 +152,38 @@ public:
   template <typename BindTextureFunc>
   void drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const;
 
+  // Draw with hover highlighting on a specific mesh
+  // hoverMeshIndex: Index of mesh to highlight (-1 for none)
+  // tintColor: Color to multiply with hovered mesh
+  // beforeDraw: Callback receiving mesh index, texture name, and tint color
+  template <typename BeforeDrawFunc>
+  void drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const glm::vec3 &tintColor,
+                     BeforeDrawFunc beforeDraw) const;
+
   // Get mesh GPU data (for external texture binding)
   const std::vector<HLodMeshGPU> &meshes() const { return meshGPU_; }
+
+  // Triangle access for ray-casting (non-skinned meshes)
+  size_t triangleCount(size_t meshIndex) const;
+  bool getTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0, glm::vec3 &v1,
+                   glm::vec3 &v2) const;
+
+  // Triangle access for skinned meshes
+  size_t skinnedTriangleCount(size_t meshIndex) const;
+  bool getSkinnedTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0, glm::vec3 &v1,
+                          glm::vec3 &v2) const;
+
+  // Get mesh name by index
+  const std::string &meshName(size_t index) const;
+  const std::string &skinnedMeshName(size_t index) const;
+
+  // Check if a mesh is visible at the current LOD level
+  bool isMeshVisible(size_t meshIndex) const;
+  bool isSkinnedMeshVisible(size_t meshIndex) const;
+
+  // Get indices of all visible meshes (aggregates + current LOD)
+  std::vector<size_t> visibleMeshIndices() const;
+  std::vector<size_t> visibleSkinnedMeshIndices() const;
 
   // Draw with per-mesh bone transforms
   template <typename UpdateModelMatrixFunc>
@@ -146,6 +194,14 @@ public:
   // Uses GPU skinning with bone matrices from SSBO
   template <typename BindTextureFunc>
   void drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const;
+
+  // Draw skinned meshes with hover highlighting
+  // hoverMeshIndex: Index of mesh to highlight (-1 for none)
+  // tintColor: Color to multiply with hovered mesh
+  // beforeDraw: Callback receiving mesh index, texture name, and tint color
+  template <typename BeforeDrawFunc>
+  void drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const glm::vec3 &tintColor,
+                            BeforeDrawFunc beforeDraw) const;
 
   // Get skinned mesh GPU data
   const std::vector<HLodSkinnedMeshGPU> &skinnedMeshes() const { return skinnedMeshGPU_; }
@@ -224,6 +280,46 @@ void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindText
                  [&](const HLodMeshGPU &mesh) { bindTexture(mesh.textureName); });
 }
 
+template <typename BeforeDrawFunc>
+void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
+                              const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
+  size_t meshIdx = 0;
+
+  // Draw aggregates first (always rendered)
+  for (size_t i = 0; i < aggregateCount_; ++i) {
+    const auto &mesh = meshGPU_[i];
+    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(meshIdx, mesh.textureName, tint);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+    ++meshIdx;
+  }
+
+  // Draw current LOD level meshes
+  for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    const auto &mesh = meshGPU_[i];
+
+    // Skip if not in current LOD level
+    if (mesh.lodLevel != currentLOD_) {
+      continue;
+    }
+
+    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(meshIdx, mesh.textureName, tint);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+    ++meshIdx;
+  }
+}
+
 template <typename UpdateModelMatrixFunc>
 void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
                                        UpdateModelMatrixFunc updateModelMatrix) const {
@@ -240,6 +336,46 @@ template <typename BindTextureFunc>
 void HLodModel::drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
   drawMeshesImpl(cmd, skinnedMeshGPU_, skinnedAggregateCount_,
                  [&](const HLodSkinnedMeshGPU &mesh) { bindTexture(mesh.textureName); });
+}
+
+template <typename BeforeDrawFunc>
+void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
+                                     const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
+  size_t meshIdx = 0;
+
+  // Draw aggregates first (always rendered)
+  for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
+    const auto &mesh = skinnedMeshGPU_[i];
+    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(meshIdx, mesh.textureName, tint);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+    ++meshIdx;
+  }
+
+  // Draw current LOD level meshes
+  for (size_t i = skinnedAggregateCount_; i < skinnedMeshGPU_.size(); ++i) {
+    const auto &mesh = skinnedMeshGPU_[i];
+
+    // Skip if not in current LOD level
+    if (mesh.lodLevel != currentLOD_) {
+      continue;
+    }
+
+    glm::vec3 tint = (static_cast<int>(meshIdx) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
+    beforeDraw(meshIdx, mesh.textureName, tint);
+
+    vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
+    vk::DeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
+    ++meshIdx;
+  }
 }
 
 } // namespace w3d

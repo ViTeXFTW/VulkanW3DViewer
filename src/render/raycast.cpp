@@ -216,4 +216,20 @@ SphereHit intersectRaySphere(const Ray &ray, const glm::vec3 &center, float radi
   return hit;
 }
 
+Ray transformRayToBoneSpace(const Ray &worldRay, const glm::mat4 &boneTransform) {
+  // Transform ray from world space to bone-local space
+  // by applying the inverse of the bone's world transform
+  glm::mat4 invBone = glm::inverse(boneTransform);
+
+  // Transform origin as a point (w=1)
+  glm::vec3 localOrigin = glm::vec3(invBone * glm::vec4(worldRay.origin, 1.0f));
+
+  // Transform direction as a vector (w=0) and re-normalize
+  // (scaling in the bone transform can affect direction length)
+  glm::vec3 localDir = glm::vec3(invBone * glm::vec4(worldRay.direction, 0.0f));
+  localDir = glm::normalize(localDir);
+
+  return Ray{localOrigin, localDir};
+}
+
 } // namespace w3d

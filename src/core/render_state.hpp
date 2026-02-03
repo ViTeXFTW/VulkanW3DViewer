@@ -1,5 +1,7 @@
 #pragma once
 
+#include "render/hover_detector.hpp"
+
 namespace w3d {
 
 /**
@@ -20,6 +22,9 @@ struct RenderState {
 
   // Animation state tracking
   float lastAppliedFrame = -1.0f;
+
+  // Hover display settings
+  HoverNameDisplayMode hoverNameMode = HoverNameDisplayMode::FullName;
 };
 
 } // namespace w3d

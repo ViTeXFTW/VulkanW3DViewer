@@ -46,8 +46,15 @@ void HoverTooltip::draw(UIContext &ctx) {
     break;
   }
 
+  // Get display name based on settings
+  HoverNameDisplayMode displayMode = HoverNameDisplayMode::FullName;
+  if (ctx.renderState) {
+    displayMode = ctx.renderState->hoverNameMode;
+  }
+  std::string displayName = hover.displayName(displayMode);
+
   // Display with colored text
-  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr, hover.objectName.c_str());
+  ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.5f, 1.0f), "%s: %s", typeStr, displayName.c_str());
 
   ImGui::End();
 }

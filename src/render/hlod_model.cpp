@@ -109,14 +109,21 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         }
 
         HLodMeshGPU gpuMesh;
+        gpuMesh.baseName = converted.name;
         gpuMesh.name = converted.name;
         if (converted.subMeshes.size() > 1) {
           gpuMesh.name += "_sub" + std::to_string(subIdx);
         }
+        gpuMesh.subMeshIndex = subIdx;
+        gpuMesh.subMeshTotal = converted.subMeshes.size();
         gpuMesh.textureName = subMesh.textureName;
         gpuMesh.boneIndex = -1;
         gpuMesh.lodLevel = 0;
         gpuMesh.isAggregate = false;
+
+        // Store CPU copies for ray-triangle intersection
+        gpuMesh.cpuVertices = subMesh.vertices;
+        gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -190,14 +197,21 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
       }
 
       HLodMeshGPU gpuMesh;
+      gpuMesh.baseName = subObj.name;
       gpuMesh.name = subObj.name;
       if (converted.subMeshes.size() > 1) {
         gpuMesh.name += "_sub" + std::to_string(subIdx);
       }
+      gpuMesh.subMeshIndex = subIdx;
+      gpuMesh.subMeshTotal = converted.subMeshes.size();
       gpuMesh.textureName = subMesh.textureName;
       gpuMesh.boneIndex = static_cast<int32_t>(subObj.boneIndex);
       gpuMesh.lodLevel = 0; // Aggregates don't have a specific LOD level
       gpuMesh.isAggregate = true;
+
+      // Store CPU copies for ray-triangle intersection
+      gpuMesh.cpuVertices = subMesh.vertices;
+      gpuMesh.cpuIndices = subMesh.indices;
 
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -245,14 +259,21 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         }
 
         HLodMeshGPU gpuMesh;
+        gpuMesh.baseName = meshInfo.name;
         gpuMesh.name = meshInfo.name;
         if (converted.subMeshes.size() > 1) {
           gpuMesh.name += "_sub" + std::to_string(subIdx);
         }
+        gpuMesh.subMeshIndex = subIdx;
+        gpuMesh.subMeshTotal = converted.subMeshes.size();
         gpuMesh.textureName = subMesh.textureName;
         gpuMesh.boneIndex = static_cast<int32_t>(meshInfo.boneIndex);
         gpuMesh.lodLevel = lodIdx;
         gpuMesh.isAggregate = false;
+
+        // Store CPU copies for ray-triangle intersection
+        gpuMesh.cpuVertices = subMesh.vertices;
+        gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -298,15 +319,22 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
         }
 
         HLodSkinnedMeshGPU gpuMesh;
+        gpuMesh.baseName = converted.name;
         gpuMesh.name = converted.name;
         if (converted.subMeshes.size() > 1) {
           gpuMesh.name += "_sub" + std::to_string(subIdx);
         }
+        gpuMesh.subMeshIndex = subIdx;
+        gpuMesh.subMeshTotal = converted.subMeshes.size();
         gpuMesh.textureName = subMesh.textureName;
         gpuMesh.fallbackBoneIndex = converted.fallbackBoneIndex;
         gpuMesh.lodLevel = 0;
         gpuMesh.isAggregate = false;
         gpuMesh.hasSkinning = converted.hasSkinning;
+
+        // Store CPU copies for ray-triangle intersection
+        gpuMesh.cpuVertices = subMesh.vertices;
+        gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -370,15 +398,22 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
       }
 
       HLodSkinnedMeshGPU gpuMesh;
+      gpuMesh.baseName = subObj.name;
       gpuMesh.name = subObj.name;
       if (converted.subMeshes.size() > 1) {
         gpuMesh.name += "_sub" + std::to_string(subIdx);
       }
+      gpuMesh.subMeshIndex = subIdx;
+      gpuMesh.subMeshTotal = converted.subMeshes.size();
       gpuMesh.textureName = subMesh.textureName;
       gpuMesh.fallbackBoneIndex = static_cast<int32_t>(subObj.boneIndex);
       gpuMesh.lodLevel = 0;
       gpuMesh.isAggregate = true;
       gpuMesh.hasSkinning = converted.hasSkinning;
+
+      // Store CPU copies for ray-triangle intersection
+      gpuMesh.cpuVertices = subMesh.vertices;
+      gpuMesh.cpuIndices = subMesh.indices;
 
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -409,15 +444,22 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
         }
 
         HLodSkinnedMeshGPU gpuMesh;
+        gpuMesh.baseName = meshInfo.name;
         gpuMesh.name = meshInfo.name;
         if (converted.subMeshes.size() > 1) {
           gpuMesh.name += "_sub" + std::to_string(subIdx);
         }
+        gpuMesh.subMeshIndex = subIdx;
+        gpuMesh.subMeshTotal = converted.subMeshes.size();
         gpuMesh.textureName = subMesh.textureName;
         gpuMesh.fallbackBoneIndex = static_cast<int32_t>(meshInfo.boneIndex);
         gpuMesh.lodLevel = lodIdx;
         gpuMesh.isAggregate = false;
         gpuMesh.hasSkinning = converted.hasSkinning;
+
+        // Store CPU copies for ray-triangle intersection
+        gpuMesh.cpuVertices = subMesh.vertices;
+        gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
@@ -485,6 +527,137 @@ void HLodModel::updateLOD(float screenHeight, float fovY, float cameraDistance) 
       currentLOD_ = i;
     }
   }
+}
+
+size_t HLodModel::triangleCount(size_t meshIndex) const {
+  if (meshIndex >= meshGPU_.size()) {
+    return 0;
+  }
+  return meshGPU_[meshIndex].cpuIndices.size() / 3;
+}
+
+bool HLodModel::getTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0, glm::vec3 &v1,
+                            glm::vec3 &v2) const {
+  if (meshIndex >= meshGPU_.size()) {
+    return false;
+  }
+
+  const auto &mesh = meshGPU_[meshIndex];
+  size_t baseIdx = triangleIndex * 3;
+
+  if (baseIdx + 2 >= mesh.cpuIndices.size()) {
+    return false;
+  }
+
+  uint32_t i0 = mesh.cpuIndices[baseIdx];
+  uint32_t i1 = mesh.cpuIndices[baseIdx + 1];
+  uint32_t i2 = mesh.cpuIndices[baseIdx + 2];
+
+  if (i0 >= mesh.cpuVertices.size() || i1 >= mesh.cpuVertices.size() ||
+      i2 >= mesh.cpuVertices.size()) {
+    return false;
+  }
+
+  v0 = mesh.cpuVertices[i0].position;
+  v1 = mesh.cpuVertices[i1].position;
+  v2 = mesh.cpuVertices[i2].position;
+
+  return true;
+}
+
+size_t HLodModel::skinnedTriangleCount(size_t meshIndex) const {
+  if (meshIndex >= skinnedMeshGPU_.size()) {
+    return 0;
+  }
+  return skinnedMeshGPU_[meshIndex].cpuIndices.size() / 3;
+}
+
+bool HLodModel::getSkinnedTriangle(size_t meshIndex, size_t triangleIndex, glm::vec3 &v0,
+                                   glm::vec3 &v1, glm::vec3 &v2) const {
+  if (meshIndex >= skinnedMeshGPU_.size()) {
+    return false;
+  }
+
+  const auto &mesh = skinnedMeshGPU_[meshIndex];
+  size_t baseIdx = triangleIndex * 3;
+
+  if (baseIdx + 2 >= mesh.cpuIndices.size()) {
+    return false;
+  }
+
+  uint32_t i0 = mesh.cpuIndices[baseIdx];
+  uint32_t i1 = mesh.cpuIndices[baseIdx + 1];
+  uint32_t i2 = mesh.cpuIndices[baseIdx + 2];
+
+  if (i0 >= mesh.cpuVertices.size() || i1 >= mesh.cpuVertices.size() ||
+      i2 >= mesh.cpuVertices.size()) {
+    return false;
+  }
+
+  v0 = mesh.cpuVertices[i0].position;
+  v1 = mesh.cpuVertices[i1].position;
+  v2 = mesh.cpuVertices[i2].position;
+
+  return true;
+}
+
+const std::string &HLodModel::meshName(size_t index) const {
+  static const std::string empty;
+  if (index >= meshGPU_.size()) {
+    return empty;
+  }
+  return meshGPU_[index].name;
+}
+
+const std::string &HLodModel::skinnedMeshName(size_t index) const {
+  static const std::string empty;
+  if (index >= skinnedMeshGPU_.size()) {
+    return empty;
+  }
+  return skinnedMeshGPU_[index].name;
+}
+
+bool HLodModel::isMeshVisible(size_t meshIndex) const {
+  if (meshIndex >= meshGPU_.size()) {
+    return false;
+  }
+  const auto &mesh = meshGPU_[meshIndex];
+  // Aggregates are always visible, otherwise check LOD level
+  return mesh.isAggregate || mesh.lodLevel == currentLOD_;
+}
+
+bool HLodModel::isSkinnedMeshVisible(size_t meshIndex) const {
+  if (meshIndex >= skinnedMeshGPU_.size()) {
+    return false;
+  }
+  const auto &mesh = skinnedMeshGPU_[meshIndex];
+  return mesh.isAggregate || mesh.lodLevel == currentLOD_;
+}
+
+std::vector<size_t> HLodModel::visibleMeshIndices() const {
+  std::vector<size_t> indices;
+  indices.reserve(meshGPU_.size());
+
+  for (size_t i = 0; i < meshGPU_.size(); ++i) {
+    if (isMeshVisible(i)) {
+      indices.push_back(i);
+    }
+  }
+
+  return indices;
+}
+
+std::vector<size_t> HLodModel::visibleSkinnedMeshIndices() const {
+  std::vector<size_t> indices;
+  indices.reserve(skinnedMeshGPU_.size());
+
+  for (size_t i = 0; i < skinnedMeshGPU_.size(); ++i) {
+    if (isSkinnedMeshVisible(i)) {
+      indices.push_back(i);
+    }
+  }
+
+  return indices;
 }
 
 void HLodModel::draw(vk::CommandBuffer cmd) const {

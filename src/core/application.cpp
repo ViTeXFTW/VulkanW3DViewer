@@ -195,7 +195,14 @@ void Application::updateHover() {
   // Test meshes
   if (renderState_.showMesh) {
     if (renderState_.useHLodModel && hlodModel_.hasData()) {
-      // TODO: Implement HLod hover detection
+      if (renderState_.useSkinnedRendering && hlodModel_.hasSkinning()) {
+        // Test skinned meshes (uses rest-pose geometry)
+        hoverDetector_.testHLodSkinnedMeshes(hlodModel_);
+      } else {
+        // Test regular meshes with bone-space ray transformation
+        const SkeletonPose *pose = skeletonPose_.isValid() ? &skeletonPose_ : nullptr;
+        hoverDetector_.testHLodMeshes(hlodModel_, pose);
+      }
     } else if (renderableMesh_.hasData()) {
       hoverDetector_.testMeshes(renderableMesh_);
     }

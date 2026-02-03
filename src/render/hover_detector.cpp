@@ -2,7 +2,9 @@
 
 #include <algorithm>
 
+#include "hlod_model.hpp"
 #include "renderable_mesh.hpp"
+#include "skeleton.hpp"
 #include "skeleton_renderer.hpp"
 
 namespace w3d {
@@ -58,6 +60,114 @@ void HoverDetector::testMeshes(const RenderableMesh &meshes) {
     state_.hitPoint = closestMeshPoint;
     state_.distance = closestMeshDist;
     state_.objectName = meshes.meshName(closestMeshIndex);
+  }
+}
+
+void HoverDetector::testHLodMeshes(const HLodModel &model, const SkeletonPose *pose) {
+  if (!model.hasData()) {
+    return;
+  }
+
+  // Get only visible meshes (aggregates + current LOD)
+  auto visibleIndices = model.visibleMeshIndices();
+
+  float closestDist = std::numeric_limits<float>::max();
+  size_t closestMeshIndex = 0;
+  size_t closestTriIndex = 0;
+  glm::vec3 closestPoint(0.0f);
+
+  for (size_t visIdx : visibleIndices) {
+    const auto &mesh = model.meshes()[visIdx];
+
+    // Transform ray to bone space if mesh is bone-attached and pose exists
+    Ray testRay = currentRay_;
+    if (pose && mesh.boneIndex >= 0 &&
+        static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
+      testRay = transformRayToBoneSpace(currentRay_,
+                                         pose->boneTransform(static_cast<size_t>(mesh.boneIndex)));
+    }
+
+    // Test all triangles in this mesh
+    size_t triCount = model.triangleCount(visIdx);
+    for (size_t triIdx = 0; triIdx < triCount; ++triIdx) {
+      glm::vec3 v0, v1, v2;
+      if (!model.getTriangle(visIdx, triIdx, v0, v1, v2)) {
+        continue;
+      }
+
+      TriangleHit hit = intersectRayTriangle(testRay, v0, v1, v2);
+
+      if (hit.hit && hit.distance < closestDist) {
+        closestDist = hit.distance;
+        closestMeshIndex = visIdx;
+        closestTriIndex = triIdx;
+        closestPoint = hit.point;
+      }
+    }
+  }
+
+  // Update state if we found a hit closer than current
+  if (closestDist < state_.distance) {
+    const auto &hitMesh = model.meshes()[closestMeshIndex];
+
+    state_.type = HoverType::Mesh;
+    state_.objectIndex = closestMeshIndex;
+    state_.triangleIndex = closestTriIndex;
+    state_.hitPoint = closestPoint;
+    state_.distance = closestDist;
+    state_.objectName = hitMesh.name;
+    state_.baseName = hitMesh.baseName;
+    state_.subMeshIndex = hitMesh.subMeshIndex;
+    state_.subMeshTotal = hitMesh.subMeshTotal;
+  }
+}
+
+void HoverDetector::testHLodSkinnedMeshes(const HLodModel &model) {
+  if (!model.hasSkinning()) {
+    return;
+  }
+
+  // Get only visible skinned meshes (aggregates + current LOD)
+  auto visibleIndices = model.visibleSkinnedMeshIndices();
+
+  float closestDist = std::numeric_limits<float>::max();
+  size_t closestMeshIndex = 0;
+  size_t closestTriIndex = 0;
+  glm::vec3 closestPoint(0.0f);
+
+  for (size_t visIdx : visibleIndices) {
+    // Test all triangles in this mesh (rest-pose geometry)
+    size_t triCount = model.skinnedTriangleCount(visIdx);
+    for (size_t triIdx = 0; triIdx < triCount; ++triIdx) {
+      glm::vec3 v0, v1, v2;
+      if (!model.getSkinnedTriangle(visIdx, triIdx, v0, v1, v2)) {
+        continue;
+      }
+
+      TriangleHit hit = intersectRayTriangle(currentRay_, v0, v1, v2);
+
+      if (hit.hit && hit.distance < closestDist) {
+        closestDist = hit.distance;
+        closestMeshIndex = visIdx;
+        closestTriIndex = triIdx;
+        closestPoint = hit.point;
+      }
+    }
+  }
+
+  // Update state if we found a hit closer than current
+  if (closestDist < state_.distance) {
+    const auto &hitMesh = model.skinnedMeshes()[closestMeshIndex];
+
+    state_.type = HoverType::Mesh;
+    state_.objectIndex = closestMeshIndex;
+    state_.triangleIndex = closestTriIndex;
+    state_.hitPoint = closestPoint;
+    state_.distance = closestDist;
+    state_.objectName = hitMesh.name;
+    state_.baseName = hitMesh.baseName;
+    state_.subMeshIndex = hitMesh.subMeshIndex;
+    state_.subMeshTotal = hitMesh.subMeshTotal;
   }
 }
 
