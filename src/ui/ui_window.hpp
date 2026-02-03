@@ -43,6 +43,10 @@ public:
   /// Called at the end of each frame (after draw)
   virtual void onFrameEnd(UIContext & /*ctx*/) {}
 
+  /// Whether this window should appear in the View menu.
+  /// Override to return false for modal popups or special windows.
+  virtual bool showInViewMenu() const { return true; }
+
 protected:
   bool visible_ = true;
 };

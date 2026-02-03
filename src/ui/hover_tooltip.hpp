@@ -19,6 +19,7 @@ public:
   // UIWindow interface
   void draw(UIContext &ctx) override;
   const char *name() const override { return "##HoverTooltip"; }
+  bool showInViewMenu() const override { return false; }
 };
 
 } // namespace w3d

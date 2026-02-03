@@ -17,6 +17,7 @@ class HLodModel;
 class RenderableMesh;
 class SkeletonPose;
 struct HoverState;
+struct Settings;
 struct W3DFile;
 
 /// Shared UI context passed to all windows and panels.
@@ -64,6 +65,10 @@ struct UIContext {
   // === Hover Detection ===
   /// Current hover state (read-only for UI display)
   const HoverState *hoverState = nullptr;
+
+  // === Application Settings ===
+  /// Persistent application settings (for settings window)
+  Settings *settings = nullptr;
 
   // === Actions/Callbacks ===
   /// Callback to request camera reset

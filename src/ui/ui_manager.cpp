@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "settings_window.hpp"
+
 namespace w3d {
 
 void UIManager::draw(UIContext &ctx) {
@@ -75,6 +77,12 @@ void UIManager::drawMenuBar(UIContext &ctx) {
       }
     }
     ImGui::Separator();
+    if (ImGui::MenuItem("Settings...")) {
+      if (auto *settingsWindow = getWindow<SettingsWindow>()) {
+        settingsWindow->open();
+      }
+    }
+    ImGui::Separator();
     if (ImGui::MenuItem("Exit", "Alt+F4")) {
       if (ctx.onExit) {
         ctx.onExit();
@@ -85,9 +93,11 @@ void UIManager::drawMenuBar(UIContext &ctx) {
 
   // View menu
   if (ImGui::BeginMenu("View")) {
-    // Add menu items for all registered windows
+    // Add menu items for all registered windows (except modal popups)
     for (auto &window : windows_) {
-      ImGui::MenuItem(window->name(), nullptr, window->visiblePtr());
+      if (window->showInViewMenu()) {
+        ImGui::MenuItem(window->name(), nullptr, window->visiblePtr());
+      }
     }
 
 #ifdef W3D_DEBUG
