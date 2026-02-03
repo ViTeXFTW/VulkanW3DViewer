@@ -156,88 +156,100 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   if (ctx.renderState.showMesh) {
     if (ctx.renderState.useHLodModel && ctx.hlodModel.hasData()) {
       if (ctx.renderState.useSkinnedRendering && ctx.hlodModel.hasSkinning()) {
-        // Draw with skinned pipeline (GPU skinning)
+        // Draw with skinned pipeline (GPU skinning) with hover support
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.pipeline());
 
-        ctx.hlodModel.drawSkinnedWithTextures(cmd, [&](const std::string &textureName) {
-          MaterialPushConstant materialData{};
-          materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-          materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-          materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
-          materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
-          materialData.flags = 0;
-          materialData.alphaThreshold = 0.5f;
+        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
+        const auto &hover = ctx.hoverDetector.state();
+        int hoverIdx = (hover.type == HoverType::Mesh) ? static_cast<int>(hover.objectIndex) : -1;
 
-          // Look up texture by name
-          uint32_t texIdx = 0;
-          if (!textureName.empty()) {
-            texIdx = textureManager_->findTexture(textureName);
-          }
+        ctx.hlodModel.drawSkinnedWithHover(
+            cmd, hoverIdx, hoverTint,
+            [&](size_t /*meshIndex*/, const std::string &textureName, const glm::vec3 &tint) {
+              MaterialPushConstant materialData{};
+              materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+              materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+              materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+              materialData.hoverTint = tint;
+              materialData.flags = 0;
+              materialData.alphaThreshold = 0.5f;
 
-          if (texIdx > 0) {
-            const auto &tex = textureManager_->texture(texIdx);
-            vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler,
-                boneMatrixBuffer_->buffer(currentFrame_),
-                sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
-                                   texDescSet, {});
-            materialData.useTexture = 1;
-          } else {
-            const auto &defaultTex = textureManager_->texture(0);
-            vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler,
-                boneMatrixBuffer_->buffer(currentFrame_),
-                sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(), 0,
-                                   defaultDescSet, {});
-            materialData.useTexture = 0;
-          }
+              // Look up texture by name
+              uint32_t texIdx = 0;
+              if (!textureName.empty()) {
+                texIdx = textureManager_->findTexture(textureName);
+              }
 
-          cmd.pushConstants(skinnedPipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                            sizeof(MaterialPushConstant), &materialData);
-        });
+              if (texIdx > 0) {
+                const auto &tex = textureManager_->texture(texIdx);
+                vk::DescriptorSet texDescSet = skinnedDescriptorManager_.getDescriptorSet(
+                    currentFrame_, texIdx, tex.view, tex.sampler,
+                    boneMatrixBuffer_->buffer(currentFrame_),
+                    sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(),
+                                       0, texDescSet, {});
+                materialData.useTexture = 1;
+              } else {
+                const auto &defaultTex = textureManager_->texture(0);
+                vk::DescriptorSet defaultDescSet = skinnedDescriptorManager_.getDescriptorSet(
+                    currentFrame_, 0, defaultTex.view, defaultTex.sampler,
+                    boneMatrixBuffer_->buffer(currentFrame_),
+                    sizeof(glm::mat4) * BoneMatrixBuffer::MAX_BONES);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skinnedPipeline_.layout(),
+                                       0, defaultDescSet, {});
+                materialData.useTexture = 0;
+              }
+
+              cmd.pushConstants(skinnedPipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                                sizeof(MaterialPushConstant), &materialData);
+            });
 
         // Switch back to regular pipeline for skeleton overlay
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
       } else {
-        // Draw with regular pipeline (CPU-transformed vertices)
-        ctx.hlodModel.drawWithTextures(cmd, [&](const std::string &textureName) {
-          MaterialPushConstant materialData{};
-          materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-          materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-          materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
-          materialData.hoverTint = glm::vec3(1.0f); // No tint for HLod (not yet implemented)
-          materialData.flags = 0;
-          materialData.alphaThreshold = 0.5f;
+        // Draw with regular pipeline (CPU-transformed vertices) with hover support
+        const glm::vec3 hoverTint(1.5f, 1.5f, 1.3f); // Warm highlight
+        const auto &hover = ctx.hoverDetector.state();
+        int hoverIdx = (hover.type == HoverType::Mesh) ? static_cast<int>(hover.objectIndex) : -1;
 
-          // Look up texture by name
-          uint32_t texIdx = 0;
-          if (!textureName.empty()) {
-            texIdx = textureManager_->findTexture(textureName);
-          }
+        ctx.hlodModel.drawWithHover(
+            cmd, hoverIdx, hoverTint,
+            [&](size_t /*meshIndex*/, const std::string &textureName, const glm::vec3 &tint) {
+              MaterialPushConstant materialData{};
+              materialData.diffuseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+              materialData.emissiveColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+              materialData.specularColor = glm::vec4(0.2f, 0.2f, 0.2f, 32.0f);
+              materialData.hoverTint = tint;
+              materialData.flags = 0;
+              materialData.alphaThreshold = 0.5f;
 
-          if (texIdx > 0) {
-            // Get pre-allocated descriptor set for this texture
-            const auto &tex = textureManager_->texture(texIdx);
-            vk::DescriptorSet texDescSet = descriptorManager_.getTextureDescriptorSet(
-                currentFrame_, texIdx, tex.view, tex.sampler);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
-                                   texDescSet, {});
-            materialData.useTexture = 1;
-          } else {
-            // Use default texture descriptor set
-            const auto &defaultTex = textureManager_->texture(0);
-            vk::DescriptorSet defaultDescSet = descriptorManager_.getTextureDescriptorSet(
-                currentFrame_, 0, defaultTex.view, defaultTex.sampler);
-            cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
-                                   defaultDescSet, {});
-            materialData.useTexture = 0;
-          }
+              // Look up texture by name
+              uint32_t texIdx = 0;
+              if (!textureName.empty()) {
+                texIdx = textureManager_->findTexture(textureName);
+              }
 
-          cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
-                            sizeof(MaterialPushConstant), &materialData);
-        });
+              if (texIdx > 0) {
+                // Get pre-allocated descriptor set for this texture
+                const auto &tex = textureManager_->texture(texIdx);
+                vk::DescriptorSet texDescSet = descriptorManager_.getTextureDescriptorSet(
+                    currentFrame_, texIdx, tex.view, tex.sampler);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                       texDescSet, {});
+                materialData.useTexture = 1;
+              } else {
+                // Use default texture descriptor set
+                const auto &defaultTex = textureManager_->texture(0);
+                vk::DescriptorSet defaultDescSet = descriptorManager_.getTextureDescriptorSet(
+                    currentFrame_, 0, defaultTex.view, defaultTex.sampler);
+                cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
+                                       defaultDescSet, {});
+                materialData.useTexture = 0;
+              }
+
+              cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+                                sizeof(MaterialPushConstant), &materialData);
+            });
       }
     } else if (ctx.renderableMesh.hasData()) {
       // Simple mesh without textures

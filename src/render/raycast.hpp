@@ -55,6 +55,12 @@ LineHit intersectRayLineSegment(const Ray &ray, const glm::vec3 &lineStart,
 // Returns closest intersection point (front face)
 SphereHit intersectRaySphere(const Ray &ray, const glm::vec3 &center, float radius);
 
+// Transform ray from world space to bone-local space
+// Used for accurate hit testing against meshes attached to animated bones
+// boneTransform: World transform of the bone
+// Returns ray with origin and direction in bone-local space
+Ray transformRayToBoneSpace(const Ray &worldRay, const glm::mat4 &boneTransform);
+
 } // namespace w3d
 
 #endif // W3D_RENDER_RAYCAST_HPP
