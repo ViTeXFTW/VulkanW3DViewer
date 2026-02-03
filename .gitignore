@@ -47,3 +47,6 @@ Thumbs.db
 legacy/
 resources/
 imgui.ini
+
+# Documentation build output
+site/

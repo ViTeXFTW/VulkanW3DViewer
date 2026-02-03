@@ -1,6 +1,9 @@
+## Documentation
+
+Full documentation is available at [vitexftw.github.io/VulkanW3DViewer](https://vitexftw.github.io/VulkanW3DViewer/)
 
 ## Dev environment tips
-The project is an updated implementation of viewing the WestWood W3D format for old Command & Conquer series.  
+The project is an updated implementation of viewing the WestWood W3D format for old Command & Conquer series.
 The project aims to update the old codebase to newer supported frameworks.
 
 - If the legacy code is in the codebase, it will be located under `PROJECT_ROOT/legacy/`.

@@ -1,0 +1,93 @@
+/* VulkanW3DViewer Documentation - Custom Styles */
+
+/* Grid cards for landing page */
+.md-typeset .grid.cards > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  padding-left: 0;
+}
+
+.md-typeset .grid.cards > ul > li {
+  list-style: none;
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  padding: 1rem;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+/* Vulkan-themed accents */
+:root {
+  --vulkan-red: #ac162c;
+  --vulkan-dark: #1a1a1a;
+}
+
+/* Code block styling */
+.md-typeset pre > code {
+  border-radius: 0.3rem;
+}
+
+/* Table styling */
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+}
+
+/* Admonition icons */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-color: #00c853;
+}
+
+/* Status checkmarks in tables */
+.md-typeset table td:first-child {
+  white-space: nowrap;
+}
+
+/* Navigation improvements */
+.md-nav__link {
+  transition: color 0.1s;
+}
+
+/* Header logo area */
+.md-header__title {
+  font-weight: 600;
+}
+
+/* Footer links */
+.md-footer-meta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 76.1875em) {
+  .md-typeset .grid.cards > ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Code annotation styling */
+.md-typeset .md-annotation__index {
+  background-color: var(--md-primary-fg-color);
+}
+
+/* Keyboard key styling */
+.md-typeset kbd {
+  background-color: var(--md-code-bg-color);
+  border: 0.05rem solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  box-shadow: 0 0.1rem 0 var(--md-default-fg-color--lighter);
+  padding: 0 0.4rem;
+}
+
+/* Mermaid diagram background fix for dark mode */
+[data-md-color-scheme="slate"] .mermaid {
+  background-color: transparent;
+}
