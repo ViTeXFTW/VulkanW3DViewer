@@ -46,9 +46,9 @@ struct HLodMeshGPU {
   std::vector<uint32_t> cpuIndices;
 
   // Sub-mesh metadata for hover display
-  std::string baseName;      // Base mesh name without _subN suffix
-  size_t subMeshIndex = 0;   // Which sub-mesh (0-indexed)
-  size_t subMeshTotal = 1;   // Total sub-meshes for this base mesh
+  std::string baseName;    // Base mesh name without _subN suffix
+  size_t subMeshIndex = 0; // Which sub-mesh (0-indexed)
+  size_t subMeshTotal = 1; // Total sub-meshes for this base mesh
 };
 
 // GPU resources for a skinned mesh (with per-vertex bone indices)
@@ -281,8 +281,8 @@ void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindText
 }
 
 template <typename BeforeDrawFunc>
-void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
-                              const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
+void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const glm::vec3 &tintColor,
+                              BeforeDrawFunc beforeDraw) const {
   // Draw aggregates first (always rendered)
   for (size_t i = 0; i < aggregateCount_; ++i) {
     const auto &mesh = meshGPU_[i];

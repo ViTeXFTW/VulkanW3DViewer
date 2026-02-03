@@ -19,9 +19,9 @@ enum class HoverType { None, Mesh, Bone, Joint };
 
 // Display mode for hover tooltip mesh names
 enum class HoverNameDisplayMode {
-  FullName,    // "SoldierBody_sub0" - exact internal name
-  BaseName,    // "SoldierBody" - base mesh name without suffix
-  Descriptive  // "SoldierBody (part 1 of 3)" - user-friendly description
+  FullName,   // "SoldierBody_sub0" - exact internal name
+  BaseName,   // "SoldierBody" - base mesh name without suffix
+  Descriptive // "SoldierBody (part 1 of 3)" - user-friendly description
 };
 
 struct HoverState {
@@ -33,9 +33,9 @@ struct HoverState {
   std::string objectName; // Name of hovered mesh/bone (full name with suffix)
 
   // Sub-mesh metadata (populated for HLod meshes)
-  std::string baseName;      // Base mesh name without _subN suffix
-  size_t subMeshIndex = 0;   // Which sub-mesh (0-indexed)
-  size_t subMeshTotal = 1;   // Total sub-meshes for this base mesh
+  std::string baseName;    // Base mesh name without _subN suffix
+  size_t subMeshIndex = 0; // Which sub-mesh (0-indexed)
+  size_t subMeshTotal = 1; // Total sub-meshes for this base mesh
 
   void reset() {
     type = HoverType::None;

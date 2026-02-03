@@ -81,10 +81,9 @@ void HoverDetector::testHLodMeshes(const HLodModel &model, const SkeletonPose *p
 
     // Transform ray to bone space if mesh is bone-attached and pose exists
     Ray testRay = currentRay_;
-    if (pose && mesh.boneIndex >= 0 &&
-        static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
+    if (pose && mesh.boneIndex >= 0 && static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
       testRay = transformRayToBoneSpace(currentRay_,
-                                         pose->boneTransform(static_cast<size_t>(mesh.boneIndex)));
+                                        pose->boneTransform(static_cast<size_t>(mesh.boneIndex)));
     }
 
     // Test all triangles in this mesh

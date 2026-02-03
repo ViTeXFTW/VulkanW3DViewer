@@ -1,10 +1,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <gtest/gtest.h>
-
 #include "render/hover_detector.hpp"
 #include "render/raycast.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace w3d;
 
@@ -107,7 +107,8 @@ TEST(RayBoneTransformTest, RotatedBone90DegreesY) {
   Ray worldRay{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)};
 
   // Bone rotated 90 degrees around Y axis
-  glm::mat4 boneTransform = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 boneTransform =
+      glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
   Ray localRay = transformRayToBoneSpace(worldRay, boneTransform);
 
