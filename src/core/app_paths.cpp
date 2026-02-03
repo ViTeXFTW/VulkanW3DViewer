@@ -8,28 +8,28 @@ namespace w3d {
 std::optional<std::filesystem::path> AppPaths::baseConfigDir() {
 #ifdef _WIN32
   // Windows: Use APPDATA environment variable
-  if (const char* appdata = std::getenv("APPDATA")) {
+  if (const char *appdata = std::getenv("APPDATA")) {
     return std::filesystem::path(appdata);
   }
   // Fallback: Use USERPROFILE
-  if (const char* userprofile = std::getenv("USERPROFILE")) {
+  if (const char *userprofile = std::getenv("USERPROFILE")) {
     return std::filesystem::path(userprofile) / "AppData" / "Roaming";
   }
   return std::nullopt;
 
 #elif defined(__APPLE__)
   // macOS: ~/Library/Application Support
-  if (const char* home = std::getenv("HOME")) {
+  if (const char *home = std::getenv("HOME")) {
     return std::filesystem::path(home) / "Library" / "Application Support";
   }
   return std::nullopt;
 
 #else
   // Linux/BSD: XDG_CONFIG_HOME or ~/.config
-  if (const char* xdgConfig = std::getenv("XDG_CONFIG_HOME")) {
+  if (const char *xdgConfig = std::getenv("XDG_CONFIG_HOME")) {
     return std::filesystem::path(xdgConfig);
   }
-  if (const char* home = std::getenv("HOME")) {
+  if (const char *home = std::getenv("HOME")) {
     return std::filesystem::path(home) / ".config";
   }
   return std::nullopt;
@@ -73,8 +73,8 @@ bool AppPaths::ensureAppDataDir() {
 
   std::error_code ec;
   if (!std::filesystem::create_directories(*dir, ec)) {
-    std::cerr << "Warning: Could not create application data directory: "
-              << dir->string() << " (" << ec.message() << ")\n";
+    std::cerr << "Warning: Could not create application data directory: " << dir->string() << " ("
+              << ec.message() << ")\n";
     return false;
   }
 

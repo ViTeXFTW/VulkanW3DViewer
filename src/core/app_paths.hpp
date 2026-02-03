@@ -10,7 +10,7 @@ namespace w3d {
 class AppPaths {
 public:
   /// Application name used for directory naming
-  static constexpr const char* kAppName = "VulkanW3DViewer";
+  static constexpr const char *kAppName = "VulkanW3DViewer";
 
   /// Get the application data directory (creates if needed).
   /// Returns:

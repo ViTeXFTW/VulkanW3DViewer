@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
+#include <filesystem>
+#include <fstream>
 
 #include "core/settings.hpp"
 
-#include <filesystem>
-#include <fstream>
+#include <gtest/gtest.h>
 
 using namespace w3d;
 
@@ -86,8 +86,8 @@ TEST_F(SettingsTest, LoadPartialJsonUsesDefaultsForMissingFields) {
   Settings s = Settings::load(tempSettingsPath);
   EXPECT_EQ(s.windowWidth, 800);
   EXPECT_EQ(s.windowHeight, 600);
-  EXPECT_TRUE(s.texturePath.empty());    // Default
-  EXPECT_TRUE(s.showMesh);               // Default
+  EXPECT_TRUE(s.texturePath.empty()); // Default
+  EXPECT_TRUE(s.showMesh);            // Default
 }
 
 TEST_F(SettingsTest, SaveCreatesParentDirectories) {
@@ -108,8 +108,7 @@ TEST_F(SettingsTest, SavedJsonIsHumanReadable) {
   s.save(tempSettingsPath);
 
   std::ifstream file(tempSettingsPath);
-  std::string content((std::istreambuf_iterator<char>(file)),
-                      std::istreambuf_iterator<char>());
+  std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
   // Check that JSON is pretty-printed (has newlines and indentation)
   EXPECT_NE(content.find('\n'), std::string::npos);
