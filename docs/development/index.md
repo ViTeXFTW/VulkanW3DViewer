@@ -34,6 +34,14 @@ This section covers everything you need to know to contribute to the project.
 
     [:octicons-arrow-right-24: Contributing](contributing.md)
 
+-   :material-book-open-page-variant:{ .lg .middle } **Publishing Docs**
+
+    ---
+
+    How to build and deploy the documentation site
+
+    [:octicons-arrow-right-24: Publishing Guide](publishing-docs.md)
+
 </div>
 
 ## Quick Start for Contributors
