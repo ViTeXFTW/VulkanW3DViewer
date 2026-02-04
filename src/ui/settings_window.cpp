@@ -2,10 +2,10 @@
 
 #include <cstring>
 
-#include <imgui.h>
-
 #include "core/settings.hpp"
 #include "ui_context.hpp"
+
+#include <imgui.h>
 
 namespace w3d {
 
@@ -45,8 +45,7 @@ void SettingsWindow::draw(UIContext &ctx) {
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   ImGui::SetNextWindowSize(ImVec2(450, 0), ImGuiCond_Appearing);
 
-  if (ImGui::BeginPopupModal("Settings##Modal", &isOpen_,
-                             ImGuiWindowFlags_AlwaysAutoResize)) {
+  if (ImGui::BeginPopupModal("Settings##Modal", &isOpen_, ImGuiWindowFlags_AlwaysAutoResize)) {
     // Path Settings section
     ImGui::SeparatorText("Path Settings");
 

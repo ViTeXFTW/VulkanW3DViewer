@@ -1,8 +1,8 @@
 #include "ui_manager.hpp"
 
-#include <imgui.h>
-
 #include "settings_window.hpp"
+
+#include <imgui.h>
 
 namespace w3d {
 
