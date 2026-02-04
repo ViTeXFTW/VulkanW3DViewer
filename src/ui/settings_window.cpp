@@ -9,6 +9,13 @@
 
 namespace w3d {
 
+SettingsWindow::SettingsWindow() {
+  // Configure the directory browser
+  directoryBrowser_.setBrowseMode(BrowseMode::Directory);
+  directoryBrowser_.setTitle("Select Texture Directory");
+  directoryBrowser_.setVisible(false);
+}
+
 void SettingsWindow::open() {
   shouldOpen_ = true;
 }
@@ -19,11 +26,11 @@ void SettingsWindow::copySettingsToEdit(const Settings &settings) {
   editShowSkeleton_ = settings.showSkeleton;
 }
 
-void SettingsWindow::applyAndSave(Settings &settings) {
-  settings.texturePath = editTexturePath_;
-  settings.showMesh = editShowMesh_;
-  settings.showSkeleton = editShowSkeleton_;
-  settings.saveDefault();
+void SettingsWindow::applyAndSave(UIContext &ctx) {
+  ctx.settings->texturePath = editTexturePath_;
+  ctx.settings->showMesh = editShowMesh_;
+  ctx.settings->showSkeleton = editShowSkeleton_;
+  ctx.settings->saveDefault();
 }
 
 void SettingsWindow::draw(UIContext &ctx) {
@@ -32,10 +39,26 @@ void SettingsWindow::draw(UIContext &ctx) {
     return;
   }
 
+  // Handle directory browser being open - don't show settings modal while browsing
+  if (directoryBrowserOpen_) {
+    directoryBrowser_.draw(ctx);
+
+    // Check if browser was closed (via Cancel or selection callback)
+    if (!directoryBrowser_.isVisible()) {
+      directoryBrowserOpen_ = false;
+      // Reopen the settings modal
+      shouldOpen_ = true;
+    }
+    return;
+  }
+
   // Handle open request
   if (shouldOpen_) {
     ImGui::OpenPopup("Settings##Modal");
-    copySettingsToEdit(*ctx.settings);
+    // Only copy settings on fresh open, not when returning from browser
+    if (!isOpen_) {
+      copySettingsToEdit(*ctx.settings);
+    }
     shouldOpen_ = false;
     isOpen_ = true;
   }
@@ -50,15 +73,39 @@ void SettingsWindow::draw(UIContext &ctx) {
     ImGui::SeparatorText("Path Settings");
 
     ImGui::Text("Texture Path:");
-    ImGui::SetNextItemWidth(-1);
 
     // Use a buffer for InputText
     char texturePathBuf[512];
     std::strncpy(texturePathBuf, editTexturePath_.c_str(), sizeof(texturePathBuf) - 1);
     texturePathBuf[sizeof(texturePathBuf) - 1] = '\0';
 
+    // Input field with Browse button
+    float browseButtonWidth = 80.0f;
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - browseButtonWidth -
+                            ImGui::GetStyle().ItemSpacing.x);
     if (ImGui::InputText("##TexturePath", texturePathBuf, sizeof(texturePathBuf))) {
       editTexturePath_ = texturePathBuf;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Browse...", ImVec2(browseButtonWidth, 0))) {
+      // Initialize browser at current path or current working directory
+      if (!editTexturePath_.empty() && std::filesystem::exists(editTexturePath_)) {
+        directoryBrowser_.openAt(editTexturePath_);
+      } else {
+        directoryBrowser_.openAt(std::filesystem::current_path());
+      }
+
+      // Set up callback to receive selected directory
+      directoryBrowser_.setPathSelectedCallback([this](const std::filesystem::path &path) {
+        editTexturePath_ = path.string();
+        directoryBrowser_.setVisible(false);
+      });
+
+      directoryBrowser_.setVisible(true);
+      directoryBrowserOpen_ = true;
+
+      // Close the settings modal to allow interaction with browser
+      ImGui::CloseCurrentPopup();
     }
     ImGui::TextDisabled("Leave empty to use default location");
 
@@ -84,7 +131,7 @@ void SettingsWindow::draw(UIContext &ctx) {
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + startX);
 
     if (ImGui::Button("Save", ImVec2(buttonWidth, 0))) {
-      applyAndSave(*ctx.settings);
+      applyAndSave(ctx);
       ImGui::CloseCurrentPopup();
       isOpen_ = false;
     }

@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "file_browser.hpp"
 #include "ui_window.hpp"
 
 namespace w3d {
@@ -13,7 +14,7 @@ struct Settings;
 /// Changes are only saved when the user clicks "Save", otherwise discarded on close.
 class SettingsWindow : public UIWindow {
 public:
-  SettingsWindow() = default;
+  SettingsWindow();
 
   // UIWindow interface
   void draw(UIContext &ctx) override;
@@ -36,11 +37,15 @@ private:
   bool editShowMesh_ = true;
   bool editShowSkeleton_ = true;
 
+  // Directory browser for texture path selection
+  FileBrowser directoryBrowser_;
+  bool directoryBrowserOpen_ = false;
+
   /// Copy current settings to edit buffers
   void copySettingsToEdit(const Settings &settings);
 
   /// Apply edit buffers to settings and save
-  void applyAndSave(Settings &settings);
+  void applyAndSave(UIContext &ctx);
 };
 
 } // namespace w3d
