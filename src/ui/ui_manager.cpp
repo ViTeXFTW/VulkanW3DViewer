@@ -65,6 +65,13 @@ void UIManager::drawDockspace() {
 }
 
 void UIManager::drawMenuBar(UIContext &ctx) {
+  // Handle global keyboard shortcuts (works even when menus are closed)
+  if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Comma, ImGuiInputFlags_RouteGlobal)) {
+    if (auto *settingsWindow = getWindow<SettingsWindow>()) {
+      settingsWindow->open();
+    }
+  }
+
   if (!ImGui::BeginMenuBar()) {
     return;
   }
@@ -77,7 +84,7 @@ void UIManager::drawMenuBar(UIContext &ctx) {
       }
     }
     ImGui::Separator();
-    if (ImGui::MenuItem("Settings...")) {
+    if (ImGui::MenuItem("Settings...", "Ctrl+,")) {
       if (auto *settingsWindow = getWindow<SettingsWindow>()) {
         settingsWindow->open();
       }
