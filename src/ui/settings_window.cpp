@@ -97,6 +97,12 @@ void SettingsWindow::draw(UIContext &ctx) {
       isOpen_ = false;
     }
 
+    // Handle Escape key to cancel
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+      ImGui::CloseCurrentPopup();
+      isOpen_ = false;
+    }
+
     ImGui::EndPopup();
   }
 }
