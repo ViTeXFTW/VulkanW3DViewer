@@ -13,37 +13,45 @@ struct ImVec2 {
 using ImGuiID = unsigned int;
 
 // Flags (minimal set needed by file_browser.cpp)
-enum ImGuiInputTextFlags_ {
-  ImGuiInputTextFlags_EnterReturnsTrue = 1 << 5
-};
+enum ImGuiInputTextFlags_ { ImGuiInputTextFlags_EnterReturnsTrue = 1 << 5 };
 using ImGuiInputTextFlags = int;
 
-enum ImGuiSelectableFlags_ {
-  ImGuiSelectableFlags_AllowDoubleClick = 1 << 2
-};
+enum ImGuiSelectableFlags_ { ImGuiSelectableFlags_AllowDoubleClick = 1 << 2 };
 using ImGuiSelectableFlags = int;
 
-enum ImGuiChildFlags_ {
-  ImGuiChildFlags_Borders = 1 << 0
-};
+enum ImGuiChildFlags_ { ImGuiChildFlags_Borders = 1 << 0 };
 using ImGuiChildFlags = int;
 
 // Stub functions (no-op implementations for linking)
 namespace ImGui {
 
-inline bool Begin(const char*, bool* = nullptr, int = 0) { return true; }
+inline bool Begin(const char *, bool * = nullptr, int = 0) {
+  return true;
+}
 inline void End() {}
-inline bool Button(const char*, const ImVec2& = ImVec2(0, 0)) { return false; }
-inline bool InputText(const char*, char*, size_t, int = 0) { return false; }
-inline bool Selectable(const char*, bool = false, int = 0, const ImVec2& = ImVec2(0, 0)) { return false; }
-inline void Text(const char*, ...) {}
+inline bool Button(const char *, const ImVec2 & = ImVec2(0, 0)) {
+  return false;
+}
+inline bool InputText(const char *, char *, size_t, int = 0) {
+  return false;
+}
+inline bool Selectable(const char *, bool = false, int = 0, const ImVec2 & = ImVec2(0, 0)) {
+  return false;
+}
+inline void Text(const char *, ...) {}
 inline void SameLine(float = 0.0f, float = -1.0f) {}
 inline void Separator() {}
-inline void BeginChild(const char*, const ImVec2& = ImVec2(0, 0), int = 0, int = 0) {}
+inline void BeginChild(const char *, const ImVec2 & = ImVec2(0, 0), int = 0, int = 0) {}
 inline void EndChild() {}
-inline bool IsMouseDoubleClicked(int) { return false; }
-inline float GetWindowWidth() { return 100.0f; }
-inline float GetFrameHeightWithSpacing() { return 20.0f; }
+inline bool IsMouseDoubleClicked(int) {
+  return false;
+}
+inline float GetWindowWidth() {
+  return 100.0f;
+}
+inline float GetFrameHeightWithSpacing() {
+  return 20.0f;
+}
 inline void SetNextItemWidth(float) {}
 
 } // namespace ImGui

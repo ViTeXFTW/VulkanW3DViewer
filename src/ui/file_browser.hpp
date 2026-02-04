@@ -11,8 +11,8 @@ namespace w3d {
 
 /// Browse mode for the file browser
 enum class BrowseMode {
-  File,      ///< Select files (default behavior)
-  Directory  ///< Select directories/folders
+  File,     ///< Select files (default behavior)
+  Directory ///< Select directories/folders
 };
 
 /// Entry in the file browser listing

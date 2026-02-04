@@ -101,7 +101,7 @@ TEST_F(FileBrowserTest, RefreshDirectoryListsContents) {
       fileCount++;
     }
   }
-  EXPECT_EQ(dirCount, 3); // subdir1, subdir2, empty_dir
+  EXPECT_EQ(dirCount, 3);  // subdir1, subdir2, empty_dir
   EXPECT_EQ(fileCount, 3); // test.w3d, test.txt, another.w3d
 }
 
@@ -171,7 +171,7 @@ TEST_F(FileBrowserTest, FilterShowsOnlyMatchingFiles) {
     }
   }
 
-  EXPECT_EQ(w3dCount, 2); // test.w3d, another.w3d
+  EXPECT_EQ(w3dCount, 2);       // test.w3d, another.w3d
   EXPECT_EQ(otherFileCount, 0); // test.txt should be filtered out
 }
 
@@ -266,9 +266,8 @@ TEST_F(FileBrowserTest, NavigationResetsSelection) {
 
 TEST_F(FileBrowserTest, SelectCurrentDirectoryTriggersCallback) {
   std::filesystem::path selectedPath;
-  browser.setPathSelectedCallback([&selectedPath](const std::filesystem::path &path) {
-    selectedPath = path;
-  });
+  browser.setPathSelectedCallback(
+      [&selectedPath](const std::filesystem::path &path) { selectedPath = path; });
 
   browser.navigateTo(tempDir);
   browser.selectCurrentDirectory();
