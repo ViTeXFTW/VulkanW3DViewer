@@ -19,12 +19,14 @@ void HLodModel::destroy() {
     mesh.indexBuffer.destroy();
   }
   meshGPU_.clear();
+  meshVisibility_.clear();
 
   for (auto &mesh : skinnedMeshGPU_) {
     mesh.vertexBuffer.destroy();
     mesh.indexBuffer.destroy();
   }
   skinnedMeshGPU_.clear();
+  skinnedMeshVisibility_.clear();
 
   lodLevels_.clear();
   aggregateCount_ = 0;
@@ -288,6 +290,9 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
   // Default to highest detail LOD
   currentLOD_ = 0;
+
+  // Initialize all meshes as visible
+  meshVisibility_.assign(meshGPU_.size(), true);
 }
 
 void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
@@ -474,6 +479,9 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
 
   // Default to highest detail LOD
   currentLOD_ = 0;
+
+  // Initialize all skinned meshes as visible
+  skinnedMeshVisibility_.assign(skinnedMeshGPU_.size(), true);
 }
 
 void HLodModel::setCurrentLOD(size_t level) {
@@ -621,6 +629,10 @@ bool HLodModel::isMeshVisible(size_t meshIndex) const {
   if (meshIndex >= meshGPU_.size()) {
     return false;
   }
+  // Check user visibility first
+  if (meshIndex < meshVisibility_.size() && !meshVisibility_[meshIndex]) {
+    return false;
+  }
   const auto &mesh = meshGPU_[meshIndex];
   // Aggregates are always visible, otherwise check LOD level
   return mesh.isAggregate || mesh.lodLevel == currentLOD_;
@@ -628,6 +640,10 @@ bool HLodModel::isMeshVisible(size_t meshIndex) const {
 
 bool HLodModel::isSkinnedMeshVisible(size_t meshIndex) const {
   if (meshIndex >= skinnedMeshGPU_.size()) {
+    return false;
+  }
+  // Check user visibility first
+  if (meshIndex < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[meshIndex]) {
     return false;
   }
   const auto &mesh = skinnedMeshGPU_[meshIndex];
@@ -661,8 +677,13 @@ std::vector<size_t> HLodModel::visibleSkinnedMeshIndices() const {
 }
 
 void HLodModel::draw(vk::CommandBuffer cmd) const {
-  // Draw aggregates first (always rendered)
+  // Draw aggregates first (always rendered unless user-hidden)
   for (size_t i = 0; i < aggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
@@ -674,6 +695,11 @@ void HLodModel::draw(vk::CommandBuffer cmd) const {
 
   // Draw current LOD level meshes
   for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     // Skip if not in current LOD level
@@ -687,6 +713,42 @@ void HLodModel::draw(vk::CommandBuffer cmd) const {
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
   }
+}
+
+bool HLodModel::isMeshHidden(size_t index) const {
+  if (index >= meshVisibility_.size()) {
+    return false;
+  }
+  return !meshVisibility_[index];
+}
+
+void HLodModel::setMeshHidden(size_t index, bool hidden) {
+  if (index >= meshVisibility_.size()) {
+    return;
+  }
+  meshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllMeshesHidden(bool hidden) {
+  std::fill(meshVisibility_.begin(), meshVisibility_.end(), !hidden);
+}
+
+bool HLodModel::isSkinnedMeshHidden(size_t index) const {
+  if (index >= skinnedMeshVisibility_.size()) {
+    return false;
+  }
+  return !skinnedMeshVisibility_[index];
+}
+
+void HLodModel::setSkinnedMeshHidden(size_t index, bool hidden) {
+  if (index >= skinnedMeshVisibility_.size()) {
+    return;
+  }
+  skinnedMeshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllSkinnedMeshesHidden(bool hidden) {
+  std::fill(skinnedMeshVisibility_.begin(), skinnedMeshVisibility_.end(), !hidden);
 }
 
 } // namespace w3d

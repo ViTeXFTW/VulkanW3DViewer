@@ -214,3 +214,22 @@ else()
 endif()
 
 add_test(NAME ui_tests COMMAND ui_tests)
+
+# Mesh visibility tests (no Vulkan dependencies)
+add_executable(mesh_visibility_tests
+  render/test_mesh_visibility.cpp
+)
+
+target_link_libraries(mesh_visibility_tests PRIVATE gtest gtest_main)
+
+target_include_directories(mesh_visibility_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(mesh_visibility_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(mesh_visibility_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)
