@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-#include <memory>
+#include <algorithm>
 #include <vector>
 
 #include "lib/gfx/renderable.hpp"
