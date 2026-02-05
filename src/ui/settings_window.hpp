@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "file_browser.hpp"
 #include "ui_window.hpp"
+#include "file_browser.hpp"
 
 namespace w3d {
 
@@ -32,14 +32,16 @@ private:
   /// Whether the popup is currently active
   bool isOpen_ = false;
 
+  /// Whether the directory browser is currently open
+  bool directoryBrowserOpen_ = false;
+
+  /// Directory browser for selecting texture path
+  FileBrowser directoryBrowser_;
+
   // Editable copies of settings (modified until Save/Cancel)
   std::string editTexturePath_;
   bool editShowMesh_ = true;
   bool editShowSkeleton_ = true;
-
-  // Directory browser for texture path selection
-  FileBrowser directoryBrowser_;
-  bool directoryBrowserOpen_ = false;
 
   /// Copy current settings to edit buffers
   void copySettingsToEdit(const Settings &settings);

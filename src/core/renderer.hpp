@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/buffer.hpp"
-#include "core/pipeline.hpp"
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/pipeline.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -13,13 +13,13 @@
 
 #include "core/render_state.hpp"
 #include "render/bone_buffer.hpp"
-#include "render/camera.hpp"
-#include "render/hlod_model.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/hover_detector.hpp"
 #include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "render/texture.hpp"
+#include "lib/gfx/texture.hpp"
 #include "ui/imgui_backend.hpp"
 
 namespace w3d {
@@ -29,7 +29,7 @@ namespace w3d {
  * This reduces coupling by grouping related parameters together.
  */
 struct FrameContext {
-  Camera &camera;
+  gfx::Camera &camera;
   RenderableMesh &renderableMesh;
   HLodModel &hlodModel;
   SkeletonRenderer &skeletonRenderer;
@@ -53,8 +53,8 @@ public:
   /**
    * Initialize the renderer with Vulkan context and window.
    */
-  void init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &imguiBackend,
-            TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer);
+  void init(GLFWwindow *window, gfx::VulkanContext &context, ImGuiBackend &imguiBackend,
+            gfx::TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer);
 
   /**
    * Clean up rendering resources.
@@ -90,32 +90,32 @@ public:
   uint32_t currentFrame() const { return currentFrame_; }
 
   // Accessors
-  Pipeline &pipeline() { return pipeline_; }
-  Pipeline &skinnedPipeline() { return skinnedPipeline_; }
-  DescriptorManager &descriptorManager() { return descriptorManager_; }
-  SkinnedDescriptorManager &skinnedDescriptorManager() { return skinnedDescriptorManager_; }
+  gfx::Pipeline &pipeline() { return pipeline_; }
+  gfx::Pipeline &skinnedPipeline() { return skinnedPipeline_; }
+  gfx::DescriptorManager &descriptorManager() { return descriptorManager_; }
+  gfx::SkinnedDescriptorManager &skinnedDescriptorManager() { return skinnedDescriptorManager_; }
 
 private:
   static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
   void createCommandBuffers();
   void createSyncObjects();
-  void updateUniformBuffer(uint32_t frameIndex, const Camera &camera);
+  void updateUniformBuffer(uint32_t frameIndex, const gfx::Camera &camera);
   void recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex, const FrameContext &ctx);
 
   // External resources (not owned)
   GLFWwindow *window_ = nullptr;
-  VulkanContext *context_ = nullptr;
+  gfx::VulkanContext *context_ = nullptr;
   ImGuiBackend *imguiBackend_ = nullptr;
-  TextureManager *textureManager_ = nullptr;
+  gfx::TextureManager *textureManager_ = nullptr;
   BoneMatrixBuffer *boneMatrixBuffer_ = nullptr;
 
   // Pipelines and descriptors
-  Pipeline pipeline_;
-  Pipeline skinnedPipeline_;
-  DescriptorManager descriptorManager_;
-  SkinnedDescriptorManager skinnedDescriptorManager_;
-  UniformBuffer<UniformBufferObject> uniformBuffers_;
+  gfx::Pipeline pipeline_;
+  gfx::Pipeline skinnedPipeline_;
+  gfx::DescriptorManager descriptorManager_;
+  gfx::SkinnedDescriptorManager skinnedDescriptorManager_;
+  gfx::UniformBuffer<gfx::UniformBufferObject> uniformBuffers_;
 
   // Command buffers and synchronization
   std::vector<vk::CommandBuffer> commandBuffers_;

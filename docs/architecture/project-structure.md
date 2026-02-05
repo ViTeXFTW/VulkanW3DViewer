@@ -38,84 +38,86 @@ The entry point:
 - Configures settings (texture path, debug mode)
 - Runs the main loop
 
+### Library Layer (`src/lib/`)
+
+The library layer contains reusable components that can be used independently of the viewer application.
+
+```
+src/lib/
+├── formats/w3d/              # W3D format parsing library
+│   ├── w3d.hpp               # Module header (includes all)
+│   ├── types.hpp             # Data structures
+│   ├── chunk_types.hpp       # Chunk type enumerations
+│   ├── chunk_reader.hpp      # Binary chunk parsing
+│   ├── loader.hpp/cpp        # File loading orchestrator
+│   ├── model_loader.hpp/cpp  # High-level model interface
+│   ├── mesh_parser.hpp/cpp   # Mesh chunk parsing
+│   ├── hierarchy_parser.hpp/cpp # Skeleton parsing
+│   ├── animation_parser.hpp/cpp # Animation parsing
+│   ├── hlod_parser.hpp/cpp   # HLod parsing
+│   └── hlod_model.hpp/cpp    # HLod model assembly
+├── gfx/                      # Graphics foundation library
+│   ├── vulkan_context.hpp/cpp # Vulkan device, swapchain, queues
+│   ├── buffer.hpp/cpp        # GPU buffer management
+│   ├── pipeline.hpp/cpp      # Graphics pipeline, descriptors
+│   ├── texture.hpp/cpp       # Texture loading
+│   ├── camera.hpp/cpp        # Camera utilities
+│   ├── bounding_box.hpp      # AABB math utilities
+│   └── renderable.hpp        # Base renderable interface
+└── scene/                    # Scene management library
+    └── scene.hpp/cpp         # Scene container
+```
+
+| Module | Purpose |
+|--------|---------|
+| `formats/w3d` | W3D file format parsing and data structures |
+| `gfx` | Vulkan abstraction and GPU resource management |
+| `scene` | Scene graph and renderable object management |
+
 ### Core Layer (`src/core/`)
+
+The core layer contains application-specific orchestration code.
 
 ```
 src/core/
 ├── application.hpp/cpp      # Main application class
-├── vulkan_context.hpp/cpp   # Vulkan device, swapchain, queues
 ├── renderer.hpp/cpp         # Rendering orchestration
-├── pipeline.hpp/cpp         # Graphics pipeline, descriptors
-├── buffer.hpp/cpp           # GPU buffer management
 ├── render_state.hpp         # Centralized render state
-└── shader_loader.hpp        # Shader loading utilities
+├── shader_loader.hpp        # Shader loading utilities
+├── settings.hpp/cpp         # Application settings
+└── app_paths.hpp/cpp        # Application path utilities
 ```
 
 | File | Purpose |
 |------|---------|
 | `application` | Window, main loop, component coordination |
-| `vulkan_context` | Vulkan initialization, swapchain, queues |
 | `renderer` | Command buffer recording, frame submission |
-| `pipeline` | Pipeline creation, descriptor sets |
-| `buffer` | GPU buffer abstraction with staging |
 | `render_state` | Shared rendering state |
 | `shader_loader` | SPIR-V shader loading |
-
-### W3D Parser (`src/w3d/`)
-
-```
-src/w3d/
-├── w3d.hpp                    # Module header (includes all)
-├── types.hpp                  # Data structures
-├── chunk_types.hpp            # Chunk type enumerations
-├── chunk_reader.hpp           # Binary chunk parsing
-├── loader.hpp/cpp             # File loading orchestrator
-├── model_loader.hpp/cpp       # High-level model interface
-├── mesh_parser.hpp/cpp        # Mesh chunk parsing
-├── hierarchy_parser.hpp/cpp   # Skeleton parsing
-├── animation_parser.hpp/cpp   # Animation parsing
-└── hlod_parser.hpp/cpp        # HLod parsing
-```
-
-| File | Purpose |
-|------|---------|
-| `w3d` | Convenience header including all W3D types |
-| `types` | Mesh, Hierarchy, Animation, HLod structures |
-| `chunk_types` | W3D chunk type IDs and constants |
-| `chunk_reader` | Low-level binary reading utilities |
-| `loader` | Orchestrates parsing of W3D files |
-| `model_loader` | High-level interface for loading |
-| `mesh_parser` | Parses MESH chunks |
-| `hierarchy_parser` | Parses HIERARCHY chunks |
-| `animation_parser` | Parses ANIMATION chunks |
-| `hlod_parser` | Parses HLOD chunks |
+| `settings` | Application configuration |
+| `app_paths` | Platform-specific path resolution |
 
 ### Rendering (`src/render/`)
+
+The render layer contains viewer-specific rendering utilities (not part of the reusable library).
 
 ```
 src/render/
 ├── animation_player.hpp/cpp    # Animation playback
 ├── bone_buffer.hpp/cpp         # Bone transformation buffer
-├── bounding_box.hpp            # AABB utilities
-├── camera.hpp/cpp              # Orbital camera
-├── hlod_model.hpp/cpp          # HLod model assembly
 ├── hover_detector.hpp/cpp      # Mesh picking
 ├── material.hpp                # Material definitions
 ├── mesh_converter.hpp/cpp      # W3D to GPU conversion
 ├── raycast.hpp/cpp             # Ray intersection
 ├── renderable_mesh.hpp/cpp     # GPU mesh representation
 ├── skeleton.hpp/cpp            # Skeleton pose computation
-├── skeleton_renderer.hpp/cpp   # Skeleton visualization
-└── texture.hpp/cpp             # Texture loading
+└── skeleton_renderer.hpp/cpp   # Skeleton visualization
 ```
 
 | File | Purpose |
 |------|---------|
 | `animation_player` | Animation timeline and playback |
 | `bone_buffer` | GPU buffer for bone matrices |
-| `bounding_box` | Axis-aligned bounding box math |
-| `camera` | Orbital camera with mouse control |
-| `hlod_model` | Multi-LOD model with sub-objects |
 | `hover_detector` | Raycast-based mesh picking |
 | `material` | Material data for GPU |
 | `mesh_converter` | Convert W3D mesh to GPU format |
@@ -123,7 +125,8 @@ src/render/
 | `renderable_mesh` | GPU buffers for mesh rendering |
 | `skeleton` | Bone pose computation |
 | `skeleton_renderer` | Bone visualization rendering |
-| `texture` | Texture loading and caching |
+
+**Note:** Camera, texture, and bounding_box utilities have been moved to `src/lib/gfx/` as they are reusable components.
 
 ### UI Layer (`src/ui/`)
 
@@ -176,6 +179,9 @@ Shaders are compiled to SPIR-V at build time and embedded in the executable.
 ```
 tests/
 ├── CMakeLists.txt         # Test configuration
+├── core/                  # Application core tests
+│   ├── test_app_paths.cpp
+│   └── test_settings.cpp
 ├── w3d/                   # W3D parsing tests
 │   ├── test_chunk_reader.cpp
 │   ├── test_loader.cpp
@@ -186,16 +192,17 @@ tests/
 ├── render/                # Rendering tests
 │   ├── test_animation_player.cpp
 │   ├── test_bounding_box.cpp
+│   ├── test_hlod_hover.cpp
 │   ├── test_mesh_converter.cpp
+│   ├── test_mesh_visibility.cpp
 │   ├── test_skeleton_pose.cpp
 │   ├── test_texture_loading.cpp
 │   └── raycast_test.cpp
-└── stubs/                 # Mock implementations
-    └── core/
-        └── pipeline.hpp
+└── ui/                    # UI tests
+    └── test_file_browser.cpp
 ```
 
-Test structure mirrors `src/` for easy navigation.
+Test structure mirrors `src/` for easy navigation. Note that `tests/w3d/` tests the library components in `src/lib/formats/w3d/`.
 
 ## Dependencies (`lib/`)
 

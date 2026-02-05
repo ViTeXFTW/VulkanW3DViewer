@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "skeleton.hpp"
-#include "w3d/types.hpp"
+#include "lib/formats/w3d/types.hpp"
 
 namespace w3d {
 

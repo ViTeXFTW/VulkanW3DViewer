@@ -1,6 +1,6 @@
-#include "texture.hpp"
+#include "lib/gfx/texture.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -9,11 +9,10 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace w3d {
+namespace w3d::gfx {
 
 namespace {
 
-// Convert string to lowercase
 std::string toLower(const std::string &str) {
   std::string result = str;
   std::transform(result.begin(), result.end(), result.begin(),
@@ -21,7 +20,6 @@ std::string toLower(const std::string &str) {
   return result;
 }
 
-// Remove file extension
 std::string removeExtension(const std::string &filename) {
   size_t lastDot = filename.find_last_of('.');
   if (lastDot == std::string::npos) {
@@ -69,7 +67,6 @@ void TextureManager::destroy() {
 }
 
 void TextureManager::createDefaultTexture() {
-  // Create a 1x1 white texture as the default
   uint8_t whitePixel[4] = {255, 255, 255, 255};
   createTexture("__default__", 1, 1, whitePixel);
 }
@@ -79,20 +76,16 @@ std::filesystem::path TextureManager::resolveTexturePath(const std::string &w3dN
     return {};
   }
 
-  // Get the base name without extension, converted to lowercase
   std::string baseName = toLower(removeExtension(w3dName));
 
-  // Try different extensions and variations
   std::vector<std::string> extensions = {".dds", ".tga", ".DDS", ".TGA"};
 
   for (const auto &ext : extensions) {
-    // Try exact lowercase name
     std::filesystem::path path = texturePath_ / (baseName + ext);
     if (std::filesystem::exists(path)) {
       return path;
     }
 
-    // Try original case name
     std::string origBase = removeExtension(w3dName);
     path = texturePath_ / (origBase + ext);
     if (std::filesystem::exists(path)) {
@@ -108,25 +101,22 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
     return 0;
   }
 
-  // Check if texture already exists
   std::string normalizedName = toLower(w3dName);
   auto it = textureNameMap_.find(normalizedName);
   if (it != textureNameMap_.end()) {
     return it->second;
   }
 
-  // Resolve the texture path
   std::filesystem::path path = resolveTexturePath(w3dName);
   if (path.empty()) {
     std::cerr << "Texture not found: " << w3dName << " (searched in " << texturePath_.string()
               << ")\n";
-    return 0; // Return default texture
+    return 0;
   }
 #ifdef W3D_DEBUG
   std::cerr << "Loading texture: " << w3dName << " -> " << path.string() << "\n";
 #endif
 
-  // Load based on extension
   std::vector<uint8_t> data;
   uint32_t width = 0, height = 0;
   vk::Format format = vk::Format::eR8G8B8A8Srgb;
@@ -162,13 +152,11 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
             << " format=" << static_cast<int>(format) << " dataSize=" << data.size() << "\n";
 #endif
 
-  // Create the GPU texture using the appropriate function based on format
   uint32_t index;
   try {
     if (format == vk::Format::eR8G8B8A8Srgb) {
       index = createTexture(normalizedName, width, height, data.data());
     } else {
-      // Compressed format
       index =
           createTextureWithFormat(normalizedName, width, height, data.data(), data.size(), format);
     }
@@ -176,7 +164,7 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
 #ifdef W3D_DEBUG
     std::cerr << "  GPU texture creation failed: " << e.what() << "\n";
 #else
-    (void)e; // Suppress unused variable warning in release
+    (void)e;
 #endif
     return 0;
   }
@@ -190,7 +178,6 @@ bool TextureManager::loadTGA(const std::filesystem::path &path, std::vector<uint
     return false;
   }
 
-  // TGA header
   uint8_t header[18];
   file.read(reinterpret_cast<char *>(header), 18);
 
@@ -201,21 +188,17 @@ bool TextureManager::loadTGA(const std::filesystem::path &path, std::vector<uint
   height = header[14] | (header[15] << 8);
   uint8_t bpp = header[16];
 
-  // Skip color map types and compressed formats for now
   if (colorMapType != 0 || (imageType != 2 && imageType != 3)) {
     return false;
   }
 
-  // Skip ID field
   file.seekg(idLength, std::ios::cur);
 
-  // Read pixel data
   size_t pixelCount = width * height;
   size_t bytesPerPixel = bpp / 8;
   std::vector<uint8_t> rawData(pixelCount * bytesPerPixel);
   file.read(reinterpret_cast<char *>(rawData.data()), static_cast<std::streamsize>(rawData.size()));
 
-  // Convert to RGBA
   data.resize(pixelCount * 4);
 
   for (size_t i = 0; i < pixelCount; ++i) {
@@ -223,19 +206,16 @@ bool TextureManager::loadTGA(const std::filesystem::path &path, std::vector<uint
     size_t dstIdx = i * 4;
 
     if (bpp == 32) {
-      // BGRA -> RGBA
       data[dstIdx + 0] = rawData[srcIdx + 2];
       data[dstIdx + 1] = rawData[srcIdx + 1];
       data[dstIdx + 2] = rawData[srcIdx + 0];
       data[dstIdx + 3] = rawData[srcIdx + 3];
     } else if (bpp == 24) {
-      // BGR -> RGBA
       data[dstIdx + 0] = rawData[srcIdx + 2];
       data[dstIdx + 1] = rawData[srcIdx + 1];
       data[dstIdx + 2] = rawData[srcIdx + 0];
       data[dstIdx + 3] = 255;
     } else if (bpp == 8) {
-      // Grayscale
       data[dstIdx + 0] = rawData[srcIdx];
       data[dstIdx + 1] = rawData[srcIdx];
       data[dstIdx + 2] = rawData[srcIdx];
@@ -243,7 +223,6 @@ bool TextureManager::loadTGA(const std::filesystem::path &path, std::vector<uint
     }
   }
 
-  // TGA images are stored bottom-up, flip if needed
   bool flipVertical = (header[17] & 0x20) == 0;
   if (flipVertical) {
     std::vector<uint8_t> flipped(data.size());
@@ -264,26 +243,22 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
     return false;
   }
 
-  // DDS magic number
   uint32_t magic;
   file.read(reinterpret_cast<char *>(&magic), 4);
-  if (magic != 0x20534444) { // "DDS "
+  if (magic != 0x20534444) {
     return false;
   }
 
-  // DDS header (124 bytes)
   uint32_t headerData[31];
   file.read(reinterpret_cast<char *>(headerData), 124);
 
   height = headerData[2];
   width = headerData[3];
   uint32_t mipMapCount = headerData[6];
-  (void)mipMapCount; // Currently only loading first mip level
+  (void)mipMapCount;
 
-  // Pixel format starts at offset 72 bytes into header (index 18)
-  // DDS_PIXELFORMAT: size(4), flags(4), fourCC(4), rgbBitCount(4), masks(4x4)
-  uint32_t pfFlags = headerData[19]; // offset 76 = flags
-  uint32_t fourCC = headerData[20];  // offset 80 = fourCC
+  uint32_t pfFlags = headerData[19];
+  uint32_t fourCC = headerData[20];
   uint32_t rgbBitCount = headerData[21];
   uint32_t rMask = headerData[22];
   uint32_t gMask = headerData[23];
@@ -295,31 +270,25 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
             << " fourCC=0x" << fourCC << std::dec << "\n";
 #endif
 
-  // Determine format
-  bool compressed = (pfFlags & 0x4) != 0; // DDPF_FOURCC
+  bool compressed = (pfFlags & 0x4) != 0;
 
   if (compressed) {
-    // Handle DXT compressed formats
-    // FourCC values: DXT1=0x31545844, DXT3=0x33545844, DXT5=0x35545844
     size_t blockSize = 0;
 
-    if (fourCC == 0x31545844) { // "DXT1"
+    if (fourCC == 0x31545844) {
       format = vk::Format::eBc1RgbaSrgbBlock;
       blockSize = 8;
-    } else if (fourCC == 0x33545844) { // "DXT3"
+    } else if (fourCC == 0x33545844) {
       format = vk::Format::eBc2SrgbBlock;
       blockSize = 16;
-    } else if (fourCC == 0x35545844) { // "DXT5"
+    } else if (fourCC == 0x35545844) {
       format = vk::Format::eBc3SrgbBlock;
       blockSize = 16;
     } else {
-      // Unsupported compressed format
       std::cerr << "    Unsupported DDS fourCC: 0x" << std::hex << fourCC << std::dec << "\n";
       return false;
     }
 
-    // Calculate data size for compressed texture
-    // Block compression uses 4x4 pixel blocks
     uint32_t blocksX = (width + 3) / 4;
     uint32_t blocksY = (height + 3) / 4;
     size_t dataSize = blocksX * blocksY * blockSize;
@@ -330,14 +299,12 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
     return true;
   }
 
-  // Uncompressed texture
   size_t pixelCount = width * height;
   uint32_t bytesPerPixel = rgbBitCount / 8;
 
   std::vector<uint8_t> rawData(pixelCount * bytesPerPixel);
   file.read(reinterpret_cast<char *>(rawData.data()), static_cast<std::streamsize>(rawData.size()));
 
-  // Convert to RGBA based on masks
   data.resize(pixelCount * 4);
   format = vk::Format::eR8G8B8A8Srgb;
 
@@ -347,7 +314,6 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
       pixel |= rawData[i * bytesPerPixel + b] << (b * 8);
     }
 
-    // Extract components using masks
     auto extractChannel = [](uint32_t pixel, uint32_t mask) -> uint8_t {
       if (mask == 0)
         return 255;
@@ -358,7 +324,6 @@ bool TextureManager::loadDDS(const std::filesystem::path &path, std::vector<uint
         shift++;
       }
       uint32_t value = (pixel & mask) >> shift;
-      // Scale to 8-bit if mask is not 0xFF
       uint32_t maxVal = mask >> shift;
       if (maxVal > 0 && maxVal != 255) {
         value = (value * 255) / maxVal;
@@ -382,7 +347,6 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
     return 0;
   }
 
-  // Check if texture already exists
   auto it = textureNameMap_.find(name);
   if (it != textureNameMap_.end()) {
     return it->second;
@@ -391,7 +355,6 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
   vk::Device device = context_->device();
   vk::DeviceSize imageSize = width * height * 4;
 
-  // Create staging buffer
   vk::BufferCreateInfo bufferInfo{{}, imageSize, vk::BufferUsageFlagBits::eTransferSrc};
   vk::Buffer stagingBuffer = device.createBuffer(bufferInfo);
 
@@ -404,12 +367,10 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
   vk::DeviceMemory stagingMemory = device.allocateMemory(allocInfo);
   device.bindBufferMemory(stagingBuffer, stagingMemory, 0);
 
-  // Copy data to staging buffer
   void *mapped = device.mapMemory(stagingMemory, 0, imageSize);
   std::memcpy(mapped, data, static_cast<size_t>(imageSize));
   device.unmapMemory(stagingMemory);
 
-  // Create image
   GPUTexture tex;
   tex.name = name;
   tex.width = width;
@@ -419,18 +380,15 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
               vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
               vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.memory);
 
-  // Transition and copy
   transitionImageLayout(tex.image, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eTransferDstOptimal);
   copyBufferToImage(stagingBuffer, tex.image, width, height);
   transitionImageLayout(tex.image, vk::ImageLayout::eTransferDstOptimal,
                         vk::ImageLayout::eShaderReadOnlyOptimal);
 
-  // Cleanup staging
   device.destroyBuffer(stagingBuffer);
   device.freeMemory(stagingMemory);
 
-  // Create view and sampler
   tex.view = createImageView(tex.image, vk::Format::eR8G8B8A8Srgb);
   tex.sampler = createSampler();
 
@@ -448,7 +406,6 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
     return 0;
   }
 
-  // Check if texture already exists
   auto it = textureNameMap_.find(name);
   if (it != textureNameMap_.end()) {
     return it->second;
@@ -456,7 +413,6 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
 
   vk::Device device = context_->device();
 
-  // Create staging buffer
   vk::BufferCreateInfo bufferInfo{{}, dataSize, vk::BufferUsageFlagBits::eTransferSrc};
   vk::Buffer stagingBuffer = device.createBuffer(bufferInfo);
 
@@ -469,12 +425,10 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
   vk::DeviceMemory stagingMemory = device.allocateMemory(allocInfo);
   device.bindBufferMemory(stagingBuffer, stagingMemory, 0);
 
-  // Copy data to staging buffer
   void *mapped = device.mapMemory(stagingMemory, 0, dataSize);
   std::memcpy(mapped, data, dataSize);
   device.unmapMemory(stagingMemory);
 
-  // Create image
   GPUTexture tex;
   tex.name = name;
   tex.width = width;
@@ -484,18 +438,15 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
               vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
               vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.memory);
 
-  // Transition and copy
   transitionImageLayout(tex.image, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eTransferDstOptimal);
   copyBufferToImage(stagingBuffer, tex.image, width, height);
   transitionImageLayout(tex.image, vk::ImageLayout::eTransferDstOptimal,
                         vk::ImageLayout::eShaderReadOnlyOptimal);
 
-  // Cleanup staging
   device.destroyBuffer(stagingBuffer);
   device.freeMemory(stagingMemory);
 
-  // Create view and sampler
   tex.view = createImageView(tex.image, format);
   tex.sampler = createSampler();
 
@@ -510,31 +461,28 @@ const GPUTexture &TextureManager::texture(uint32_t index) const {
   if (index < textures_.size()) {
     return textures_[index];
   }
-  return textures_[0]; // Return default texture
+  return textures_[0];
 }
 
 uint32_t TextureManager::findTexture(const std::string &name) const {
-  // Try exact match first
   auto it = textureNameMap_.find(name);
   if (it != textureNameMap_.end()) {
     return it->second;
   }
 
-  // Try case-insensitive match (normalized to lowercase)
   std::string normalizedName = toLower(name);
   it = textureNameMap_.find(normalizedName);
   if (it != textureNameMap_.end()) {
     return it->second;
   }
 
-  // Also try without extension
   std::string baseName = toLower(removeExtension(name));
   it = textureNameMap_.find(baseName);
   if (it != textureNameMap_.end()) {
     return it->second;
   }
 
-  return 0; // Return default texture index
+  return 0;
 }
 
 vk::DescriptorImageInfo TextureManager::descriptorInfo(uint32_t index) const {
@@ -582,7 +530,6 @@ vk::ImageView TextureManager::createImageView(vk::Image image, vk::Format format
 }
 
 vk::Sampler TextureManager::createSampler() {
-  // Check if anisotropy is supported
   vk::PhysicalDeviceFeatures features = context_->physicalDevice().getFeatures();
   bool anisotropyEnabled = features.samplerAnisotropy == VK_TRUE;
 
@@ -674,4 +621,4 @@ uint32_t TextureManager::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyF
   throw std::runtime_error("Failed to find suitable memory type");
 }
 
-} // namespace w3d
+} // namespace w3d::gfx

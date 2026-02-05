@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <filesystem>
 #include <functional>
@@ -9,15 +9,20 @@
 
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "render/camera.hpp"
-#include "render/hlod_model.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "render/texture.hpp"
-#include "w3d/loader.hpp"
+#include "lib/gfx/texture.hpp"
+#include "lib/formats/w3d/loader.hpp"
 
 namespace w3d {
+
+// Using declarations for gfx types
+using gfx::Camera;
+using gfx::TextureManager;
+using gfx::VulkanContext;
 
 /**
  * Result of a model loading operation.

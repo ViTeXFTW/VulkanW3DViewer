@@ -1,4 +1,4 @@
-#include "camera.hpp"
+#include "lib/gfx/camera.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -9,7 +9,7 @@
 
 #include <imgui.h>
 
-namespace w3d {
+namespace w3d::gfx {
 
 void Camera::setTarget(const glm::vec3 &target, float distance) {
   target_ = target;
@@ -17,7 +17,6 @@ void Camera::setTarget(const glm::vec3 &target, float distance) {
 }
 
 void Camera::update(GLFWwindow *window) {
-  // Don't process input if ImGui wants the mouse
   if (ImGui::GetIO().WantCaptureMouse) {
     dragging_ = false;
     return;
@@ -30,15 +29,12 @@ void Camera::update(GLFWwindow *window) {
 
   if (leftButton) {
     if (dragging_) {
-      // Calculate delta
       double deltaX = mouseX - lastMouseX_;
       double deltaY = mouseY - lastMouseY_;
 
-      // Update yaw and pitch
       yaw_ -= static_cast<float>(deltaX) * kRotationSpeed;
       pitch_ -= static_cast<float>(deltaY) * kRotationSpeed;
 
-      // Clamp pitch to avoid gimbal lock
       pitch_ = std::clamp(pitch_, kMinPitch, kMaxPitch);
     }
     dragging_ = true;
@@ -51,12 +47,10 @@ void Camera::update(GLFWwindow *window) {
 }
 
 void Camera::onScroll(float yOffset) {
-  // Don't process if ImGui wants the mouse
   if (ImGui::GetIO().WantCaptureMouse) {
     return;
   }
 
-  // Logarithmic zoom for better feel at different scales
   float zoomFactor = 1.0f - yOffset * kZoomSpeed;
   distance_ *= zoomFactor;
   distance_ = std::clamp(distance_, kMinDistance, kMaxDistance);
@@ -69,9 +63,6 @@ glm::mat4 Camera::viewMatrix() const {
 }
 
 glm::vec3 Camera::position() const {
-  // Convert spherical coordinates to Cartesian
-  // yaw: rotation around Y axis
-  // pitch: rotation above/below horizontal plane
   float x = distance_ * std::cos(pitch_) * std::sin(yaw_);
   float y = distance_ * std::sin(pitch_);
   float z = distance_ * std::cos(pitch_) * std::cos(yaw_);
@@ -91,4 +82,4 @@ void Camera::setPitch(float pitch) {
   pitch_ = std::clamp(pitch, kMinPitch, kMaxPitch);
 }
 
-} // namespace w3d
+} // namespace w3d::gfx

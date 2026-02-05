@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -12,19 +12,19 @@
 #include "core/settings.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "render/camera.hpp"
-#include "render/hlod_model.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/hover_detector.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "render/texture.hpp"
+#include "lib/gfx/texture.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
 #include "ui/ui_manager.hpp"
-#include "w3d/loader.hpp"
-#include "w3d/model_loader.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/formats/w3d/model_loader.hpp"
 
 namespace w3d {
 

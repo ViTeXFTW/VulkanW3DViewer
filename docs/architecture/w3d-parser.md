@@ -4,18 +4,20 @@ The W3D parsing layer handles loading and interpreting W3D format files.
 
 ## Overview
 
-Located in `src/w3d/`, this layer provides:
+Located in `src/lib/formats/w3d/`, this layer provides:
 
 - Binary file reading
 - Chunk-based parsing
 - Data structure population
+
+This is part of the reusable library layer and can be used independently of the viewer application.
 
 ## Module Header
 
 `w3d.hpp` provides a convenience include:
 
 ```cpp
-#include "w3d/w3d.hpp"  // Includes all W3D types
+#include "formats/w3d/w3d.hpp"  // Includes all W3D types
 ```
 
 ## Chunk Reader
@@ -166,6 +168,32 @@ Handles these chunk types:
 ### HLodParser
 
 `hlod_parser.hpp/cpp` - Parses LOD configuration.
+
+| Chunk | Content |
+|-------|---------|
+| `HLOD` | Container |
+| `HLOD_HEADER` | LOD count, names |
+| `HLOD_LOD_ARRAY` | LOD level meshes |
+| `HLOD_SUB_OBJECT` | Mesh reference |
+
+### HLodModel
+
+`hlod_model.hpp/cpp` - Multi-LOD model representation.
+
+The HLodModel has been extracted to `src/lib/formats/w3d/` as it is a core W3D format component that can be reused across different applications.
+
+```mermaid
+graph TB
+    HM[HLodModel]
+    HM --> LOD0[LOD Level 0]
+    HM --> LOD1[LOD Level 1]
+    HM --> LODN[LOD Level N]
+    LOD0 --> M0A[Mesh A]
+    LOD0 --> M0B[Mesh B]
+    LOD1 --> M1A[Mesh A simplified]
+    HM --> SKEL[Skeleton]
+    HM --> ANIM[Animations]
+```
 
 | Chunk | Content |
 |-------|---------|

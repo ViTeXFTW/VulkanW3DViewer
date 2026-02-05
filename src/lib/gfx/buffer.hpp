@@ -1,10 +1,14 @@
 #pragma once
 
-#include <cstring>
-
 #include <vulkan/vulkan.hpp>
 
-namespace w3d {
+#include <GLFW/glfw3.h>
+
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
+namespace w3d::gfx {
 
 class VulkanContext;
 
@@ -40,7 +44,6 @@ private:
   void *mappedData_ = nullptr;
 };
 
-// Helper to create a device-local buffer with staging
 class StagedBuffer {
 public:
   StagedBuffer() = default;
@@ -57,7 +60,6 @@ private:
   Buffer buffer_;
 };
 
-// Vertex buffer helper
 template <typename Vertex>
 class VertexBuffer {
 public:
@@ -77,7 +79,6 @@ private:
   uint32_t vertexCount_ = 0;
 };
 
-// Index buffer helper
 class IndexBuffer {
 public:
   void create(VulkanContext &context, const std::vector<uint32_t> &indices);
@@ -91,7 +92,6 @@ private:
   uint32_t indexCount_ = 0;
 };
 
-// Uniform buffer with per-frame copies
 template <typename T>
 class UniformBuffer {
 public:
@@ -121,4 +121,4 @@ private:
   std::vector<Buffer> buffers_;
 };
 
-} // namespace w3d
+} // namespace w3d::gfx

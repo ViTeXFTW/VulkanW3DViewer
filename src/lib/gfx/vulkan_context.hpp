@@ -4,11 +4,16 @@
 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace w3d {
+namespace w3d::gfx {
+
+class VulkanContext;
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
@@ -36,7 +41,6 @@ public:
 
   void recreateSwapchain(uint32_t width, uint32_t height);
 
-  // Accessors
   vk::Instance instance() const { return instance_; }
   vk::PhysicalDevice physicalDevice() const { return physicalDevice_; }
   vk::Device device() const { return device_; }
@@ -56,7 +60,6 @@ public:
   vk::RenderPass renderPass() const { return renderPass_; }
   vk::Framebuffer framebuffer(uint32_t index) const { return framebuffers_[index]; }
 
-  // Helper for one-time commands
   vk::CommandBuffer beginSingleTimeCommands();
   void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
@@ -119,4 +122,4 @@ private:
   static constexpr std::array<const char *, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };
 
-} // namespace w3d
+} // namespace w3d::gfx

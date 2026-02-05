@@ -1,4 +1,4 @@
-#include "w3d/chunk_reader.hpp"
+#include "lib/formats/w3d/chunk_reader.hpp"
 
 #include <gtest/gtest.h>
 

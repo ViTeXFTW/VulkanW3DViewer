@@ -44,38 +44,68 @@ This is a **W3D format renderer** - a modern Vulkan-based tool for loading and r
 ```
 src/
   main.cpp                    # Application entry, CLI argument parsing (CLI11)
-  core/
-    vulkan_context.hpp/cpp    # Device, swapchain, queues, depth buffer
-    buffer.hpp/cpp            # GPU buffer management with staging
-    pipeline.hpp/cpp          # Graphics pipeline, descriptors
-  w3d/
-    w3d.hpp                   # W3D module main header
-    loader.hpp/cpp            # W3D file loading interface
-    chunk_reader.hpp          # Binary chunk parsing utilities
-    chunk_types.hpp           # W3D chunk type enumerations
-    types.hpp                 # W3D data structures (Mesh, Hierarchy, Animation, etc.)
-    mesh_parser.hpp/cpp       # Mesh chunk parsing
-    hierarchy_parser.hpp/cpp  # Skeleton/bone parsing
-    animation_parser.hpp/cpp  # Animation keyframe parsing
-    hlod_parser.hpp/cpp       # Hierarchical LOD parsing
-  render/
+  core/                       # Application orchestration (viewer-specific)
+    application.hpp/cpp       # Main application class
+    renderer.hpp/cpp          # Rendering orchestration
+    render_state.hpp          # Centralized render state
+    shader_loader.hpp         # Shader loading utilities
+    settings.hpp/cpp          # Application settings
+    app_paths.hpp/cpp         # Application path utilities
+  lib/                        # Reusable library components
+    formats/w3d/              # W3D format parsing
+      w3d.hpp                 # W3D module main header
+      types.hpp               # W3D data structures (Mesh, Hierarchy, Animation, etc.)
+      chunk_types.hpp         # W3D chunk type enumerations
+      chunk_reader.hpp        # Binary chunk parsing utilities
+      loader.hpp/cpp          # W3D file loading interface
+      model_loader.hpp/cpp    # High-level model interface
+      mesh_parser.hpp/cpp     # Mesh chunk parsing
+      hierarchy_parser.hpp/cpp # Skeleton/bone parsing
+      animation_parser.hpp/cpp # Animation keyframe parsing
+      hlod_parser.hpp/cpp     # Hierarchical LOD parsing
+      hlod_model.hpp/cpp      # HLod model assembly with LOD switching
+    gfx/                      # Graphics foundation
+      vulkan_context.hpp/cpp  # Device, swapchain, queues, depth buffer
+      buffer.hpp/cpp          # GPU buffer management with staging
+      pipeline.hpp/cpp        # Graphics pipeline, descriptors
+      texture.hpp/cpp         # Texture loading and management
+      camera.hpp/cpp          # Orbital camera with mouse controls
+      bounding_box.hpp        # AABB utilities
+      renderable.hpp          # Base renderable interface
+    scene/                    # Scene management
+      scene.hpp/cpp           # Scene container
+  render/                     # Rendering utilities (viewer-specific)
     animation_player.hpp/cpp  # Animation playback control
-    bone_buffer.hpp/cpp       # GPU buffer management for bone transformations
-    bounding_box.hpp          # AABB utilities
-    camera.hpp/cpp            # Orbital camera with mouse controls
-    hlod_model.hpp/cpp        # HLod model assembly with LOD switching
+    bone_buffer.hpp/cpp       # GPU buffer for bone transformations
+    hover_detector.hpp/cpp    # Mesh picking via raycast
     material.hpp              # Material definitions and GPU format
     mesh_converter.hpp/cpp    # W3D mesh to GPU vertex conversion
-    renderable_mesh.hpp/cpp   # GPU buffer management for meshes
+    raycast.hpp/cpp           # Ray intersection utilities
+    renderable_mesh.hpp/cpp   # GPU mesh representation
     skeleton.hpp/cpp          # Skeleton pose computation
     skeleton_renderer.hpp/cpp # Skeleton debug visualization
-    texture.hpp/cpp           # Texture loading and management
-  ui/
+  ui/                         # User interface
     imgui_backend.hpp/cpp     # ImGui Vulkan integration
+    ui_manager.hpp/cpp        # UI component lifecycle management
+    ui_context.hpp            # Shared UI context
+    ui_window.hpp             # Window base class
+    ui_panel.hpp              # Panel base class
     console_window.hpp/cpp    # Debug console UI
     file_browser.hpp/cpp      # File browser for loading W3D files
+    viewport_window.hpp/cpp   # 3D viewport
+    settings_window.hpp/cpp   # Settings dialog
+    hover_tooltip.hpp/cpp     # Tooltip display
+    panels/                   # UI panels
+      animation_panel.hpp/cpp # Animation controls
+      camera_panel.hpp/cpp    # Camera settings
+      display_panel.hpp/cpp   # Display options
+      lod_panel.hpp/cpp       # LOD selection
+      model_info_panel.hpp/cpp# Model information
+      mesh_visibility_panel.hpp/cpp # Mesh visibility
 shaders/
   basic.vert/frag             # Shader with texture and material support
+  skinned.vert                # Skeletal animation vertex shader
+  skeleton.vert/frag          # Skeleton visualization
 ```
 
 ## Implementation Phases
