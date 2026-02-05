@@ -1,5 +1,5 @@
-#include "w3d/chunk_reader.hpp"
-#include "w3d/hierarchy_parser.hpp"
+#include "lib/formats/w3d/chunk_reader.hpp"
+#include "lib/formats/w3d/hierarchy_parser.hpp"
 
 #include <gtest/gtest.h>
 

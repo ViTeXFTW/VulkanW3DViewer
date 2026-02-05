@@ -1,6 +1,6 @@
 #include "imgui_backend.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include "core/app_paths.hpp"
 
@@ -10,11 +10,14 @@
 
 namespace w3d {
 
+// Using declarations for gfx types
+using gfx::VulkanContext;
+
 ImGuiBackend::~ImGuiBackend() {
   cleanup();
 }
 
-void ImGuiBackend::init(GLFWwindow *window, VulkanContext &context) {
+void ImGuiBackend::init(GLFWwindow *window, gfx::VulkanContext &context) {
   context_ = &context;
 
   // Create descriptor pool for ImGui

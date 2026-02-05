@@ -2,11 +2,11 @@
 
 # Collect W3D source files needed for testing (parser module only, no Vulkan dependencies)
 set(W3D_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/w3d/loader.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/mesh_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/hierarchy_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/animation_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/hlod_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/loader.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/mesh_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hierarchy_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/animation_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hlod_parser.cpp
 )
 
 add_executable(w3d_tests

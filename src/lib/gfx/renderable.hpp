@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "render/bounding_box.hpp"
+#include "lib/gfx/bounding_box.hpp"
 
 namespace w3d::gfx {
 

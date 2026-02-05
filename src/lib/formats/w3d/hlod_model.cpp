@@ -1,6 +1,7 @@
 #include "lib/formats/w3d/hlod_model.hpp"
 
 #include "lib/gfx/vulkan_context.hpp"
+#include "lib/gfx/bounding_box.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -8,12 +9,6 @@
 #include "render/mesh_converter.hpp"
 
 namespace w3d {
-
-HLodModel::~HLodModel() {
-  destroy();
-}
-
-} // namespace
 
 HLodModel::~HLodModel() {
   destroy();
@@ -125,8 +120,8 @@ void HLodModel::load(gfx::VulkanContext &context, const W3DFile &file, const Ske
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(w3d::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
-        lodLevels_[0].bounds.expand(w3d::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         meshGPU_.push_back(std::move(gpuMesh));
       }
@@ -205,7 +200,7 @@ void HLodModel::load(gfx::VulkanContext &context, const W3DFile &file, const Ske
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      combinedBounds_.expand(toW3DBounds(subMesh.bounds));
+      combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
       meshGPU_.push_back(std::move(gpuMesh));
     }
@@ -257,8 +252,8 @@ void HLodModel::load(gfx::VulkanContext &context, const W3DFile &file, const Ske
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(w3d::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
-        lodLevels_[0].bounds.expand(w3d::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         meshGPU_.push_back(std::move(gpuMesh));
       }
@@ -313,8 +308,8 @@ void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(toW3DBounds(subMesh.bounds));
-        lodLevels_[0].bounds.expand(toW3DBounds(subMesh.bounds));
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
@@ -388,7 +383,7 @@ void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      combinedBounds_.expand(toW3DBounds(subMesh.bounds));
+      combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
       skinnedMeshGPU_.push_back(std::move(gpuMesh));
     }
@@ -432,8 +427,8 @@ void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(toW3DBounds(subMesh.bounds));
-        levelInfo.bounds.expand(toW3DBounds(subMesh.bounds));
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        levelInfo.bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
@@ -609,7 +604,7 @@ std::vector<size_t> HLodModel::visibleSkinnedMeshIndices() const {
   return indices;
 }
 
-void HLodModel::draw(vk::CommandBuffer cmd) const {
+void HLodModel::draw(vk::CommandBuffer cmd) {
   for (size_t i = 0; i < aggregateCount_; ++i) {
     const auto &mesh = meshGPU_[i];
 

@@ -8,6 +8,13 @@
 
 namespace w3d {
 
+// Using declarations for gfx types
+using gfx::Camera;
+using gfx::MaterialPushConstant;
+using gfx::TextureManager;
+using gfx::UniformBufferObject;
+using gfx::VulkanContext;
+
 void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &imguiBackend,
                     TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer) {
   window_ = window;

@@ -4,7 +4,7 @@
 #include <glm/gtc/constants.hpp>
 
 #include "../ui_context.hpp"
-#include "render/camera.hpp"
+#include "lib/gfx/camera.hpp"
 
 #include <imgui.h>
 
