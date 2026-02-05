@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "ui/hover_tooltip.hpp"
+#include "ui/settings_window.hpp"
 #include "ui/ui_context.hpp"
 #include "ui/viewport_window.hpp"
 
@@ -114,6 +115,7 @@ void Application::initUI() {
   console_ = uiManager_.addWindow<ConsoleWindow>();
   fileBrowser_ = uiManager_.addWindow<FileBrowser>();
   uiManager_.addWindow<HoverTooltip>();
+  uiManager_.addWindow<SettingsWindow>();
 
   // Set initial visibility
   viewport->setVisible(true);
@@ -122,7 +124,7 @@ void Application::initUI() {
 
   // Configure file browser
   fileBrowser_->setFilter(".w3d");
-  fileBrowser_->setFileSelectedCallback([this](const std::filesystem::path &path) {
+  fileBrowser_->setPathSelectedCallback([this](const std::filesystem::path &path) {
     loadW3DFile(path);
     fileBrowser_->setVisible(false);
   });
@@ -222,6 +224,7 @@ void Application::drawUI() {
   ctx.skeletonPose = &skeletonPose_;
   ctx.animationPlayer = &animationPlayer_;
   ctx.hoverState = &hoverDetector_.state();
+  ctx.settings = &appSettings_;
 
   // Set up callbacks
   ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
@@ -335,6 +338,10 @@ void Application::cleanup() {
 void Application::run() {
   // Load settings first (before any initialization)
   appSettings_ = Settings::loadDefault();
+
+  // Apply display settings from persistent storage to render state
+  renderState_.showMesh = appSettings_.showMesh;
+  renderState_.showSkeleton = appSettings_.showSkeleton;
 
   initWindow();
   initVulkan();

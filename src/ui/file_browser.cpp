@@ -50,8 +50,15 @@ void FileBrowser::draw(UIContext & /*ctx*/) {
   if (ImGui::Button("Refresh")) {
     refreshDirectory();
   }
-  ImGui::SameLine();
-  ImGui::Text("Filter: %s", filterExtension_.empty() ? "*" : filterExtension_.c_str());
+
+  // Show filter info only in File mode
+  if (browseMode_ == BrowseMode::File) {
+    ImGui::SameLine();
+    ImGui::Text("Filter: %s", filterExtension_.empty() ? "*" : filterExtension_.c_str());
+  } else {
+    ImGui::SameLine();
+    ImGui::Text("(Selecting folder)");
+  }
 
   ImGui::Separator();
 
@@ -72,16 +79,12 @@ void FileBrowser::draw(UIContext & /*ctx*/) {
       selectedIndex_ = static_cast<int>(i);
 
       if (ImGui::IsMouseDoubleClicked(0)) {
-        if (entry.isDirectory) {
-          navigateTo(entry.path);
-        } else if (fileSelectedCallback_) {
-          fileSelectedCallback_(entry.path);
-        }
+        handleSelection(entry);
       }
     }
 
-    // Show file size for files
-    if (!entry.isDirectory) {
+    // Show file size for files (only in File mode)
+    if (!entry.isDirectory && browseMode_ == BrowseMode::File) {
       ImGui::SameLine(ImGui::GetWindowWidth() - 100);
       if (entry.size < 1024) {
         ImGui::Text("%llu B", static_cast<unsigned long long>(entry.size));
@@ -95,17 +98,35 @@ void FileBrowser::draw(UIContext & /*ctx*/) {
 
   ImGui::EndChild();
 
-  // Open button
-  if (ImGui::Button("Open") && selectedIndex_ >= 0 &&
-      selectedIndex_ < static_cast<int>(entries_.size())) {
-    const auto &entry = entries_[selectedIndex_];
-    if (entry.isDirectory) {
-      navigateTo(entry.path);
-    } else if (fileSelectedCallback_) {
-      fileSelectedCallback_(entry.path);
+  // Action buttons based on mode
+  if (browseMode_ == BrowseMode::Directory) {
+    // Directory mode: "Select This Folder" button
+    if (ImGui::Button("Select This Folder")) {
+      selectCurrentDirectory();
     }
+    ImGui::SameLine();
+    // Also allow selecting a highlighted directory
+    bool canOpenSelected =
+        selectedIndex_ >= 0 && selectedIndex_ < static_cast<int>(entries_.size());
+    if (canOpenSelected) {
+      const auto &entry = entries_[selectedIndex_];
+      if (entry.isDirectory) {
+        if (ImGui::Button("Open Selected")) {
+          navigateTo(entry.path);
+        }
+        ImGui::SameLine();
+      }
+    }
+  } else {
+    // File mode: "Open" button
+    if (ImGui::Button("Open") && selectedIndex_ >= 0 &&
+        selectedIndex_ < static_cast<int>(entries_.size())) {
+      const auto &entry = entries_[selectedIndex_];
+      handleSelection(entry);
+    }
+    ImGui::SameLine();
   }
-  ImGui::SameLine();
+
   if (ImGui::Button("Cancel")) {
     setVisible(false);
   }
@@ -113,9 +134,23 @@ void FileBrowser::draw(UIContext & /*ctx*/) {
   ImGui::End();
 }
 
+void FileBrowser::handleSelection(const FileEntry &entry) {
+  if (entry.isDirectory) {
+    // Always navigate into directories on double-click
+    navigateTo(entry.path);
+  } else if (browseMode_ == BrowseMode::File && pathSelectedCallback_) {
+    // Select file only in File mode
+    pathSelectedCallback_(entry.path);
+  }
+}
+
 void FileBrowser::refreshDirectory() {
   entries_.clear();
   selectedIndex_ = -1;
+
+  if (!std::filesystem::exists(currentPath_)) {
+    return;
+  }
 
   try {
     for (const auto &dirEntry : std::filesystem::directory_iterator(currentPath_)) {
@@ -123,10 +158,25 @@ void FileBrowser::refreshDirectory() {
       entry.name = dirEntry.path().filename().string();
       entry.path = dirEntry.path();
       entry.isDirectory = dirEntry.is_directory();
-      entry.size = entry.isDirectory ? 0 : dirEntry.file_size();
 
-      // Apply filter for files
-      if (!entry.isDirectory && !filterExtension_.empty()) {
+      // Get file size safely
+      if (!entry.isDirectory) {
+        try {
+          entry.size = dirEntry.file_size();
+        } catch (const std::filesystem::filesystem_error &) {
+          entry.size = 0;
+        }
+      } else {
+        entry.size = 0;
+      }
+
+      // In Directory mode, only show directories
+      if (browseMode_ == BrowseMode::Directory && !entry.isDirectory) {
+        continue;
+      }
+
+      // Apply filter for files (only in File mode)
+      if (browseMode_ == BrowseMode::File && !entry.isDirectory && !filterExtension_.empty()) {
         std::string ext = dirEntry.path().extension().string();
         // Case-insensitive comparison
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
@@ -175,6 +225,18 @@ void FileBrowser::openAt(const std::filesystem::path &path) {
       currentPath_ = path.parent_path();
     }
     refreshDirectory();
+  }
+}
+
+void FileBrowser::selectCurrentDirectory() {
+  if (pathSelectedCallback_) {
+    pathSelectedCallback_(currentPath_);
+  }
+}
+
+void FileBrowser::selectEntry(int index) {
+  if (index >= 0 && index < static_cast<int>(entries_.size())) {
+    selectedIndex_ = index;
   }
 }
 

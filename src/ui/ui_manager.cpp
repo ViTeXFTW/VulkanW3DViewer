@@ -1,5 +1,7 @@
 #include "ui_manager.hpp"
 
+#include "settings_window.hpp"
+
 #include <imgui.h>
 
 namespace w3d {
@@ -63,6 +65,13 @@ void UIManager::drawDockspace() {
 }
 
 void UIManager::drawMenuBar(UIContext &ctx) {
+  // Handle global keyboard shortcuts (works even when menus are closed)
+  if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Comma, ImGuiInputFlags_RouteGlobal)) {
+    if (auto *settingsWindow = getWindow<SettingsWindow>()) {
+      settingsWindow->open();
+    }
+  }
+
   if (!ImGui::BeginMenuBar()) {
     return;
   }
@@ -72,6 +81,12 @@ void UIManager::drawMenuBar(UIContext &ctx) {
     if (ImGui::MenuItem("Open W3D...", "Ctrl+O")) {
       if (ctx.onOpenFile) {
         ctx.onOpenFile();
+      }
+    }
+    ImGui::Separator();
+    if (ImGui::MenuItem("Settings...", "Ctrl+,")) {
+      if (auto *settingsWindow = getWindow<SettingsWindow>()) {
+        settingsWindow->open();
       }
     }
     ImGui::Separator();
@@ -85,9 +100,11 @@ void UIManager::drawMenuBar(UIContext &ctx) {
 
   // View menu
   if (ImGui::BeginMenu("View")) {
-    // Add menu items for all registered windows
+    // Add menu items for all registered windows (except modal popups)
     for (auto &window : windows_) {
-      ImGui::MenuItem(window->name(), nullptr, window->visiblePtr());
+      if (window->showInViewMenu()) {
+        ImGui::MenuItem(window->name(), nullptr, window->visiblePtr());
+      }
     }
 
 #ifdef W3D_DEBUG
