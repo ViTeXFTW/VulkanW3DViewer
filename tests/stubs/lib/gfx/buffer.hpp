@@ -3,7 +3,10 @@
 // Stub buffer.hpp for tests - provides buffer types without Vulkan dependencies
 
 #include <glm/glm.hpp>
+
 #include <vector>
+
+#include "../../src/lib/gfx/bounding_box.hpp"
 
 namespace w3d::gfx {
 
@@ -29,12 +32,6 @@ public:
 class Buffer {
 public:
   void destroy() {}
-};
-
-// Stub bounding box
-struct BoundingBox {
-  glm::vec3 min{};
-  glm::vec3 max{};
 };
 
 } // namespace w3d::gfx
