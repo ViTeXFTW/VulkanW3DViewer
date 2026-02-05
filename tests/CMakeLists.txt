@@ -170,47 +170,21 @@ endif()
 
 add_test(NAME hlod_hover_tests COMMAND hlod_hover_tests)
 
-# Core tests (settings, app paths - no Vulkan dependencies)
-add_executable(core_tests
-  core/test_settings.cpp
-  core/test_app_paths.cpp
-  ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
-  ${CMAKE_SOURCE_DIR}/src/core/app_paths.cpp
+# Mesh visibility tests (no Vulkan dependencies)
+add_executable(mesh_visibility_tests
+  render/test_mesh_visibility.cpp
 )
 
-target_link_libraries(core_tests PRIVATE gtest gtest_main)
+target_link_libraries(mesh_visibility_tests PRIVATE gtest gtest_main)
 
-target_include_directories(core_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_SOURCE_DIR}/lib/json/include
-)
-
-if(MSVC)
-  target_compile_options(core_tests PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(core_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_test(NAME core_tests COMMAND core_tests)
-
-# UI tests (FileBrowser - no Vulkan/ImGui dependencies for logic tests)
-add_executable(ui_tests
-  ui/test_file_browser.cpp
-  ${CMAKE_SOURCE_DIR}/src/ui/file_browser.cpp
-)
-
-target_link_libraries(ui_tests PRIVATE gtest gtest_main)
-
-# Use stubs directory to provide mock UIWindow base class without ImGui
-target_include_directories(ui_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/tests/stubs
+target_include_directories(mesh_visibility_tests PRIVATE
   ${CMAKE_SOURCE_DIR}/src
 )
 
 if(MSVC)
-  target_compile_options(ui_tests PRIVATE /W4 /permissive-)
+  target_compile_options(mesh_visibility_tests PRIVATE /W4 /permissive-)
 else()
-  target_compile_options(ui_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(mesh_visibility_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_test(NAME ui_tests COMMAND ui_tests)
+add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)

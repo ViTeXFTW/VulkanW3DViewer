@@ -185,6 +185,15 @@ public:
   std::vector<size_t> visibleMeshIndices() const;
   std::vector<size_t> visibleSkinnedMeshIndices() const;
 
+  // User-controlled mesh visibility (independent of LOD visibility)
+  bool isMeshHidden(size_t index) const;
+  void setMeshHidden(size_t index, bool hidden);
+  void setAllMeshesHidden(bool hidden);
+
+  bool isSkinnedMeshHidden(size_t index) const;
+  void setSkinnedMeshHidden(size_t index, bool hidden);
+  void setAllSkinnedMeshesHidden(bool hidden);
+
   // Draw with per-mesh bone transforms
   template <typename UpdateModelMatrixFunc>
   void drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
@@ -221,7 +230,8 @@ private:
   // Template works with both HLodMeshGPU and HLodSkinnedMeshGPU
   template <typename MeshT, typename BeforeDrawFunc>
   void drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
-                      size_t aggregateCount, BeforeDrawFunc beforeDraw) const;
+                      const std::vector<bool> &visibility, size_t aggregateCount,
+                      BeforeDrawFunc beforeDraw) const;
 
   std::string name_;
   std::string hierarchyName_;
@@ -237,14 +247,24 @@ private:
   float currentScreenSize_ = 0.0f; // Current calculated screen size
 
   BoundingBox combinedBounds_;     // Combined bounds of all meshes
+
+  // Mesh visibility state (true = visible, false = hidden)
+  std::vector<bool> meshVisibility_;
+  std::vector<bool> skinnedMeshVisibility_;
 };
 
 // Template implementation - unified mesh drawing helper
 template <typename MeshT, typename BeforeDrawFunc>
 void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
-                               size_t aggregateCount, BeforeDrawFunc beforeDraw) const {
-  // Draw aggregates first (always rendered)
+                               const std::vector<bool> &visibility, size_t aggregateCount,
+                               BeforeDrawFunc beforeDraw) const {
+  // Draw aggregates first (always rendered unless user-hidden)
   for (size_t i = 0; i < aggregateCount; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < visibility.size() && !visibility[i]) {
+      continue;
+    }
+
     const auto &mesh = meshes[i];
     beforeDraw(mesh);
 
@@ -257,6 +277,11 @@ void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &
 
   // Draw current LOD level meshes
   for (size_t i = aggregateCount; i < meshes.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < visibility.size() && !visibility[i]) {
+      continue;
+    }
+
     const auto &mesh = meshes[i];
 
     // Skip if not in current LOD level
@@ -276,15 +301,20 @@ void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &
 
 template <typename BindTextureFunc>
 void HLodModel::drawWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
-  drawMeshesImpl(cmd, meshGPU_, aggregateCount_,
+  drawMeshesImpl(cmd, meshGPU_, meshVisibility_, aggregateCount_,
                  [&](const HLodMeshGPU &mesh) { bindTexture(mesh.textureName); });
 }
 
 template <typename BeforeDrawFunc>
 void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const glm::vec3 &tintColor,
                               BeforeDrawFunc beforeDraw) const {
-  // Draw aggregates first (always rendered)
+  // Draw aggregates first (always rendered unless user-hidden)
   for (size_t i = 0; i < aggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
     // Compare against actual array index (i), not a sequential counter
     glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
@@ -299,6 +329,11 @@ void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const g
 
   // Draw current LOD level meshes
   for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     // Skip if not in current LOD level
@@ -321,7 +356,7 @@ void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const g
 template <typename UpdateModelMatrixFunc>
 void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose *pose,
                                        UpdateModelMatrixFunc updateModelMatrix) const {
-  drawMeshesImpl(cmd, meshGPU_, aggregateCount_, [&](const HLodMeshGPU &mesh) {
+  drawMeshesImpl(cmd, meshGPU_, meshVisibility_, aggregateCount_, [&](const HLodMeshGPU &mesh) {
     glm::mat4 boneTransform(1.0f);
     if (pose && mesh.boneIndex >= 0 && static_cast<size_t>(mesh.boneIndex) < pose->boneCount()) {
       boneTransform = pose->boneTransform(static_cast<size_t>(mesh.boneIndex));
@@ -332,15 +367,20 @@ void HLodModel::drawWithBoneTransforms(vk::CommandBuffer cmd, const SkeletonPose
 
 template <typename BindTextureFunc>
 void HLodModel::drawSkinnedWithTextures(vk::CommandBuffer cmd, BindTextureFunc bindTexture) const {
-  drawMeshesImpl(cmd, skinnedMeshGPU_, skinnedAggregateCount_,
+  drawMeshesImpl(cmd, skinnedMeshGPU_, skinnedMeshVisibility_, skinnedAggregateCount_,
                  [&](const HLodSkinnedMeshGPU &mesh) { bindTexture(mesh.textureName); });
 }
 
 template <typename BeforeDrawFunc>
 void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
                                      const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
-  // Draw aggregates first (always rendered)
+  // Draw aggregates first (always rendered unless user-hidden)
   for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = skinnedMeshGPU_[i];
     // Compare against actual array index (i), not a sequential counter
     glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
@@ -355,6 +395,11 @@ void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
 
   // Draw current LOD level meshes
   for (size_t i = skinnedAggregateCount_; i < skinnedMeshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = skinnedMeshGPU_[i];
 
     // Skip if not in current LOD level
