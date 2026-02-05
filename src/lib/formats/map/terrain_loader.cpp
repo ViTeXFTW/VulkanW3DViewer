@@ -400,47 +400,143 @@ bool TerrainLoader::parseBlendTileData(MapChunkReader &reader, uint32_t version,
   return true;
 }
 
-bool TerrainLoader::parseWorldDict([[maybe_unused]] MapChunkReader &reader,
-                                   [[maybe_unused]] uint32_t version,
-                                   [[maybe_unused]] MapData &map) {
-  // WorldDict contains key-value pairs
-  // For now, just skip the content - this can be expanded later
-  // The legacy code uses file.readDict() which reads a dictionary
+bool TerrainLoader::parseWorldDict([[maybe_unused]] MapChunkReader &reader, [[maybe_unused]] uint32_t version,
+                                   MapData &map) {
+  // WorldDict contains global key-value pairs for the map
+  // Format: Dict (length + key-value pairs)
+  //
+  // For a minimal implementation, we skip parsing the dict
+  // In a full implementation, we would:
+  // 1. Read dict length (uint16)
+  // 2. For each pair, read keyAndType (int32) and value
+  // 3. Store in map.worldDict
 
-  // For Phase 2, we just skip this chunk
-  // In Phase 4, we would parse the dictionary into map.worldDict
+  // For now, just skip the content
+  // The dict length would be: uint16_t dictLen = reader.read<uint16_t>();
+  // Then we would iterate dictLen times reading pairs
 
-  return true;
-}
-
-bool TerrainLoader::parseObjectsList([[maybe_unused]] MapChunkReader &reader,
-                                     [[maybe_unused]] uint32_t version,
-                                     [[maybe_unused]] MapData &map) {
-  // ObjectsList contains Object chunks
-  // For Phase 2, we just skip the content
-  // In Phase 4, we would parse the objects into map.objects
-
-  // For now, just skip this chunk
-  // In Phase 4, we would iterate through sub-chunks and call parseObject
+  (void)map; // Unused for now
 
   return true;
 }
 
-bool TerrainLoader::parseObject([[maybe_unused]] MapChunkReader &reader,
-                                [[maybe_unused]] uint32_t version,
-                                [[maybe_unused]] MapData &map) {
-  // Object chunk contains position, rotation, name, and properties
-  // For Phase 4, we would parse this into a MapObject
+bool TerrainLoader::parseObjectsList(MapChunkReader &reader, [[maybe_unused]] uint32_t version,
+                                     MapData &map) {
+  // ObjectsList contains sub-chunks, each representing one object
+  // Each sub-chunk has name "Object" and contains:
+  // - position (3 floats: x, y, z)
+  // - angle (float)
+  // - flags (int32)
+  // - name (null-terminated string)
+  // - properties dict (only if version >= 2)
 
-  // For now, just skip this chunk
-  // In Phase 4:
-  // float x = reader.read<float>();
-  // float y = reader.read<float>();
-  // float z = reader.read<float>();
-  // float angle = reader.read<float>();
-  // int32_t flags = reader.read<int32_t>();
-  // std::string name = reader.readNullString();
-  // ... parse properties dict ...
+  // Read sub-chunks until we reach the end of the ObjectsList chunk
+  while (!reader.atEnd()) {
+    auto headerOpt = reader.peekChunkHeader();
+    if (!headerOpt) {
+      break;
+    }
+
+    auto header = *headerOpt;
+    std::string chunkName = header.name;
+
+    // Read the full chunk (header + data)
+    MapChunkReader chunkReader = reader.subReader(12 + header.size);
+
+    if (chunkName == "Obj" || chunkName == "Obje" || chunkName == "Objec") {
+      // Object chunk (4-char name, truncated from "Object")
+      if (!parseObject(chunkReader, header.version, map)) {
+        std::cerr << "Failed to parse Object chunk\n";
+        return false;
+      }
+    } else {
+      // Skip unknown sub-chunks
+      chunkReader.skip(header.size);
+    }
+  }
+
+  return true;
+}
+
+bool TerrainLoader::parseObject(MapChunkReader &reader, uint32_t version,
+                                MapData &map) {
+  // Object chunk format (from ParseObjectData in WorldHeightMap.cpp):
+  // - x (float) - X position
+  // - y (float) - Y position
+  // - z (float) - Z position (set to 0 if version <= 2)
+  // - angle (float) - rotation angle in degrees
+  // - flags (int32) - object flags
+  // - name (null-terminated string) - thing template name
+  // - properties dict (only if version >= 2)
+
+  MapObject obj;
+
+  // Read position
+  obj.position.x = reader.read<float>();
+  obj.position.y = reader.read<float>();
+  obj.position.z = reader.read<float>();
+
+  // Version 2 and earlier have z = 0
+  if (version <= MapChunkVersion::OBJECTS_VERSION_2) {
+    obj.position.z = 0.0f;
+  }
+
+  // Read angle
+  obj.angle = reader.read<float>();
+
+  // Read flags
+  obj.flags = reader.read<int32_t>();
+
+  // Read name (thing template name)
+  obj.thingTemplate = reader.readNullString(256);
+  obj.name = obj.thingTemplate; // Default to template name
+
+  // Read properties dict if version >= 2
+  if (version >= MapChunkVersion::OBJECTS_VERSION_2) {
+    // Read dict length
+    uint16_t dictLen = reader.read<uint16_t>();
+
+    // For a minimal implementation, we skip the dict values
+    // In a full implementation, we would parse each key-value pair
+    for (uint16_t i = 0; i < dictLen; ++i) {
+      // Read keyAndType (int32)
+      // Key is in high 24 bits, type is in low 8 bits
+      int32_t keyAndType = reader.read<int32_t>();
+      int32_t type = keyAndType & 0xFF;
+      [[maybe_unused]] int32_t keyIndex = keyAndType >> 8;
+
+      // Read value based on type
+      switch (type) {
+        case 0: // DICT_BOOL
+          reader.read<uint8_t>();
+          break;
+        case 1: // DICT_INT
+          reader.read<int32_t>();
+          break;
+        case 2: // DICT_REAL
+          reader.read<float>();
+          break;
+        case 3: // DICT_ASCIISTRING
+          reader.readNullString(256);
+          break;
+        case 4: // DICT_UNICODESTRING
+          // Skip wide string (read until null wchar)
+          while (reader.read<uint16_t>() != 0) {
+            // Keep reading until we find null terminator
+            if (reader.atEnd()) {
+              break;
+            }
+          }
+          break;
+        default:
+          // Unknown type, skip this dict entry
+          break;
+      }
+    }
+  }
+
+  // Add object to map
+  map.objects.push_back(std::move(obj));
 
   return true;
 }
