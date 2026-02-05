@@ -1,12 +1,13 @@
-#include "mesh_visibility_panel.hpp"
+#include <unordered_map>
+#include <vector>
 
 #include "../ui_context.hpp"
+#include "mesh_visibility_panel.hpp"
 #include "render/hlod_model.hpp"
 #include "render/skeleton.hpp"
 
 #include <imgui.h>
-#include <unordered_map>
-#include <vector>
+
 
 namespace w3d {
 
@@ -14,8 +15,8 @@ namespace {
 
 // Build map of bone index -> mesh indices (only for meshes visible at current LOD)
 template <typename MeshT>
-std::unordered_map<int, std::vector<size_t>>
-buildBoneToMeshMap(const std::vector<MeshT> &meshes, size_t currentLOD) {
+std::unordered_map<int, std::vector<size_t>> buildBoneToMeshMap(const std::vector<MeshT> &meshes,
+                                                                size_t currentLOD) {
   std::unordered_map<int, std::vector<size_t>> boneToMeshes;
 
   for (size_t i = 0; i < meshes.size(); ++i) {
@@ -40,8 +41,7 @@ buildBoneToMeshMap(const std::vector<MeshT> &meshes, size_t currentLOD) {
 }
 
 // Build map of bone index -> child bone indices
-std::unordered_map<int, std::vector<size_t>>
-buildBoneChildMap(const SkeletonPose *pose) {
+std::unordered_map<int, std::vector<size_t>> buildBoneChildMap(const SkeletonPose *pose) {
   std::unordered_map<int, std::vector<size_t>> children;
 
   if (!pose) {
@@ -57,8 +57,7 @@ buildBoneChildMap(const SkeletonPose *pose) {
 }
 
 // Check if a bone or any descendant has meshes
-bool boneHasMeshes(int boneIndex,
-                   const std::unordered_map<int, std::vector<size_t>> &boneToMeshes,
+bool boneHasMeshes(int boneIndex, const std::unordered_map<int, std::vector<size_t>> &boneToMeshes,
                    const std::unordered_map<int, std::vector<size_t>> &boneChildren) {
   // Check this bone
   if (boneToMeshes.count(boneIndex) && !boneToMeshes.at(boneIndex).empty()) {
@@ -131,7 +130,8 @@ void MeshVisibilityPanel::draw(UIContext &ctx) {
   ImGui::Separator();
 
   // Show mesh count
-  auto visibleIndices = useSkinned ? model->visibleSkinnedMeshIndices() : model->visibleMeshIndices();
+  auto visibleIndices =
+      useSkinned ? model->visibleSkinnedMeshIndices() : model->visibleMeshIndices();
   ImGui::Text("Meshes: %zu visible", visibleIndices.size());
   ImGui::Separator();
 
@@ -143,9 +143,8 @@ void MeshVisibilityPanel::draw(UIContext &ctx) {
   }
 
   // Build hierarchy data structures
-  auto boneToMeshes = useSkinned
-      ? buildBoneToMeshMap(model->skinnedMeshes(), model->currentLOD())
-      : buildBoneToMeshMap(model->meshes(), model->currentLOD());
+  auto boneToMeshes = useSkinned ? buildBoneToMeshMap(model->skinnedMeshes(), model->currentLOD())
+                                 : buildBoneToMeshMap(model->meshes(), model->currentLOD());
 
   auto boneChildren = buildBoneChildMap(ctx.skeletonPose);
 
@@ -155,8 +154,7 @@ void MeshVisibilityPanel::draw(UIContext &ctx) {
     auto rootIt = boneChildren.find(-1);
     if (rootIt != boneChildren.end()) {
       for (size_t rootIdx : rootIt->second) {
-        drawBoneNode(ctx, model, useSkinned, static_cast<int>(rootIdx),
-                     boneToMeshes, boneChildren);
+        drawBoneNode(ctx, model, useSkinned, static_cast<int>(rootIdx), boneToMeshes, boneChildren);
       }
     }
 
@@ -225,7 +223,8 @@ void MeshVisibilityPanel::drawBoneNode(
     bool mixedState = !allVisible && !noneVisible;
 
     // Draw tree node with checkbox
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+    ImGuiTreeNodeFlags flags =
+        ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
     if (!hasChildren && hasMeshes && meshIt->second.size() == 1) {
       // Leaf bone with single mesh - no need for tree expansion
       flags |= ImGuiTreeNodeFlags_Leaf;
@@ -268,8 +267,8 @@ void MeshVisibilityPanel::drawBoneNode(
 
       // Draw child bones
       for (size_t childIdx : relevantChildren) {
-        drawBoneNode(ctx, model, useSkinned, static_cast<int>(childIdx),
-                     boneToMeshes, boneChildren);
+        drawBoneNode(ctx, model, useSkinned, static_cast<int>(childIdx), boneToMeshes,
+                     boneChildren);
       }
 
       ImGui::TreePop();
@@ -279,7 +278,7 @@ void MeshVisibilityPanel::drawBoneNode(
   ImGui::PopID();
 }
 
-void MeshVisibilityPanel::drawMeshCheckbox(UIContext &ctx, HLodModel *model,
+void MeshVisibilityPanel::drawMeshCheckbox([[maybe_unused]] UIContext &ctx, HLodModel *model,
                                            bool useSkinned, size_t meshIndex) {
   std::string meshName;
   bool isAggregate = false;
@@ -299,8 +298,8 @@ void MeshVisibilityPanel::drawMeshCheckbox(UIContext &ctx, HLodModel *model,
     meshName += " [A]";
   }
 
-  bool visible = useSkinned ? !model->isSkinnedMeshHidden(meshIndex)
-                            : !model->isMeshHidden(meshIndex);
+  bool visible =
+      useSkinned ? !model->isSkinnedMeshHidden(meshIndex) : !model->isMeshHidden(meshIndex);
 
   ImGui::PushID(static_cast<int>(meshIndex) + 10000); // Offset to avoid ID collision with bones
   if (ImGui::Checkbox(meshName.c_str(), &visible)) {
