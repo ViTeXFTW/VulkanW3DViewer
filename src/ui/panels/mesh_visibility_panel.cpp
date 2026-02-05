@@ -1,13 +1,13 @@
+#include "mesh_visibility_panel.hpp"
+
 #include <unordered_map>
 #include <vector>
 
 #include "../ui_context.hpp"
-#include "mesh_visibility_panel.hpp"
 #include "render/hlod_model.hpp"
 #include "render/skeleton.hpp"
 
 #include <imgui.h>
-
 
 namespace w3d {
 

@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 // Unit tests for mesh visibility logic
 // Note: Full HLodModel tests require VulkanContext, so we test the state logic patterns
@@ -25,9 +26,7 @@ public:
     visibility_[index] = !hidden;
   }
 
-  void setAllHidden(bool hidden) {
-    std::fill(visibility_.begin(), visibility_.end(), !hidden);
-  }
+  void setAllHidden(bool hidden) { std::fill(visibility_.begin(), visibility_.end(), !hidden); }
 
   size_t size() const { return visibility_.size(); }
   bool isVisible(size_t index) const { return index < visibility_.size() && visibility_[index]; }
