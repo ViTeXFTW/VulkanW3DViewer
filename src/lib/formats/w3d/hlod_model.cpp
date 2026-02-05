@@ -261,6 +261,9 @@ void HLodModel::load(gfx::VulkanContext &context, const W3DFile &file, const Ske
   }
 
   currentLOD_ = 0;
+
+  // Initialize all meshes as visible
+  meshVisibility_.resize(meshGPU_.size(), true);
 }
 
 void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
@@ -314,6 +317,9 @@ void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
         skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
     }
+
+    // Initialize all skinned meshes as visible
+    skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), true);
 
     return;
   }
@@ -436,6 +442,9 @@ void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
   }
 
   currentLOD_ = 0;
+
+  // Initialize all skinned meshes as visible
+  skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), true);
 }
 
 void HLodModel::setCurrentLOD(size_t level) {
@@ -604,8 +613,49 @@ std::vector<size_t> HLodModel::visibleSkinnedMeshIndices() const {
   return indices;
 }
 
+bool HLodModel::isMeshHidden(size_t index) const {
+  if (index >= meshVisibility_.size()) {
+    return false;
+  }
+  return !meshVisibility_[index];
+}
+
+void HLodModel::setMeshHidden(size_t index, bool hidden) {
+  if (index >= meshVisibility_.size()) {
+    meshVisibility_.resize(index + 1, true);
+  }
+  meshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllMeshesHidden(bool hidden) {
+  meshVisibility_.resize(meshGPU_.size(), !hidden);
+}
+
+bool HLodModel::isSkinnedMeshHidden(size_t index) const {
+  if (index >= skinnedMeshVisibility_.size()) {
+    return false;
+  }
+  return !skinnedMeshVisibility_[index];
+}
+
+void HLodModel::setSkinnedMeshHidden(size_t index, bool hidden) {
+  if (index >= skinnedMeshVisibility_.size()) {
+    skinnedMeshVisibility_.resize(index + 1, true);
+  }
+  skinnedMeshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllSkinnedMeshesHidden(bool hidden) {
+  skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), !hidden);
+}
+
 void HLodModel::draw(vk::CommandBuffer cmd) {
   for (size_t i = 0; i < aggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     vk::Buffer vertexBuffers[] = {mesh.vertexBuffer.buffer()};
@@ -616,6 +666,11 @@ void HLodModel::draw(vk::CommandBuffer cmd) {
   }
 
   for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     if (mesh.lodLevel != currentLOD_) {

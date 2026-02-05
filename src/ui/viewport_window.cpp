@@ -4,6 +4,7 @@
 #include "panels/camera_panel.hpp"
 #include "panels/display_panel.hpp"
 #include "panels/lod_panel.hpp"
+#include "panels/mesh_visibility_panel.hpp"
 #include "panels/model_info_panel.hpp"
 
 #include <imgui.h>
@@ -16,6 +17,7 @@ ViewportWindow::ViewportWindow() {
   addPanel<AnimationPanel>();
   addPanel<DisplayPanel>();
   addPanel<LODPanel>();
+  addPanel<MeshVisibilityPanel>();
   addPanel<CameraPanel>();
 }
 

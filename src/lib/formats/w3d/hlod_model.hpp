@@ -135,8 +135,18 @@ public:
   const std::string &meshName(size_t index) const;
   const std::string &skinnedMeshName(size_t index) const;
 
+  // Mesh visibility based on LOD (original behavior)
   bool isMeshVisible(size_t meshIndex) const;
   bool isSkinnedMeshVisible(size_t meshIndex) const;
+
+  // User-controllable mesh hiding API
+  bool isMeshHidden(size_t index) const;
+  void setMeshHidden(size_t index, bool hidden);
+  void setAllMeshesHidden(bool hidden);
+
+  bool isSkinnedMeshHidden(size_t index) const;
+  void setSkinnedMeshHidden(size_t index, bool hidden);
+  void setAllSkinnedMeshesHidden(bool hidden);
 
   std::vector<size_t> visibleMeshIndices() const;
   std::vector<size_t> visibleSkinnedMeshIndices() const;
@@ -182,6 +192,10 @@ private:
   std::vector<w3d_types::HLodSkinnedMeshGPU> skinnedMeshGPU_;
   size_t aggregateCount_ = 0;
   size_t skinnedAggregateCount_ = 0;
+
+  // User-controllable mesh visibility state
+  std::vector<bool> meshVisibility_;
+  std::vector<bool> skinnedMeshVisibility_;
 
   w3d_types::LODSelectionMode selectionMode_ = w3d_types::LODSelectionMode::Auto;
   size_t currentLOD_ = 0;
@@ -231,6 +245,11 @@ template <typename BeforeDrawFunc>
 void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const glm::vec3 &tintColor,
                               BeforeDrawFunc beforeDraw) const {
   for (size_t i = 0; i < aggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
     glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
     beforeDraw(i, mesh.textureName, tint);
@@ -243,6 +262,11 @@ void HLodModel::drawWithHover(vk::CommandBuffer cmd, int hoverMeshIndex, const g
   }
 
   for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < meshVisibility_.size() && !meshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = meshGPU_[i];
 
     if (mesh.lodLevel != currentLOD_) {
@@ -282,6 +306,11 @@ template <typename BeforeDrawFunc>
 void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
                                      const glm::vec3 &tintColor, BeforeDrawFunc beforeDraw) const {
   for (size_t i = 0; i < skinnedAggregateCount_; ++i) {
+    // Skip if user has hidden this mesh
+    if (i < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = skinnedMeshGPU_[i];
     glm::vec3 tint = (static_cast<int>(i) == hoverMeshIndex) ? tintColor : glm::vec3(1.0f);
     beforeDraw(i, mesh.textureName, tint);
@@ -294,6 +323,11 @@ void HLodModel::drawSkinnedWithHover(vk::CommandBuffer cmd, int hoverMeshIndex,
   }
 
   for (size_t i = skinnedAggregateCount_; i < skinnedMeshGPU_.size(); ++i) {
+    // Skip if user has hidden this mesh
+    if (i < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[i]) {
+      continue;
+    }
+
     const auto &mesh = skinnedMeshGPU_[i];
 
     if (mesh.lodLevel != currentLOD_) {

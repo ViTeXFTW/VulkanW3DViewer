@@ -124,7 +124,7 @@ void Application::initUI() {
 
   // Configure file browser
   fileBrowser_->setFilter(".w3d");
-  fileBrowser_->setFileSelectedCallback([this](const std::filesystem::path &path) {
+  fileBrowser_->setPathSelectedCallback([this](const std::filesystem::path &path) {
     loadW3DFile(path);
     fileBrowser_->setVisible(false);
   });

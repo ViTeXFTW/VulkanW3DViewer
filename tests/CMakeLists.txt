@@ -169,3 +169,44 @@ else()
 endif()
 
 add_test(NAME hlod_hover_tests COMMAND hlod_hover_tests)
+
+# File browser tests
+add_executable(file_browser_tests
+  ui/test_file_browser.cpp
+  ${CMAKE_SOURCE_DIR}/src/ui/file_browser.cpp
+)
+
+target_link_libraries(file_browser_tests PRIVATE gtest gtest_main)
+
+# Use stubs directory first to override ImGui with stub for testing
+target_include_directories(file_browser_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/tests/stubs
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(file_browser_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(file_browser_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME file_browser_tests COMMAND file_browser_tests)
+
+# Mesh visibility tests (lightweight state logic tests, no Vulkan)
+add_executable(mesh_visibility_tests
+  render/test_mesh_visibility.cpp
+)
+
+target_link_libraries(mesh_visibility_tests PRIVATE gtest gtest_main)
+
+target_include_directories(mesh_visibility_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(mesh_visibility_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(mesh_visibility_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)
