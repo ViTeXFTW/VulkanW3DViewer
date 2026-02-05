@@ -210,3 +210,27 @@ else()
 endif()
 
 add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)
+
+# Map/Terrain format tests (no Vulkan dependencies)
+set(MAP_SOURCES
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/map/terrain_loader.cpp
+)
+
+add_executable(map_tests
+  map/test_map_chunk_reader.cpp
+  ${MAP_SOURCES}
+)
+
+target_link_libraries(map_tests PRIVATE gtest gtest_main)
+
+target_include_directories(map_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(map_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME map_tests COMMAND map_tests)
