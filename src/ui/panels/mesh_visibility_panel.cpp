@@ -50,7 +50,10 @@ std::unordered_map<int, std::vector<size_t>> buildBoneChildMap(const SkeletonPos
 
   for (size_t i = 0; i < pose->boneCount(); ++i) {
     int parent = pose->parentIndex(i);
-    children[parent].push_back(i);
+    // Only track valid parent indices (-1 for roots, or in range [0, boneCount))
+    if (parent == -1 || (parent >= 0 && static_cast<size_t>(parent) < pose->boneCount())) {
+      children[parent].push_back(i);
+    }
   }
 
   return children;
