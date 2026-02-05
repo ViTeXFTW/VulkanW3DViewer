@@ -5,6 +5,7 @@
 #include "chunk_types.hpp"
 #include "map_chunk_reader.hpp"
 #include "terrain_loader.hpp"
+#include "terrain_renderable.hpp"
 #include "terrain_types.hpp"
 
 // The following are internal implementation headers, typically not needed
