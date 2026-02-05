@@ -16,7 +16,6 @@ ViewportWindow::ViewportWindow() {
   addPanel<ModelInfoPanel>();
   addPanel<AnimationPanel>();
   addPanel<DisplayPanel>();
-  addPanel<MeshVisibilityPanel>();
   addPanel<LODPanel>();
   addPanel<MeshVisibilityPanel>();
   addPanel<CameraPanel>();

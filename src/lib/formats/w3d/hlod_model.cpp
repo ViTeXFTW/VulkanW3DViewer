@@ -20,14 +20,12 @@ void HLodModel::destroy() {
     mesh.indexBuffer.destroy();
   }
   meshGPU_.clear();
-  meshVisibility_.clear();
 
   for (auto &mesh : skinnedMeshGPU_) {
     mesh.vertexBuffer.destroy();
     mesh.indexBuffer.destroy();
   }
   skinnedMeshGPU_.clear();
-  skinnedMeshVisibility_.clear();
 
   lodLevels_.clear();
   aggregateCount_ = 0;
@@ -577,20 +575,12 @@ bool HLodModel::isMeshVisible(size_t meshIndex) const {
   if (meshIndex >= meshGPU_.size()) {
     return false;
   }
-  // Check user visibility first
-  if (meshIndex < meshVisibility_.size() && !meshVisibility_[meshIndex]) {
-    return false;
-  }
   const auto &mesh = meshGPU_[meshIndex];
   return mesh.isAggregate || mesh.lodLevel == currentLOD_;
 }
 
 bool HLodModel::isSkinnedMeshVisible(size_t meshIndex) const {
   if (meshIndex >= skinnedMeshGPU_.size()) {
-    return false;
-  }
-  // Check user visibility first
-  if (meshIndex < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[meshIndex]) {
     return false;
   }
   const auto &mesh = skinnedMeshGPU_[meshIndex];
@@ -693,42 +683,6 @@ void HLodModel::draw(vk::CommandBuffer cmd) {
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
   }
-}
-
-bool HLodModel::isMeshHidden(size_t index) const {
-  if (index >= meshVisibility_.size()) {
-    return false;
-  }
-  return !meshVisibility_[index];
-}
-
-void HLodModel::setMeshHidden(size_t index, bool hidden) {
-  if (index >= meshVisibility_.size()) {
-    return;
-  }
-  meshVisibility_[index] = !hidden;
-}
-
-void HLodModel::setAllMeshesHidden(bool hidden) {
-  std::fill(meshVisibility_.begin(), meshVisibility_.end(), !hidden);
-}
-
-bool HLodModel::isSkinnedMeshHidden(size_t index) const {
-  if (index >= skinnedMeshVisibility_.size()) {
-    return false;
-  }
-  return !skinnedMeshVisibility_[index];
-}
-
-void HLodModel::setSkinnedMeshHidden(size_t index, bool hidden) {
-  if (index >= skinnedMeshVisibility_.size()) {
-    return;
-  }
-  skinnedMeshVisibility_[index] = !hidden;
-}
-
-void HLodModel::setAllSkinnedMeshesHidden(bool hidden) {
-  std::fill(skinnedMeshVisibility_.begin(), skinnedMeshVisibility_.end(), !hidden);
 }
 
 } // namespace w3d

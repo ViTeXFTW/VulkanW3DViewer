@@ -182,8 +182,7 @@ private:
 
   template <typename MeshT, typename BeforeDrawFunc>
   void drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
-                      const std::vector<bool> &visibility, size_t aggregateCount,
-                      BeforeDrawFunc beforeDraw) const;
+                      size_t aggregateCount, BeforeDrawFunc beforeDraw) const;
 
   std::string name_;
   std::string hierarchyName_;
@@ -209,11 +208,6 @@ template <typename MeshT, typename BeforeDrawFunc>
 void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &meshes,
                                size_t aggregateCount, BeforeDrawFunc beforeDraw) const {
   for (size_t i = 0; i < aggregateCount; ++i) {
-    // Skip if user has hidden this mesh
-    if (i < visibility.size() && !visibility[i]) {
-      continue;
-    }
-
     const auto &mesh = meshes[i];
     beforeDraw(mesh);
 
@@ -225,11 +219,6 @@ void HLodModel::drawMeshesImpl(vk::CommandBuffer cmd, const std::vector<MeshT> &
   }
 
   for (size_t i = aggregateCount; i < meshes.size(); ++i) {
-    // Skip if user has hidden this mesh
-    if (i < visibility.size() && !visibility[i]) {
-      continue;
-    }
-
     const auto &mesh = meshes[i];
 
     if (mesh.lodLevel != currentLOD_) {
