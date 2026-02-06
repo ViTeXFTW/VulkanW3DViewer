@@ -1,5 +1,8 @@
 #include "model_loader.hpp"
 
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <set>
@@ -76,7 +79,36 @@ ModelLoadResult ModelLoader::load(const std::filesystem::path &path, VulkanConte
   }
 
   std::string error;
-  auto file = Loader::load(path, &error);
+  std::optional<W3DFile> file;
+
+  // Try direct disk load first
+  file = Loader::load(path, &error);
+
+  // If not found and we have BIG archive support, try extraction
+  if (!file && bigArchiveManager_ && bigArchiveManager_->isInitialized()) {
+    // Get model name from path (e.g., "avvehicle.tank" from "avvehicle.tank.w3d")
+    std::string modelName = path.stem().string();
+
+    // Try to get archive path from registry
+    std::string archivePath;
+    if (assetRegistry_ && assetRegistry_->isScanned()) {
+      archivePath = assetRegistry_->getModelArchivePath(modelName);
+    }
+
+    // If not in registry, try standard archive path
+    if (archivePath.empty()) {
+      archivePath = "Art/W3D/" + path.filename().string();
+    }
+
+    // Extract to cache
+    auto cachedPath = bigArchiveManager_->extractToCache(archivePath, &error);
+    if (cachedPath) {
+      if (logCallback) {
+        logCallback("Extracted from BIG archive: " + archivePath);
+      }
+      file = Loader::load(*cachedPath, &error);
+    }
+  }
 
   if (!file) {
     result.error = "Failed to load: " + error;
