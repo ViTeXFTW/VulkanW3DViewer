@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstring>
-
 #include <vulkan/vulkan.hpp>
+
+#include <cstring>
 
 namespace w3d {
 
