@@ -1,11 +1,12 @@
 #include <cmath>
 #include <limits>
 
-#include "render/bounding_box.hpp"
+#include "lib/gfx/bounding_box.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace w3d;
+using gfx::BoundingBox;
 
 class BoundingBoxTest : public ::testing::Test {};
 

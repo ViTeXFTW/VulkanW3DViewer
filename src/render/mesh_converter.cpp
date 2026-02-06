@@ -6,6 +6,11 @@
 
 namespace w3d {
 
+// Using declarations for gfx types
+using gfx::BoundingBox;
+using gfx::SkinnedVertex;
+using gfx::Vertex;
+
 namespace {
 
 // Helper to get texture name from mesh by texture ID

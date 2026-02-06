@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "w3d/loader.hpp"
+#include "lib/formats/w3d/loader.hpp"
 
 #include <gtest/gtest.h>
 

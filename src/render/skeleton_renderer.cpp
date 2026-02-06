@@ -1,6 +1,6 @@
 #include "skeleton_renderer.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <algorithm>
 #include <array>

@@ -6,6 +6,7 @@
 #include "ui_context.hpp"
 
 #include <imgui.h>
+#include <filesystem>
 
 namespace w3d {
 

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "../ui_context.hpp"
-#include "render/hlod_model.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/skeleton.hpp"
 
 #include <imgui.h>
@@ -28,7 +28,7 @@ std::unordered_map<int, std::vector<size_t>> buildBoneToMeshMap(const std::vecto
     }
 
     int boneIdx = -1;
-    if constexpr (std::is_same_v<MeshT, HLodMeshGPU>) {
+    if constexpr (std::is_same_v<MeshT, w3d_types::HLodMeshGPU>) {
       boneIdx = mesh.boneIndex;
     } else {
       boneIdx = mesh.fallbackBoneIndex;

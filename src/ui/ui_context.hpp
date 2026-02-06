@@ -4,6 +4,7 @@
 #include <string>
 
 #include "core/render_state.hpp"
+#include "lib/gfx/camera.hpp"
 
 // Forward declarations to avoid header dependencies
 struct GLFWwindow;
@@ -11,7 +12,7 @@ struct GLFWwindow;
 namespace w3d {
 
 // Forward declarations
-class Camera;
+using gfx::Camera;
 class AnimationPlayer;
 class HLodModel;
 class RenderableMesh;

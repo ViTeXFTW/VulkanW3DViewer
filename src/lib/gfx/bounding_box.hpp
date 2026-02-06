@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace w3d {
+namespace w3d::gfx {
 
 struct BoundingBox {
   glm::vec3 min{std::numeric_limits<float>::max()};
@@ -32,4 +32,4 @@ struct BoundingBox {
   bool valid() const { return min.x <= max.x && min.y <= max.y && min.z <= max.z; }
 };
 
-} // namespace w3d
+} // namespace w3d::gfx
