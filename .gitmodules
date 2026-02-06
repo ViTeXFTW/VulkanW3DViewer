@@ -22,3 +22,6 @@
 [submodule "GeneralsGameCode"]
 	path = lib/GeneralsGameCode
 	url = https://github.com/TheSuperHackers/GeneralsGameCode.git
+[submodule "lib/BigXtractor"]
+	path = lib/BigXtractor
+	url = https://github.com/ViTeXFTW/BigXtractor.git

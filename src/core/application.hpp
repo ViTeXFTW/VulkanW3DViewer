@@ -10,21 +10,23 @@
 #include "core/render_state.hpp"
 #include "core/renderer.hpp"
 #include "core/settings.hpp"
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/formats/w3d/model_loader.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "lib/gfx/camera.hpp"
-#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/hover_detector.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "lib/gfx/texture.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
 #include "ui/ui_manager.hpp"
-#include "lib/formats/w3d/loader.hpp"
-#include "lib/formats/w3d/model_loader.hpp"
 
 namespace w3d {
 
@@ -84,6 +86,11 @@ private:
 
   // Model loading
   void loadW3DFile(const std::filesystem::path &path);
+  void loadModelByName(const std::string &modelName);
+
+  // BIG archive management
+  void initializeBigArchiveManager();
+  void rescanAssetRegistry();
 
   // Command line options
   std::string customTexturePath_;
@@ -124,11 +131,16 @@ private:
   // UI components
   ImGuiBackend imguiBackend_;
   UIManager uiManager_;
-  ConsoleWindow *console_ = nullptr;   // Owned by uiManager_
-  FileBrowser *fileBrowser_ = nullptr; // Owned by uiManager_
+  ConsoleWindow *console_ = nullptr;           // Owned by uiManager_
+  FileBrowser *fileBrowser_ = nullptr;         // Owned by uiManager_
+  class ModelBrowser *modelBrowser_ = nullptr; // Owned by uiManager_
 
   // Setting Management
   Settings appSettings_;
+
+  // BIG Archive Support
+  big::AssetRegistry assetRegistry_;
+  big::BigArchiveManager bigArchiveManager_;
 };
 
 } // namespace w3d
