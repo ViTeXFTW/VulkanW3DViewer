@@ -103,6 +103,9 @@ void Application::initVulkan() {
   }
 #endif
 
+  // Initialize BIG archive manager
+  initializeBigArchiveManager();
+
   // Initialize renderer
   renderer_.init(window_, context_, imguiBackend_, textureManager_, boneMatrixBuffer_);
 }
@@ -358,6 +361,64 @@ void Application::run() {
 
   // Save settings after cleanup (which captures final window size)
   appSettings_.saveDefault();
+}
+
+void Application::initializeBigArchiveManager() {
+  // Try to initialize from settings game directory
+  if (!appSettings_.gameDirectory.empty()) {
+    std::filesystem::path gameDir(appSettings_.gameDirectory);
+
+    // Check if directory exists
+    std::error_code ec;
+    if (std::filesystem::exists(gameDir, ec)) {
+      // Initialize BIG archive manager
+      std::string error;
+      if (bigArchiveManager_.initialize(gameDir, &error)) {
+        console_->info("BIG archive manager initialized");
+        console_->log("Game directory: " + gameDir.string());
+        console_->log("Cache directory: " + bigArchiveManager_.cacheDirectory().string());
+
+        // Scan archives to build registry
+        if (assetRegistry_.scanArchives(gameDir, &error)) {
+          console_->info("Asset registry scanned");
+          console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
+          console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
+          console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+        } else {
+          console_->error("Failed to scan asset registry: " + error);
+        }
+      } else {
+        console_->error("Failed to initialize BIG archive manager: " + error);
+      }
+    } else {
+      console_->warn("Game directory does not exist: " + gameDir.string());
+    }
+  }
+
+  // Set up managers for texture and model loading
+  textureManager_.setAssetRegistry(&assetRegistry_);
+  textureManager_.setBigArchiveManager(&bigArchiveManager_);
+  modelLoader_.setAssetRegistry(&assetRegistry_);
+  modelLoader_.setBigArchiveManager(&bigArchiveManager_);
+}
+
+void Application::rescanAssetRegistry() {
+  if (!bigArchiveManager_.isInitialized()) {
+    console_->warn("Cannot rescan: BIG archive manager not initialized");
+    return;
+  }
+
+  console_->info("Rescanning asset registry...");
+
+  std::string error;
+  if (assetRegistry_.scanArchives(bigArchiveManager_.gameDirectory(), &error)) {
+    console_->info("Asset registry rescanned");
+    console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
+    console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
+    console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+  } else {
+    console_->error("Failed to rescan asset registry: " + error);
+  }
 }
 
 } // namespace w3d
