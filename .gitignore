@@ -45,3 +45,8 @@ Thumbs.db
 
 # Project Specific
 legacy/
+resources/
+imgui.ini
+
+# Documentation build output
+site/

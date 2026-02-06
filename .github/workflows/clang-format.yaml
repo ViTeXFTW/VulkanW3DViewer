@@ -1,0 +1,58 @@
+name: clang-format
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+      
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # Get the list of changed C/C++ files in the PR
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/${{ github.base_ref }}...HEAD | grep -E '\.(cpp|hpp|h|c|cc|cxx)$' || true)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Run clang-format
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -n "$FILES" ]; then
+            echo "Formatting files:"
+            echo "$FILES"
+            echo "$FILES" | xargs -r clang-format -i --style=file --fallback-style=LLVM
+          fi
+      
+      - name: Commit formatted changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if git diff --quiet; then
+            echo "No formatting changes needed"
+          else
+            git add -A
+            git commit -m "refactor: Apply clang-format to PR files [skip ci]"
+            git push
+          fi
