@@ -13,6 +13,15 @@ namespace w3d::gfx {
 
 class VulkanContext;
 
+} // namespace w3d::gfx
+
+namespace w3d::big {
+class AssetRegistry;
+class BigArchiveManager;
+} // namespace w3d::big
+
+namespace w3d::gfx {
+
 struct GPUTexture {
   vk::Image image;
   vk::DeviceMemory memory;
@@ -38,6 +47,12 @@ public:
   void setTexturePath(const std::filesystem::path &path) { texturePath_ = path; }
 
   const std::filesystem::path &texturePath() const { return texturePath_; }
+
+  /// Set asset registry for path resolution
+  void setAssetRegistry(big::AssetRegistry *registry) { assetRegistry_ = registry; }
+
+  /// Set BIG archive manager for texture extraction
+  void setBigArchiveManager(big::BigArchiveManager *manager) { bigArchiveManager_ = manager; }
 
   void destroy();
 
@@ -85,6 +100,8 @@ private:
   std::filesystem::path texturePath_;
   std::vector<GPUTexture> textures_;
   std::unordered_map<std::string, uint32_t> textureNameMap_;
+  big::AssetRegistry *assetRegistry_ = nullptr;
+  big::BigArchiveManager *bigArchiveManager_ = nullptr;
 };
 
 } // namespace w3d::gfx

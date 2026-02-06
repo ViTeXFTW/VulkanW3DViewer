@@ -1,6 +1,8 @@
 #include "lib/gfx/texture.hpp"
 
 #include "lib/gfx/vulkan_context.hpp"
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -108,6 +110,47 @@ uint32_t TextureManager::loadTexture(const std::string &w3dName) {
   }
 
   std::filesystem::path path = resolveTexturePath(w3dName);
+
+  // If not found on disk and we have BIG archive support, try extraction
+  if (path.empty() && bigArchiveManager_ && bigArchiveManager_->isInitialized()) {
+    std::string baseName = toLower(removeExtension(w3dName));
+
+    // Try to get archive path from registry
+    std::string archivePath;
+    if (assetRegistry_ && assetRegistry_->isScanned()) {
+      archivePath = assetRegistry_->getTextureArchivePath(baseName);
+    }
+
+    // If not in registry, try standard archive paths
+    if (archivePath.empty()) {
+      // Try .dds first, then .tga
+      archivePath = "Art/Textures/" + baseName + ".dds";
+      auto cachedPath = bigArchiveManager_->extractToCache(archivePath, nullptr);
+      if (!cachedPath) {
+        archivePath = "Art/Textures/" + baseName + ".tga";
+        cachedPath = bigArchiveManager_->extractToCache(archivePath, nullptr);
+        if (cachedPath) {
+          path = *cachedPath;
+        }
+      } else {
+        path = *cachedPath;
+      }
+    } else {
+      // Extract from known archive path
+      auto cachedPath = bigArchiveManager_->extractToCache(archivePath, nullptr);
+      if (cachedPath) {
+        path = *cachedPath;
+      }
+    }
+
+    if (!path.empty()) {
+#ifdef W3D_DEBUG
+      std::cerr << "Texture extracted from BIG archive: " << w3dName << " -> " << path.string()
+                << "\n";
+#endif
+    }
+  }
+
   if (path.empty()) {
     std::cerr << "Texture not found: " << w3dName << " (searched in " << texturePath_.string()
               << ")\n";
