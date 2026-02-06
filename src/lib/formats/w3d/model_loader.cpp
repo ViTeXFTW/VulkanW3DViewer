@@ -1,12 +1,12 @@
 #include "model_loader.hpp"
 
-#include "lib/formats/big/asset_registry.hpp"
-#include "lib/formats/big/big_archive_manager.hpp"
-
 #include <algorithm>
 #include <iostream>
 #include <set>
 #include <sstream>
+
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
 
 namespace w3d {
 

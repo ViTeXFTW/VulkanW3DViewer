@@ -1,12 +1,14 @@
 #pragma once
 
 #include "lib/gfx/buffer.hpp"
-#include "lib/gfx/bounding_box.hpp"
 #include "lib/gfx/pipeline.hpp"
-#include "lib/gfx/renderable.hpp"
 
 #include <glm/glm.hpp>
+
 #include <vector>
+
+#include "lib/gfx/bounding_box.hpp"
+#include "lib/gfx/renderable.hpp"
 
 namespace map {
 

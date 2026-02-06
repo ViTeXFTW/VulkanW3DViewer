@@ -174,8 +174,8 @@ bool TerrainLoader::parseHeightMapData(MapChunkReader &reader, uint32_t version,
 
   // Validate data size
   if (dataSize != static_cast<uint32_t>(heightmap.width * heightmap.height)) {
-    std::cerr << "Heightmap data size mismatch: expected "
-              << (heightmap.width * heightmap.height) << " got " << dataSize << "\n";
+    std::cerr << "Heightmap data size mismatch: expected " << (heightmap.width * heightmap.height)
+              << " got " << dataSize << "\n";
     return false;
   }
 
@@ -209,8 +209,8 @@ bool TerrainLoader::parseBlendTileData(MapChunkReader &reader, uint32_t version,
   // Verify length matches expected size
   int32_t length = reader.read<int32_t>();
   if (length != static_cast<int32_t>(heightmap.dataSize())) {
-    std::cerr << "BlendTileData length mismatch: expected " << heightmap.dataSize()
-              << " got " << length << "\n";
+    std::cerr << "BlendTileData length mismatch: expected " << heightmap.dataSize() << " got "
+              << length << "\n";
     return false;
   }
 
@@ -341,8 +341,8 @@ bool TerrainLoader::parseBlendTileData(MapChunkReader &reader, uint32_t version,
     int32_t flag = reader.read<int32_t>();
     constexpr int32_t EXPECTED_FLAG = 0x7ADA0000;
     if (flag != EXPECTED_FLAG) {
-      std::cerr << "Invalid blend tile flag at index " << i << ": expected 0x"
-                << std::hex << EXPECTED_FLAG << " got 0x" << flag << std::dec << "\n";
+      std::cerr << "Invalid blend tile flag at index " << i << ": expected 0x" << std::hex
+                << EXPECTED_FLAG << " got 0x" << flag << std::dec << "\n";
       return false;
     }
   }
@@ -400,8 +400,8 @@ bool TerrainLoader::parseBlendTileData(MapChunkReader &reader, uint32_t version,
   return true;
 }
 
-bool TerrainLoader::parseWorldDict([[maybe_unused]] MapChunkReader &reader, [[maybe_unused]] uint32_t version,
-                                   MapData &map) {
+bool TerrainLoader::parseWorldDict([[maybe_unused]] MapChunkReader &reader,
+                                   [[maybe_unused]] uint32_t version, MapData &map) {
   // WorldDict contains global key-value pairs for the map
   // Format: Dict (length + key-value pairs)
   //
@@ -458,8 +458,7 @@ bool TerrainLoader::parseObjectsList(MapChunkReader &reader, [[maybe_unused]] ui
   return true;
 }
 
-bool TerrainLoader::parseObject(MapChunkReader &reader, uint32_t version,
-                                MapData &map) {
+bool TerrainLoader::parseObject(MapChunkReader &reader, uint32_t version, MapData &map) {
   // Object chunk format (from ParseObjectData in WorldHeightMap.cpp):
   // - x (float) - X position
   // - y (float) - Y position
@@ -507,30 +506,30 @@ bool TerrainLoader::parseObject(MapChunkReader &reader, uint32_t version,
 
       // Read value based on type
       switch (type) {
-        case 0: // DICT_BOOL
-          reader.read<uint8_t>();
-          break;
-        case 1: // DICT_INT
-          reader.read<int32_t>();
-          break;
-        case 2: // DICT_REAL
-          reader.read<float>();
-          break;
-        case 3: // DICT_ASCIISTRING
-          reader.readNullString(256);
-          break;
-        case 4: // DICT_UNICODESTRING
-          // Skip wide string (read until null wchar)
-          while (reader.read<uint16_t>() != 0) {
-            // Keep reading until we find null terminator
-            if (reader.atEnd()) {
-              break;
-            }
+      case 0: // DICT_BOOL
+        reader.read<uint8_t>();
+        break;
+      case 1: // DICT_INT
+        reader.read<int32_t>();
+        break;
+      case 2: // DICT_REAL
+        reader.read<float>();
+        break;
+      case 3: // DICT_ASCIISTRING
+        reader.readNullString(256);
+        break;
+      case 4: // DICT_UNICODESTRING
+        // Skip wide string (read until null wchar)
+        while (reader.read<uint16_t>() != 0) {
+          // Keep reading until we find null terminator
+          if (reader.atEnd()) {
+            break;
           }
-          break;
-        default:
-          // Unknown type, skip this dict entry
-          break;
+        }
+        break;
+      default:
+        // Unknown type, skip this dict entry
+        break;
       }
     }
   }

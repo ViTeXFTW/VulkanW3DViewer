@@ -41,10 +41,10 @@ struct ICoord2D {
 
 // Single cell in the heightmap grid
 struct TileIndex {
-  uint16_t baseTile = 0;      // Primary texture tile index
-  uint16_t blendTile = 0;     // Optional blend tile (0 = none)
+  uint16_t baseTile = 0;       // Primary texture tile index
+  uint16_t blendTile = 0;      // Optional blend tile (0 = none)
   uint16_t extraBlendTile = 0; // Extra blend tile for 3-way blending (0 = none)
-  uint16_t cliffInfo = 0;     // Cliff information index (0 = none)
+  uint16_t cliffInfo = 0;      // Cliff information index (0 = none)
 
   // Check if this tile has blending
   bool hasBlend() const { return blendTile != 0; }
@@ -65,28 +65,28 @@ struct TextureClass {
 
 // Cliff UV mapping information
 struct CliffInfo {
-  float u0 = 0.0f; // Upper left UV
+  float u0 = 0.0f;       // Upper left UV
   float v0 = 0.0f;
-  float u1 = 0.0f; // Lower left UV
+  float u1 = 0.0f;       // Lower left UV
   float v1 = 0.0f;
-  float u2 = 0.0f; // Lower right UV
+  float u2 = 0.0f;       // Lower right UV
   float v2 = 0.0f;
-  float u3 = 0.0f; // Upper right UV
+  float u3 = 0.0f;       // Upper right UV
   float v3 = 0.0f;
-  bool flip = false;      // Triangle flip flag
-  bool mutant = false;    // Mutant mapping needed
-  int16_t tileIndex = 0;  // Tile texture index
+  bool flip = false;     // Triangle flip flag
+  bool mutant = false;   // Mutant mapping needed
+  int16_t tileIndex = 0; // Tile texture index
 };
 
 // Blend tile information
 struct BlendTileInfo {
   int32_t blendNdx = 0;
-  bool horiz = false;           // Horizontal blend
-  bool vert = false;            // Vertical blend
-  bool rightDiagonal = false;   // Right diagonal blend
-  bool leftDiagonal = false;    // Left diagonal blend
-  bool inverted = false;        // Inverted blend
-  bool longDiagonal = false;    // Long diagonal blend
+  bool horiz = false;                // Horizontal blend
+  bool vert = false;                 // Vertical blend
+  bool rightDiagonal = false;        // Right diagonal blend
+  bool leftDiagonal = false;         // Left diagonal blend
+  bool inverted = false;             // Inverted blend
+  bool longDiagonal = false;         // Long diagonal blend
   int32_t customBlendEdgeClass = -1; // Custom blend edge class
 };
 
@@ -114,16 +114,13 @@ struct TerrainData {
   int32_t flipStateWidth = 0;
 
   // Check if terrain data is valid
-  bool isValid() const {
-    return heightmap.isValid() &&
-           tiles.size() == heightmap.dataSize();
-  }
+  bool isValid() const { return heightmap.isValid() && tiles.size() == heightmap.dataSize(); }
 };
 
 // Map object structure (for Phase 4)
 struct MapObject {
   std::string name;
-  std::string thingTemplate;  // Object type/template name
+  std::string thingTemplate; // Object type/template name
 
   // Position and orientation
   struct {

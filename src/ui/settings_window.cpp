@@ -1,12 +1,12 @@
 #include "settings_window.hpp"
 
 #include <cstring>
+#include <filesystem>
 
 #include "core/settings.hpp"
 #include "ui_context.hpp"
 
 #include <imgui.h>
-#include <filesystem>
 
 namespace w3d {
 
@@ -184,9 +184,11 @@ void SettingsWindow::draw(UIContext &ctx) {
       } else if (ctx.cacheSize < 1024 * 1024) {
         std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f KB", ctx.cacheSize / 1024.0);
       } else if (ctx.cacheSize < 1024 * 1024 * 1024) {
-        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f MB", ctx.cacheSize / (1024.0 * 1024.0));
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f MB",
+                      ctx.cacheSize / (1024.0 * 1024.0));
       } else {
-        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.2f GB", ctx.cacheSize / (1024.0 * 1024.0 * 1024.0));
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.2f GB",
+                      ctx.cacheSize / (1024.0 * 1024.0 * 1024.0));
       }
 
       ImGui::Text("Cache Size: %s", cacheSizeStr);

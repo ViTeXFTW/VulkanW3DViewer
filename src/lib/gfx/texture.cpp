@@ -1,8 +1,6 @@
 #include "lib/gfx/texture.hpp"
 
 #include "lib/gfx/vulkan_context.hpp"
-#include "lib/formats/big/asset_registry.hpp"
-#include "lib/formats/big/big_archive_manager.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -10,6 +8,9 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
 
 namespace w3d::gfx {
 

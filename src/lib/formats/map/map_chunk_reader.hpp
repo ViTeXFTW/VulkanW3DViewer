@@ -50,9 +50,8 @@ public:
   // Skip bytes
   void skip(size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Skip past end of data (pos=" + std::to_string(pos_) +
-                       ", skip=" + std::to_string(count) +
-                       ", size=" + std::to_string(data_.size()) + ")");
+      throw ParseError("Skip past end of data (pos=" + std::to_string(pos_) + ", skip=" +
+                       std::to_string(count) + ", size=" + std::to_string(data_.size()) + ")");
     }
     pos_ += count;
   }
@@ -60,16 +59,16 @@ public:
   // Read raw bytes
   void readBytes(void *dest, size_t count) {
     if (pos_ + count > data_.size()) {
-      throw ParseError("Read past end of data (pos=" + std::to_string(pos_) +
-                       ", read=" + std::to_string(count) +
-                       ", size=" + std::to_string(data_.size()) + ")");
+      throw ParseError("Read past end of data (pos=" + std::to_string(pos_) + ", read=" +
+                       std::to_string(count) + ", size=" + std::to_string(data_.size()) + ")");
     }
     std::memcpy(dest, data_.data() + pos_, count);
     pos_ += count;
   }
 
   // Read a single value (little-endian)
-  template <typename T> T read() {
+  template <typename T>
+  T read() {
     static_assert(std::is_trivially_copyable_v<T>);
     T value;
     readBytes(&value, sizeof(T));
@@ -77,7 +76,8 @@ public:
   }
 
   // Read multiple values into a vector
-  template <typename T> std::vector<T> readArray(size_t count) {
+  template <typename T>
+  std::vector<T> readArray(size_t count) {
     static_assert(std::is_trivially_copyable_v<T>);
     std::vector<T> result(count);
     if (count > 0) {
@@ -153,10 +153,9 @@ public:
   // Create a sub-reader for a chunk's data
   MapChunkReader subReader(size_t length) {
     if (pos_ + length > data_.size()) {
-      throw ParseError("Sub-reader extends past end of data (pos=" +
-                       std::to_string(pos_) + ", length=" +
-                       std::to_string(length) + ", size=" +
-                       std::to_string(data_.size()) + ")");
+      throw ParseError("Sub-reader extends past end of data (pos=" + std::to_string(pos_) +
+                       ", length=" + std::to_string(length) +
+                       ", size=" + std::to_string(data_.size()) + ")");
     }
     MapChunkReader sub(data_.subspan(pos_, length));
     pos_ += length;

@@ -7,15 +7,15 @@
 #include <optional>
 #include <string>
 
+#include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "lib/gfx/camera.hpp"
-#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "lib/gfx/texture.hpp"
-#include "lib/formats/w3d/loader.hpp"
 
 namespace w3d::big {
 class AssetRegistry;

@@ -34,24 +34,19 @@ public:
 
 private:
   // Parse HeightMapData chunk
-  bool parseHeightMapData(MapChunkReader &reader, uint32_t version,
-                          TerrainData &terrain);
+  bool parseHeightMapData(MapChunkReader &reader, uint32_t version, TerrainData &terrain);
 
   // Parse BlendTileData chunk
-  bool parseBlendTileData(MapChunkReader &reader, uint32_t version,
-                          TerrainData &terrain);
+  bool parseBlendTileData(MapChunkReader &reader, uint32_t version, TerrainData &terrain);
 
   // Parse WorldDict chunk
-  bool parseWorldDict(MapChunkReader &reader, uint32_t version,
-                      MapData &map);
+  bool parseWorldDict(MapChunkReader &reader, uint32_t version, MapData &map);
 
   // Parse ObjectsList chunk
-  bool parseObjectsList(MapChunkReader &reader, uint32_t version,
-                        MapData &map);
+  bool parseObjectsList(MapChunkReader &reader, uint32_t version, MapData &map);
 
   // Parse single Object chunk
-  bool parseObject(MapChunkReader &reader, uint32_t version,
-                   MapData &map);
+  bool parseObject(MapChunkReader &reader, uint32_t version, MapData &map);
 };
 
 } // namespace map

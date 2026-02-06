@@ -1,5 +1,5 @@
-#include "lib/formats/map/map_chunk_reader.hpp"
 #include "lib/formats/map/chunk_types.hpp"
+#include "lib/formats/map/map_chunk_reader.hpp"
 #include "lib/formats/map/terrain_types.hpp"
 
 #include <gtest/gtest.h>
@@ -14,9 +14,8 @@ protected:
   }
 
   // Helper to create a chunk header
-  static std::vector<uint8_t> makeChunkHeader(const std::string &name,
-                                               uint32_t version,
-                                               uint32_t size) {
+  static std::vector<uint8_t> makeChunkHeader(const std::string &name, uint32_t version,
+                                              uint32_t size) {
     std::vector<uint8_t> result;
     result.reserve(12);
 

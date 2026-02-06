@@ -9,16 +9,15 @@
 namespace w3d {
 
 namespace {
-  // Extract just the filename from a path for display
-  // e.g., "art/w3d/vehicles/tank" -> "tank"
-  std::string getDisplayName(const std::string &fullPath) {
-    size_t lastSlash = fullPath.find_last_of('/');
-    if (lastSlash == std::string::npos) {
-      lastSlash = fullPath.find_last_of('\\');
-    }
-    return (lastSlash != std::string::npos) ?
-        fullPath.substr(lastSlash + 1) : fullPath;
+// Extract just the filename from a path for display
+// e.g., "art/w3d/vehicles/tank" -> "tank"
+std::string getDisplayName(const std::string &fullPath) {
+  size_t lastSlash = fullPath.find_last_of('/');
+  if (lastSlash == std::string::npos) {
+    lastSlash = fullPath.find_last_of('\\');
   }
+  return (lastSlash != std::string::npos) ? fullPath.substr(lastSlash + 1) : fullPath;
+}
 } // namespace
 
 ModelBrowser::ModelBrowser() {

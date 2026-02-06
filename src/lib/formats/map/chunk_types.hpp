@@ -37,13 +37,9 @@ constexpr uint32_t LIGHTING_CURRENT = LIGHTING_VERSION_3;
 struct MapChunkType {
   std::string_view name;
 
-  constexpr bool operator==(const MapChunkType &other) const {
-    return name == other.name;
-  }
+  constexpr bool operator==(const MapChunkType &other) const { return name == other.name; }
 
-  constexpr bool operator==(std::string_view str) const {
-    return name == str;
-  }
+  constexpr bool operator==(std::string_view str) const { return name == str; }
 };
 
 // Map chunk type constants

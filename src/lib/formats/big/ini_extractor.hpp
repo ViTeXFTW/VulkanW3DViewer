@@ -27,15 +27,15 @@ public:
   /// @param outError Optional error output parameter
   /// @return Extracted file path if successful
   std::optional<std::filesystem::path> extractIni(const std::string &iniFileName,
-                                                    const std::filesystem::path &cacheDirectory,
-                                                    std::string *outError = nullptr);
+                                                  const std::filesystem::path &cacheDirectory,
+                                                  std::string *outError = nullptr);
 
   /// List all INI files available in the archives
   /// @param gameDirectory Path to game directory containing BIG files
   /// @param outError Optional error output parameter
   /// @return Vector of INI file paths within archives
   static std::vector<std::string> listIniFiles(const std::filesystem::path &gameDirectory,
-                                                std::string *outError = nullptr);
+                                               std::string *outError = nullptr);
 
   /// Extract all INI files to cache
   /// @param gameDirectory Path to game directory containing BIG files

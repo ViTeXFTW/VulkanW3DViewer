@@ -1,10 +1,12 @@
 #include "terrain_renderable.hpp"
 
-#include "lib/formats/map/terrain_types.hpp"
 #include "lib/gfx/vulkan_context.hpp"
 
 #include <glm/glm.hpp>
+
 #include <algorithm>
+
+#include "lib/formats/map/terrain_types.hpp"
 
 namespace map {
 
@@ -13,8 +15,7 @@ TerrainRenderable::~TerrainRenderable() {
 }
 
 TerrainRenderable::TerrainRenderable(TerrainRenderable &&other) noexcept
-    : vertexBuffer_(std::move(other.vertexBuffer_)),
-      indexBuffer_(std::move(other.indexBuffer_)),
+    : vertexBuffer_(std::move(other.vertexBuffer_)), indexBuffer_(std::move(other.indexBuffer_)),
       bounds_(other.bounds_) {}
 
 TerrainRenderable &TerrainRenderable::operator=(TerrainRenderable &&other) noexcept {
@@ -111,7 +112,7 @@ std::vector<w3d::gfx::Vertex> TerrainRenderable::generateVertices(const TerrainD
 
       // Texture coordinates: based on tile position
       vertex.texCoord = calculateUV(static_cast<int32_t>(x), static_cast<int32_t>(y),
-                                      static_cast<int32_t>(width), static_cast<int32_t>(height));
+                                    static_cast<int32_t>(width), static_cast<int32_t>(height));
 
       // Color: white (can be tinted by material)
       vertex.color = glm::vec3(1.0f);
@@ -161,7 +162,8 @@ std::vector<uint32_t> TerrainRenderable::generateIndices(const TerrainData &data
   return indices;
 }
 
-glm::vec2 TerrainRenderable::calculateUV(int32_t x, int32_t y, int32_t width, int32_t height) const {
+glm::vec2 TerrainRenderable::calculateUV(int32_t x, int32_t y, int32_t width,
+                                         int32_t height) const {
   // Simple UV mapping based on grid position
   // UV coordinates range from 0 to 1 across the entire terrain
   float u = static_cast<float>(x) / static_cast<float>(width - 1);
@@ -170,7 +172,8 @@ glm::vec2 TerrainRenderable::calculateUV(int32_t x, int32_t y, int32_t width, in
   return glm::vec2(u, v);
 }
 
-w3d::gfx::BoundingBox TerrainRenderable::computeBounds(const std::vector<w3d::gfx::Vertex> &vertices) const {
+w3d::gfx::BoundingBox
+TerrainRenderable::computeBounds(const std::vector<w3d::gfx::Vertex> &vertices) const {
   if (vertices.empty()) {
     return {};
   }
