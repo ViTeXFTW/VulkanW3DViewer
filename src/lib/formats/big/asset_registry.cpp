@@ -8,6 +8,7 @@
 #include <system_error>
 
 #include "core/app_paths.hpp"
+#include "core/debug.hpp"
 
 namespace w3d::big {
 
@@ -88,7 +89,7 @@ bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
   }
 
   // Then, recursively search for any additional .big files in subdirectories
-  size_t additionalCount = 0;
+  [[maybe_unused]] size_t additionalCount = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator(gameDirectory_, ec)) {
     if (ec) {
       continue; // Skip directories we can't access
@@ -130,8 +131,8 @@ bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
     }
   }
 
-  std::cerr << "[AssetRegistry] Total archives scanned: " << archivesFound
-            << " (" << additionalCount << " additional)\n";
+  LOG_DEBUG("[AssetRegistry] Total archives scanned: " << archivesFound
+            << " (" << additionalCount << " additional)\n");
 
   if (archivesFound == 0) {
     if (outError) {
@@ -158,32 +159,33 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
   }
 
   size_t modelsFound = 0;
-  size_t texturesFound = 0;
-  size_t iniFilesFound = 0;
+  [[maybe_unused]] size_t texturesFound = 0;
+  [[maybe_unused]] size_t iniFilesFound = 0;
 
   // Scan files in archive
   for (const auto &file : archive->files()) {
-    std::string path = file.path;
+    // Use lowercase path for case-insensitive extension matching
+    // (original case is preserved in file.path, but many archives have uppercase extensions)
+    const std::string &path = file.lowercasePath;
 
     // Check for .w3d model files anywhere in the archive
     if (path.length() > 4 &&
         path.substr(path.length() - 4) == kModelExtension) {
-      // Use the full path (minus extension) as the model name to avoid collisions
-      // e.g., "Art/W3D/vehicles/tank.w3d" -> "art/w3d/vehicles/tank"
+      // Use the original path for archive lookups, but lowercase for the model name
+      std::string originalPath = file.path;
       std::string modelName = path.substr(0, path.length() - 4); // Remove .w3d
-      modelName = normalizeAssetName(modelName);
 
       // Only add if not already present (avoid duplicates across archives)
       if (modelArchivePaths_.find(modelName) == modelArchivePaths_.end()) {
-        modelArchivePaths_[modelName] = path;
+        modelArchivePaths_[modelName] = originalPath;
         availableModels_.push_back(modelName);
         modelsFound++;
       }
       // Log when model is skipped due to duplicate
       // (only log a few samples to avoid spam)
       else if (modelsFound < 5 || modelName.find("tank") != std::string::npos) {
-        std::cerr << "[AssetRegistry] Skipped duplicate: " << modelName
-                  << " (original: " << modelArchivePaths_[modelName] << ")\n";
+        LOG_DEBUG("[AssetRegistry] Skipped duplicate: " << modelName
+                  << " (original: " << modelArchivePaths_[modelName] << ")\n");
       }
     }
 
@@ -192,13 +194,12 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
       size_t extLen = std::strlen(ext);
       if (path.length() > extLen &&
           path.substr(path.length() - extLen) == ext) {
-        // Use full path (minus extension) as texture name
+        std::string originalPath = file.path;
         std::string textureName = path.substr(0, path.length() - extLen);
-        textureName = normalizeAssetName(textureName);
 
         // Only add if not already present
         if (textureArchivePaths_.find(textureName) == textureArchivePaths_.end()) {
-          textureArchivePaths_[textureName] = path;
+          textureArchivePaths_[textureName] = originalPath;
           availableTextures_.push_back(textureName);
           texturesFound++;
         }
@@ -218,9 +219,9 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
   }
 
   // Debug output
-  std::cerr << "[AssetRegistry] Scanned " << archiveName << ": "
+  LOG_DEBUG("[AssetRegistry] Scanned " << archiveName << ": "
             << modelsFound << " models, " << texturesFound << " textures, "
-            << iniFilesFound << " INI files\n";
+            << iniFilesFound << " INI files\n");
 
   return true;
 }

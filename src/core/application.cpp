@@ -1,5 +1,3 @@
-#include "application.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -8,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "application.hpp"
 #include "ui/hover_tooltip.hpp"
 #include "ui/model_browser.hpp"
 #include "ui/settings_window.hpp"
@@ -15,6 +14,7 @@
 #include "ui/viewport_window.hpp"
 
 #include <imgui.h>
+
 
 namespace w3d {
 
@@ -456,24 +456,18 @@ void Application::initializeBigArchiveManager() {
           console_->info("BIG archive manager initialized");
           console_->log("Game directory: " + gameDir.string());
           console_->log("Cache directory: " + bigArchiveManager_.cacheDirectory().string());
-        } else {
-          std::cerr << "BIG archive manager initialized\n";
-          std::cerr << "Game directory: " << gameDir.string() << "\n";
-          std::cerr << "Cache directory: " << bigArchiveManager_.cacheDirectory().string() << "\n";
         }
 
         // Scan archives to build registry
         if (assetRegistry_.scanArchives(gameDir, &error)) {
           if (console_) {
             console_->info("Asset registry scanned");
-            console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
-            console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
-            console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
-          } else {
-            std::cerr << "Asset registry scanned\n";
-            std::cerr << "Models found: " << assetRegistry_.availableModels().size() << "\n";
-            std::cerr << "Textures found: " << assetRegistry_.availableTextures().size() << "\n";
-            std::cerr << "INI files found: " << assetRegistry_.availableIniFiles().size() << "\n";
+            console_->log("Models found: " +
+                          std::to_string(assetRegistry_.availableModels().size()));
+            console_->log("Textures found: " +
+                          std::to_string(assetRegistry_.availableTextures().size()));
+            console_->log("INI files found: " +
+                          std::to_string(assetRegistry_.availableIniFiles().size()));
           }
         } else {
           if (console_) {
