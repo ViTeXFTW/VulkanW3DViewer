@@ -38,6 +38,12 @@ if(NOT BUILD_TESTING)
     # Add GLM submodule
     add_subdirectory(lib/glm)
 
+    # BigXtractor library for BIG archive support
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(INSTALL_STANDALONE OFF CACHE BOOL "" FORCE)
+    add_subdirectory(lib/BigXtractor)
+
     # ImGui sources
     set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
     set(IMGUI_SOURCES
@@ -68,6 +74,7 @@ if(NOT BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/CLI11/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/BigXtractor/include
     )
 
     # Link libraries
@@ -75,6 +82,7 @@ if(NOT BUILD_TESTING)
         Vulkan::Vulkan
         glfw
         glm::glm
+        big::big
     )
 
     # Compiler-specific flags
