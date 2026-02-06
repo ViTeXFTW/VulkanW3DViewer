@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace w3d {
 
@@ -13,6 +14,12 @@ struct Settings {
   std::string texturePath;
   /// Last directory opened in file browser
   std::string lastBrowsedDirectory;
+  /// Command & Conquer game directory containing BIG archives
+  std::string gameDirectory;
+  /// All search paths (auto-detected from BIG + custom paths)
+  std::vector<std::string> searchPaths;
+  /// Custom search paths added by user (excluding auto-detected BIG paths)
+  std::vector<std::string> customSearchPaths;
 
   // === Window Settings ===
   /// Last window width

@@ -35,6 +35,15 @@ Settings Settings::load(const std::filesystem::path &path) {
       if (paths.contains("last_browsed_directory")) {
         settings.lastBrowsedDirectory = paths["last_browsed_directory"].get<std::string>();
       }
+      if (paths.contains("game_directory")) {
+        settings.gameDirectory = paths["game_directory"].get<std::string>();
+      }
+      if (paths.contains("search_paths")) {
+        settings.searchPaths = paths["search_paths"].get<std::vector<std::string>>();
+      }
+      if (paths.contains("custom_search_paths")) {
+        settings.customSearchPaths = paths["custom_search_paths"].get<std::vector<std::string>>();
+      }
     }
 
     // Parse window section
@@ -98,6 +107,9 @@ bool Settings::save(const std::filesystem::path &path) const {
     // Paths section
     json["paths"]["texture_path"] = texturePath;
     json["paths"]["last_browsed_directory"] = lastBrowsedDirectory;
+    json["paths"]["game_directory"] = gameDirectory;
+    json["paths"]["search_paths"] = searchPaths;
+    json["paths"]["custom_search_paths"] = customSearchPaths;
 
     // Window section
     json["window"]["width"] = windowWidth;

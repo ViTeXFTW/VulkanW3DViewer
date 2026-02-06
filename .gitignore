@@ -34,7 +34,7 @@ compile_commands.json
 Makefile
 
 # AI
-.claude/
+.claude/settings.local.json
 
 # Shader compiled files
 *.spv
