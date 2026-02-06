@@ -1,7 +1,9 @@
 #include "asset_registry.hpp"
 
-#include <big/archive.hpp>
-#include <fstream>
+#include <bigx/archive.hpp>
+#include <algorithm>
+#include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <system_error>
@@ -105,7 +107,7 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
                                  const std::string &archiveName,
                                  std::string *outError) {
   std::string error;
-  auto archive = big::Archive::open(archivePath, &error);
+  auto archive = ::big::Archive::open(archivePath, &error);
 
   if (!archive) {
     if (outError) {

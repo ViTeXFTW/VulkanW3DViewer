@@ -1,6 +1,6 @@
 #include "ini_extractor.hpp"
 
-#include <big/archive.hpp>
+#include <bigx/archive.hpp>
 #include <system_error>
 
 namespace w3d::big {
@@ -11,27 +11,6 @@ namespace {
       "INIZH.big",
       "WindowsZH.big"  // May contain additional INI files
   };
-
-  // Normalize INI file name (remove .ini if present, convert to lowercase)
-  std::string normalizeIniName(const std::string &name) {
-    std::string normalized = name;
-
-    // Convert to lowercase
-    for (char &c : normalized) {
-      if (c >= 'A' && c <= 'Z') {
-        c = c - 'A' + 'a';
-      }
-    }
-
-    // Remove .ini extension if present
-    constexpr const char *kExt = ".ini";
-    if (normalized.length() > 4 &&
-        normalized.substr(normalized.length() - 4) == kExt) {
-      normalized = normalized.substr(0, normalized.length() - 4);
-    }
-
-    return normalized;
-  }
 } // namespace
 
 std::optional<std::filesystem::path> IniExtractor::extractIni(const std::string &iniFileName,
@@ -40,6 +19,8 @@ std::optional<std::filesystem::path> IniExtractor::extractIni(const std::string 
   // This method is meant to be used with an already-open BigArchiveManager
   // For now, it's a placeholder for future functionality
   // The actual extraction would be done via BigArchiveManager
+  (void)iniFileName;
+  (void)cacheDirectory;
 
   if (outError) {
     *outError = "INI extraction should be done via BigArchiveManager";
@@ -56,7 +37,7 @@ std::vector<std::string> IniExtractor::listIniFiles(const std::filesystem::path 
     std::filesystem::path archivePath = gameDirectory / archiveName;
 
     std::string error;
-    auto archive = big::Archive::open(archivePath, &error);
+    auto archive = ::big::Archive::open(archivePath, &error);
 
     if (!archive) {
       continue; // Skip archives that don't exist
@@ -99,7 +80,7 @@ size_t IniExtractor::extractAllIni(const std::filesystem::path &gameDirectory,
     std::filesystem::path archivePath = gameDirectory / archiveName;
 
     std::string error;
-    auto archive = big::Archive::open(archivePath, &error);
+    auto archive = ::big::Archive::open(archivePath, &error);
 
     if (!archive) {
       continue; // Skip archives that don't exist

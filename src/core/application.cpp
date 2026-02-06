@@ -391,7 +391,7 @@ void Application::initializeBigArchiveManager() {
         console_->error("Failed to initialize BIG archive manager: " + error);
       }
     } else {
-      console_->warn("Game directory does not exist: " + gameDir.string());
+      console_->warning("Game directory does not exist: " + gameDir.string());
     }
   }
 
@@ -404,7 +404,7 @@ void Application::initializeBigArchiveManager() {
 
 void Application::rescanAssetRegistry() {
   if (!bigArchiveManager_.isInitialized()) {
-    console_->warn("Cannot rescan: BIG archive manager not initialized");
+    console_->warning("Cannot rescan: BIG archive manager not initialized");
     return;
   }
 
