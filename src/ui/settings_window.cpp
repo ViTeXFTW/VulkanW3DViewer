@@ -173,6 +173,36 @@ void SettingsWindow::draw(UIContext &ctx) {
 
     ImGui::Spacing();
 
+    // Cache status and management
+    if (ctx.isBigArchiveInitialized) {
+      ImGui::SeparatorText("Cache Status");
+
+      // Format cache size
+      char cacheSizeStr[64];
+      if (ctx.cacheSize < 1024) {
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%zu B", ctx.cacheSize);
+      } else if (ctx.cacheSize < 1024 * 1024) {
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f KB", ctx.cacheSize / 1024.0);
+      } else if (ctx.cacheSize < 1024 * 1024 * 1024) {
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f MB", ctx.cacheSize / (1024.0 * 1024.0));
+      } else {
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.2f GB", ctx.cacheSize / (1024.0 * 1024.0 * 1024.0));
+      }
+
+      ImGui::Text("Cache Size: %s", cacheSizeStr);
+      ImGui::Text("Models Found: %zu", ctx.availableModelCount);
+
+      // Clear & Rescan button
+      if (ImGui::Button("Clear & Rescan Cache")) {
+        if (ctx.onClearAndRescanCache) {
+          ctx.onClearAndRescanCache();
+        }
+      }
+      ImGui::TextDisabled("Deletes all cached files and re-scans archives");
+    }
+
+    ImGui::Spacing();
+
     // Display Settings section
     ImGui::SeparatorText("Default Display Settings");
     ImGui::TextDisabled("These settings determine what is shown when the application starts.");

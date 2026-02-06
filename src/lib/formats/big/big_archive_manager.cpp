@@ -1,7 +1,6 @@
 #include "big_archive_manager.hpp"
 
 #include <bigx/archive.hpp>
-#include <fstream>
 #include <iostream>
 #include <system_error>
 
@@ -52,6 +51,9 @@ bool BigArchiveManager::ensureCacheDirectory(std::string *outError) {
 bool BigArchiveManager::loadArchives(std::string *outError) {
   size_t loadedCount = 0;
 
+  std::cerr << "[BigArchiveManager] Loading BIG archives from: " << gameDirectory_.string() << "\n";
+
+  // First, load the well-known archives from the root directory
   for (const char *archiveName : kBigArchives) {
     std::filesystem::path archivePath = gameDirectory_ / archiveName;
 
@@ -61,8 +63,59 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
     if (archive) {
       archives_[archiveName] = std::move(*archive);
       loadedCount++;
+      size_t fileCount = archive->fileCount();
+      std::cerr << "[BigArchiveManager] Loaded: " << archiveName
+                << " (" << fileCount << " files)\n";
+    } else {
+      std::cerr << "[BigArchiveManager] Skipped: " << archiveName
+                << " - " << error << "\n";
     }
   }
+
+  // Then, recursively search for any additional .big files in subdirectories
+  std::error_code ec;
+  size_t additionalCount = 0;
+  for (const auto &entry : std::filesystem::recursive_directory_iterator(gameDirectory_, ec)) {
+    if (ec) {
+      continue; // Skip directories we can't access
+    }
+
+    if (entry.is_regular_file(ec)) {
+      std::filesystem::path path = entry.path();
+      if (path.extension() == ".big") {
+        // Get relative path from game directory for the key
+        std::filesystem::path relativePath = std::filesystem::relative(path, gameDirectory_);
+        std::string key = relativePath.string();
+
+        // Convert backslashes to forward slashes for consistency
+        for (char &c : key) {
+          if (c == '\\') {
+            c = '/';
+          }
+        }
+
+        // Skip if already loaded (the well-known archives above)
+        if (archives_.find(key) != archives_.end()) {
+          continue;
+        }
+
+        std::string error;
+        auto archive = ::big::Archive::open(path, &error);
+
+        if (archive) {
+          archives_[key] = std::move(*archive);
+          loadedCount++;
+          additionalCount++;
+          size_t fileCount = archive->fileCount();
+          std::cerr << "[BigArchiveManager] Found additional BIG: " << key
+                    << " (" << fileCount << " files)\n";
+        }
+      }
+    }
+  }
+
+  std::cerr << "[BigArchiveManager] Total archives loaded: " << loadedCount
+            << " (" << additionalCount << " additional)\n";
 
   if (loadedCount == 0) {
     if (outError) {
@@ -137,25 +190,22 @@ std::optional<std::filesystem::path> BigArchiveManager::extractToCache(
     return std::nullopt;
   }
 
-  // Find asset in archives
-  const auto *entry = findAsset(archivePath);
-  if (!entry) {
-    if (outError) {
-      *outError = "Asset not found in archives: " + archivePath;
-    }
-    return std::nullopt;
-  }
-
   // Determine cache file path
   std::filesystem::path cachePath = getCachePath(archivePath);
 
-  // Check if already cached
+  // Check if already cached and valid
   std::error_code ec;
   if (std::filesystem::exists(cachePath, ec)) {
-    // Verify file size matches
-    auto fileSize = std::filesystem::file_size(cachePath, ec);
-    if (!ec && fileSize == entry->size) {
-      return cachePath;
+    // File exists - need to verify it's still valid by finding the entry
+    for (const auto &pair : archives_) {
+      const auto *entry = pair.second.findFile(archivePath);
+      if (entry) {
+        auto fileSize = std::filesystem::file_size(cachePath, ec);
+        if (!ec && fileSize == entry->size) {
+          return cachePath;
+        }
+        break; // Found the entry but size mismatch, need to re-extract
+      }
     }
   }
 
@@ -170,16 +220,25 @@ std::optional<std::filesystem::path> BigArchiveManager::extractToCache(
     }
   }
 
-  // Extract from archives (first one that has it)
+  // Find and extract from the specific archive that contains this file
   for (auto &pair : archives_) {
-    std::string extractError;
-    if (pair.second.extract(*entry, cachePath, &extractError)) {
-      return cachePath;
+    const auto *entry = pair.second.findFile(archivePath);
+    if (entry) {
+      // Extract from THIS archive using the entry from THIS archive
+      std::string extractError;
+      if (pair.second.extract(*entry, cachePath, &extractError)) {
+        return cachePath;
+      } else {
+        if (outError) {
+          *outError = "Failed to extract: " + extractError;
+        }
+        return std::nullopt;
+      }
     }
   }
 
   if (outError) {
-    *outError = "Failed to extract asset: " + archivePath;
+    *outError = "Asset not found in archives: " + archivePath;
   }
   return std::nullopt;
 }
@@ -195,26 +254,26 @@ std::optional<std::vector<uint8_t>> BigArchiveManager::extractToMemory(
     return std::nullopt;
   }
 
-  // Find asset in archives
-  const auto *entry = findAsset(archivePath);
-  if (!entry) {
-    if (outError) {
-      *outError = "Asset not found in archives: " + archivePath;
-    }
-    return std::nullopt;
-  }
-
-  // Extract from archives (first one that has it)
+  // Find and extract from the specific archive that contains this file
   for (auto &pair : archives_) {
-    std::string extractError;
-    auto data = pair.second.extractToMemory(*entry, &extractError);
-    if (data) {
-      return data;
+    const auto *entry = pair.second.findFile(archivePath);
+    if (entry) {
+      // Extract from THIS archive using the entry from THIS archive
+      std::string extractError;
+      auto data = pair.second.extractToMemory(*entry, &extractError);
+      if (data) {
+        return data;
+      } else {
+        if (outError) {
+          *outError = "Failed to extract: " + extractError;
+        }
+        return std::nullopt;
+      }
     }
   }
 
   if (outError) {
-    *outError = "Failed to extract asset: " + archivePath;
+    *outError = "Asset not found in archives: " + archivePath;
   }
   return std::nullopt;
 }

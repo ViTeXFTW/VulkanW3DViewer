@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "ui/hover_tooltip.hpp"
+#include "ui/model_browser.hpp"
 #include "ui/settings_window.hpp"
 #include "ui/ui_context.hpp"
 #include "ui/viewport_window.hpp"
@@ -117,6 +118,7 @@ void Application::initUI() {
   auto *viewport = uiManager_.addWindow<ViewportWindow>();
   console_ = uiManager_.addWindow<ConsoleWindow>();
   fileBrowser_ = uiManager_.addWindow<FileBrowser>();
+  modelBrowser_ = uiManager_.addWindow<ModelBrowser>();
   uiManager_.addWindow<HoverTooltip>();
   uiManager_.addWindow<SettingsWindow>();
 
@@ -124,6 +126,7 @@ void Application::initUI() {
   viewport->setVisible(true);
   console_->setVisible(true);
   fileBrowser_->setVisible(false);
+  modelBrowser_->setVisible(false);
 
   // Configure file browser
   fileBrowser_->setFilter(".w3d");
@@ -131,6 +134,31 @@ void Application::initUI() {
     loadW3DFile(path);
     fileBrowser_->setVisible(false);
   });
+
+  // If BIG archives are configured, default to cache directory
+  if (bigArchiveManager_.isInitialized()) {
+    std::filesystem::path cacheW3DPath = bigArchiveManager_.cacheDirectory() / "Art" / "W3D";
+    std::error_code ec;
+    if (std::filesystem::exists(cacheW3DPath, ec)) {
+      fileBrowser_->openAt(cacheW3DPath);
+    } else {
+      // Cache directory doesn't exist yet, default to cache root
+      fileBrowser_->openAt(bigArchiveManager_.cacheDirectory());
+    }
+  }
+
+  // Configure model browser
+  modelBrowser_->setModelSelectedCallback([this](const std::string &modelName) {
+    loadModelByName(modelName);
+    modelBrowser_->setVisible(false);
+  });
+
+  // If asset registry has scanned models, set up model browser
+  if (assetRegistry_.isScanned()) {
+    modelBrowser_->setAvailableModels(assetRegistry_.availableModels());
+    modelBrowser_->setAvailableTextures(assetRegistry_.availableTextures());
+    modelBrowser_->setBigArchiveMode(true);
+  }
 
   // Welcome message
   console_->info("W3D Viewer initialized");
@@ -162,6 +190,36 @@ void Application::loadW3DFile(const std::filesystem::path &path) {
   renderState_.useHLodModel = result.useHLodModel;
   renderState_.useSkinnedRendering = result.useSkinnedRendering;
   renderState_.lastAppliedFrame = -1.0f; // Reset animation state for new model
+}
+
+void Application::loadModelByName(const std::string &modelName) {
+  // This method loads a model by name from the BIG archive
+  // The model name is like "avvehicle.tank" (without .w3d extension)
+
+  console_->info("Loading model from BIG archive: " + modelName);
+
+  // Try to get archive path from registry
+  std::string archivePath;
+  if (assetRegistry_.isScanned()) {
+    archivePath = assetRegistry_.getModelArchivePath(modelName);
+  }
+
+  // If not in registry, try standard archive path
+  if (archivePath.empty()) {
+    archivePath = "Art/W3D/" + modelName + ".w3d";
+  }
+
+  // Extract to cache
+  std::string error;
+  auto cachedPath = bigArchiveManager_.extractToCache(archivePath, &error);
+  if (!cachedPath) {
+    console_->error("Failed to extract model: " + error);
+    return;
+  }
+
+  // Load from cached path
+  console_->log("Extracted to: " + cachedPath->string());
+  loadW3DFile(*cachedPath);
 }
 
 void Application::updateHover() {
@@ -229,8 +287,27 @@ void Application::drawUI() {
   ctx.hoverState = &hoverDetector_.state();
   ctx.settings = &appSettings_;
 
+  // BIG archive status
+  ctx.isBigArchiveInitialized = bigArchiveManager_.isInitialized();
+  ctx.cacheSize = bigArchiveManager_.getCacheSize();
+  ctx.availableModelCount = assetRegistry_.availableModels().size();
+
   // Set up callbacks
   ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
+  ctx.onOpenModelBrowser = [this]() {
+    // Update available models before opening
+    if (assetRegistry_.isScanned()) {
+      modelBrowser_->setAvailableModels(assetRegistry_.availableModels());
+      modelBrowser_->setAvailableTextures(assetRegistry_.availableTextures());
+      modelBrowser_->setBigArchiveMode(true);
+    }
+    modelBrowser_->setVisible(true);
+  };
+  ctx.onClearAndRescanCache = [this]() {
+    // Clear cache and rescan archives
+    bigArchiveManager_.clearCache();
+    rescanAssetRegistry();
+  };
   ctx.onExit = [this]() { glfwSetWindowShouldClose(window_, GLFW_TRUE); };
   ctx.onResetCamera = [this]() {
     if (renderState_.useHLodModel && hlodModel_.hasData()) {

@@ -86,6 +86,7 @@ private:
 
   // Model loading
   void loadW3DFile(const std::filesystem::path &path);
+  void loadModelByName(const std::string &modelName);
 
   // BIG archive management
   void initializeBigArchiveManager();
@@ -132,6 +133,7 @@ private:
   UIManager uiManager_;
   ConsoleWindow *console_ = nullptr;   // Owned by uiManager_
   FileBrowser *fileBrowser_ = nullptr; // Owned by uiManager_
+  class ModelBrowser *modelBrowser_ = nullptr; // Owned by uiManager_
 
   // Setting Management
   Settings appSettings_;
