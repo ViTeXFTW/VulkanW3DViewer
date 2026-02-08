@@ -6,22 +6,77 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
+### Getting Help
+
+For detailed usage information, run:
+```bash
+# PowerShell
+.\scripts\rebuild.ps1 -Help
+
+# Bash
+./scripts/rebuild.sh --help
+```
+
+### Quick Build (using helper scripts)
+
+**Recommended:** Use the rebuild scripts for hassle-free builds with automatic environment setup.
+
+```bash
+# Windows (PowerShell) - automatically sets up MSVC environment
+.\scripts\rebuild.ps1 debug                    # Auto-detect compiler
+.\scripts\rebuild.ps1 release -Compiler msvc   # MSVC (recommended on Windows)
+.\scripts\rebuild.ps1 debug -D                 # Clean build
+.\scripts\rebuild.ps1 release -Compiler msvc -R # Build and run
+.\scripts\rebuild.ps1 debug -Compiler clang    # Use Clang explicitly
+
+# Linux/Mac (Bash)
+./scripts/rebuild.sh debug                     # Auto-detect compiler
+./scripts/rebuild.sh release -c gcc            # Use GCC
+./scripts/rebuild.sh debug -c clang -d         # Clean build with Clang
+./scripts/rebuild.sh test                      # Build and run tests
+```
+
+**Features:**
+- 🚀 Simple syntax: `<config>` + optional `-Compiler <name>`
+- 🔧 Automatic MSVC environment setup (no VS Developer Command Prompt needed)
+- 🧹 `-D` flag for clean rebuilds
+- ▶️  `-R` flag to run after building (PowerShell only)
+- ❓ Built-in help: Run `.\scripts\rebuild.ps1 -Help` or `./scripts/rebuild.sh --help`
+
+### Manual CMake Commands
+
 ```bash
 # Configure (first time or after CMakeLists.txt changes)
-cmake --preset debug    # Debug build
-cmake --preset release  # Release build
-cmake --preset test     # Test build
+cmake --preset debug          # Auto-detect compiler
+cmake --preset msvc-debug     # MSVC (Windows, Visual Studio generator)
+cmake --preset clang-release  # Clang (Ninja generator)
+cmake --preset gcc-debug      # GCC (Ninja generator)
+cmake --preset test           # Test build
 
 # Build
 cmake --build --preset debug
-cmake --build --preset release
-cmake --build --preset test
+cmake --build --preset msvc-release
+cmake --build --preset clang-debug
 
 # Run (after building)
-./build/debug/VulkanW3DViewer.exe    # Windows debug
-./build/release/VulkanW3DViewer.exe  # Windows release
-ctest --preset test                  # Run tests
+./build/debug/VulkanW3DViewer.exe          # Windows debug
+./build/msvc-release/VulkanW3DViewer.exe   # Windows MSVC release
+ctest --preset test                        # Run tests
 ```
+
+### Available Presets
+
+| Preset | Compiler | Generator | Description |
+|--------|----------|-----------|-------------|
+| `debug` | Auto-detect | Ninja | Debug build (auto-detect compiler) |
+| `release` | Auto-detect | Ninja | Release build (auto-detect compiler) |
+| `test` | Auto-detect | Ninja | Debug build with tests |
+| `clang-debug` | Clang | Ninja | Debug build with Clang |
+| `clang-release` | Clang | Ninja | Release build with Clang |
+| `gcc-debug` | GCC | Ninja | Debug build with GCC |
+| `gcc-release` | GCC | Ninja | Release build with GCC |
+| `msvc-debug` | MSVC | VS 2026 | Debug build with MSVC |
+| `msvc-release` | MSVC | VS 2026 | Release build with MSVC |
 
 ## Project Overview
 
@@ -124,8 +179,8 @@ shaders/
 ## Code Style
 
 - 2-space indentation for C/C++ files
-- Compiler warnings treated as errors (`-Werror`)
-- Uses Clang toolchain via MSYS2 MinGW64
+- Compiler warnings treated as errors (`-Werror` on GCC/Clang, `/W4` on MSVC)
+- Supports multiple compilers: MSVC, Clang, GCC, Intel
 - Namespace: `w3d::`
 - Modern C++20 patterns (structured bindings, designated initializers)
 
