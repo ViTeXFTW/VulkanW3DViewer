@@ -7,13 +7,12 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
             "name": "debug",
-            "displayName": "Debug",
+            "displayName": "Debug (Auto-detect compiler)",
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
@@ -21,7 +20,7 @@
         },
         {
             "name": "release",
-            "displayName": "Release",
+            "displayName": "Release (Auto-detect compiler)",
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
@@ -34,6 +33,59 @@
             "cacheVariables": {
                 "BUILD_TESTING": "ON"
             }
+        },
+        {
+            "name": "clang-base",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "Debug (Clang)",
+            "inherits": ["debug", "clang-base"]
+        },
+        {
+            "name": "clang-release",
+            "displayName": "Release (Clang)",
+            "inherits": ["release", "clang-base"]
+        },
+        {
+            "name": "gcc-base",
+            "hidden": true,
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "gcc-debug",
+            "displayName": "Debug (GCC)",
+            "inherits": ["debug", "gcc-base"]
+        },
+        {
+            "name": "gcc-release",
+            "displayName": "Release (GCC)",
+            "inherits": ["release", "gcc-base"]
+        },
+        {
+            "name": "msvc-base",
+            "hidden": true,
+            "inherits": "base"
+        },
+        {
+            "name": "msvc-debug",
+            "displayName": "Debug (MSVC)",
+            "inherits": ["debug", "msvc-base"]
+        },
+        {
+            "name": "msvc-release",
+            "displayName": "Release (MSVC)",
+            "inherits": ["release", "msvc-base"]
         }
     ],
     "buildPresets": [
@@ -48,6 +100,30 @@
         {
             "name": "test",
             "configurePreset": "test"
+        },
+        {
+            "name": "clang-debug",
+            "configurePreset": "clang-debug"
+        },
+        {
+            "name": "clang-release",
+            "configurePreset": "clang-release"
+        },
+        {
+            "name": "gcc-debug",
+            "configurePreset": "gcc-debug"
+        },
+        {
+            "name": "gcc-release",
+            "configurePreset": "gcc-release"
+        },
+        {
+            "name": "msvc-debug",
+            "configurePreset": "msvc-debug"
+        },
+        {
+            "name": "msvc-release",
+            "configurePreset": "msvc-release"
         }
     ],
     "testPresets": [

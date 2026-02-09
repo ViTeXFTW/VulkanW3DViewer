@@ -6,16 +6,34 @@ This guide will get you viewing W3D models in minutes.
 
 After [building](building.md) the project, launch the viewer:
 
-=== "Windows"
+=== "Windows (auto-detect)"
 
     ```powershell
     .\build\release\VulkanW3DViewer.exe
     ```
 
-=== "Linux/macOS"
+=== "Windows (MSVC)"
+
+    ```powershell
+    .\build\msvc-release\VulkanW3DViewer.exe
+    ```
+
+=== "Linux/macOS (auto-detect)"
 
     ```bash
     ./build/release/VulkanW3DViewer
+    ```
+
+=== "Linux/macOS (Clang)"
+
+    ```bash
+    ./build/clang-release/VulkanW3DViewer
+    ```
+
+=== "Linux/macOS (GCC)"
+
+    ```bash
+    ./build/gcc-release/VulkanW3DViewer
     ```
 
 ## Loading a Model

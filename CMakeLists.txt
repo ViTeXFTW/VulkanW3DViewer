@@ -8,14 +8,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 # Export compile commands for IDE support (clangd)
+# Note: This is also set in CMakePresets.json, but we set it here as a fallback
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Create symlink to compile_commands.json in project root for clangd
+# This is deferred to build time since compile_commands.json doesn't exist at configure time
 if(CMAKE_EXPORT_COMPILE_COMMANDS)
-    # Copy compile_commands.json to project root for clangd
-    file(CREATE_LINK
-        ${CMAKE_BINARY_DIR}/compile_commands.json
-        ${CMAKE_SOURCE_DIR}/compile_commands.json
-        COPY_ON_ERROR
-        SYMBOLIC
+    add_custom_target(compile_commands_symlink ALL
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${CMAKE_BINARY_DIR}/compile_commands.json
+            ${CMAKE_SOURCE_DIR}/build/compile_commands.json
+        COMMENT "Creating symlink to compile_commands.json in project root"
+        VERBATIM
     )
 endif()
 
@@ -79,17 +83,38 @@ if(NOT BUILD_TESTING)
 
     # Compiler-specific flags
     if(MSVC)
+        # MSVC (Microsoft Visual C++)
         target_compile_options(${PROJECT_NAME} PRIVATE
-            /W4 /permissive-
-            $<$<CONFIG:Debug>:/Od /Zi>
+            /permissive-           # Standards conformance
+            /utf-8                 # UTF-8 source and execution charset
+            $<$<CONFIG:Debug>:/Od /Zi /W4 >
             $<$<CONFIG:Release>:/O2 /GL>
         )
         target_link_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Release>:/LTCG>
         )
-    else()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        # GCC
         target_compile_options(${PROJECT_NAME} PRIVATE
-            -Wall -Wextra -Wpedantic -Werror
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic -Werror>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        # Clang or AppleClang
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic -Werror>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        # Intel C++ Compiler
+        target_compile_options(${PROJECT_NAME} PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Werror>
+            $<$<CONFIG:Release>:-O3 -ipo>
+        )
+    else()
+        # Unknown compiler - use basic flags
+        message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
+        target_compile_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Debug>:-O0 -g>
             $<$<CONFIG:Release>:-O3>
         )

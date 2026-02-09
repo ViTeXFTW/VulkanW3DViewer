@@ -5,19 +5,33 @@ This file guides AI coding agents working on this Vulkan-based W3D renderer.
 ## Build Commands
 
 ```bash
+# Quick Build (using helper scripts - recommended)
+# PowerShell
+.\scripts\rebuild.ps1 debug                    # Auto-detect compiler
+.\scripts\rebuild.ps1 release -Compiler msvc   # MSVC (Windows)
+.\scripts\rebuild.ps1 debug -D -R              # Clean debug build and run
+
+# Bash
+./scripts/rebuild.sh debug                     # Auto-detect compiler
+./scripts/rebuild.sh release -c gcc            # GCC
+./scripts/rebuild.sh debug -c clang -d         # Clean build with Clang
+
 # Configure (CMake presets)
-cmake --preset debug    # Debug build
-cmake --preset release  # Release build
-cmake --preset test     # Build with tests enabled (BUILD_TESTING=ON)
+cmake --preset debug          # Auto-detect compiler
+cmake --preset msvc-debug     # MSVC (Windows)
+cmake --preset clang-release  # Clang
+cmake --preset gcc-debug      # GCC
+cmake --preset test           # Debug build with tests enabled (BUILD_TESTING=ON)
 
 # Build
 cmake --build --preset debug
-cmake --build --preset release
-cmake --build --preset test
+cmake --build --preset msvc-release
+cmake --build --preset clang-debug
 
 # Run main application
 ./build/debug/VulkanW3DViewer.exe
-./build/release/VulkanW3DViewer.exe
+./build/msvc-release/VulkanW3DViewer.exe
+./build/clang-release/VulkanW3DViewer
 
 # Run all tests
 ctest --preset test
