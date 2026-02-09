@@ -75,8 +75,7 @@
         {
             "name": "msvc-base",
             "hidden": true,
-            "inherits": "base",
-            "generator": "Visual Studio 18 2026"
+            "inherits": "base"
         },
         {
             "name": "msvc-debug",
