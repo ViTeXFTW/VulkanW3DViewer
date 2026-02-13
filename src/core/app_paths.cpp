@@ -3,17 +3,23 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <stdlib.h>
+
 namespace w3d {
 
 std::optional<std::filesystem::path> AppPaths::baseConfigDir() {
-#ifdef _WIN32
-  // Windows: Use APPDATA environment variable
-  if (const char *appdata = std::getenv("APPDATA")) {
-    return std::filesystem::path(appdata);
+#if defined(_WIN32) && defined(_MSC_VER)
+  char *appdata = nullptr;
+  if (_dupenv_s(&appdata, nullptr, "APPDATA") == 0 && appdata) {
+    std::filesystem::path result(appdata);
+    free(appdata);
+    return result;
   }
-  // Fallback: Use USERPROFILE
-  if (const char *userprofile = std::getenv("USERPROFILE")) {
-    return std::filesystem::path(userprofile) / "AppData" / "Roaming";
+  char *userprofile = nullptr;
+  if (_dupenv_s(&userprofile, nullptr, "USERPROFILE") == 0 && userprofile) {
+    std::filesystem::path result = std::filesystem::path(userprofile) / "AppData" / "Roaming";
+    free(userprofile);
+    return result;
   }
   return std::nullopt;
 
