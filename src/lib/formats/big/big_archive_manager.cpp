@@ -5,6 +5,7 @@
 #include <system_error>
 
 #include "core/app_paths.hpp"
+#include "core/debug.hpp"
 
 namespace w3d::big {
 
@@ -51,7 +52,7 @@ bool BigArchiveManager::ensureCacheDirectory(std::string *outError) {
 bool BigArchiveManager::loadArchives(std::string *outError) {
   size_t loadedCount = 0;
 
-  std::cerr << "[BigArchiveManager] Loading BIG archives from: " << gameDirectory_.string() << "\n";
+  LOG_DEBUG("[BigArchiveManager] Loading BIG archives from: " << gameDirectory_.string() << "\n");
 
   // First, load the well-known archives from the root directory
   for (const char *archiveName : kBigArchives) {
@@ -63,18 +64,18 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
     if (archive) {
       archives_[archiveName] = std::move(*archive);
       loadedCount++;
-      size_t fileCount = archive->fileCount();
-      std::cerr << "[BigArchiveManager] Loaded: " << archiveName
-                << " (" << fileCount << " files)\n";
+      [[maybe_unused]] size_t fileCount = archive->fileCount();
+      LOG_DEBUG("[BigArchiveManager] Loaded: " << archiveName
+                << " (" << fileCount << " files)\n");
     } else {
-      std::cerr << "[BigArchiveManager] Skipped: " << archiveName
-                << " - " << error << "\n";
+      LOG_DEBUG("[BigArchiveManager] Skipped: " << archiveName
+                << " - " << error << "\n");
     }
   }
 
   // Then, recursively search for any additional .big files in subdirectories
   std::error_code ec;
-  size_t additionalCount = 0;
+  [[maybe_unused]] size_t additionalCount = 0;
   for (const auto &entry : std::filesystem::recursive_directory_iterator(gameDirectory_, ec)) {
     if (ec) {
       continue; // Skip directories we can't access
@@ -106,16 +107,16 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
           archives_[key] = std::move(*archive);
           loadedCount++;
           additionalCount++;
-          size_t fileCount = archive->fileCount();
-          std::cerr << "[BigArchiveManager] Found additional BIG: " << key
-                    << " (" << fileCount << " files)\n";
+          [[maybe_unused]] size_t fileCount = archive->fileCount();
+          LOG_DEBUG("[BigArchiveManager] Found additional BIG: " << key
+                    << " (" << fileCount << " files)\n");
         }
       }
     }
   }
 
-  std::cerr << "[BigArchiveManager] Total archives loaded: " << loadedCount
-            << " (" << additionalCount << " additional)\n";
+  LOG_DEBUG("[BigArchiveManager] Total archives loaded: " << loadedCount
+            << " (" << additionalCount << " additional)\n");
 
   if (loadedCount == 0) {
     if (outError) {
