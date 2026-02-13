@@ -379,24 +379,50 @@ void Application::initializeBigArchiveManager() {
       // Initialize BIG archive manager
       std::string error;
       if (bigArchiveManager_.initialize(gameDir, &error)) {
-        console_->info("BIG archive manager initialized");
-        console_->log("Game directory: " + gameDir.string());
-        console_->log("Cache directory: " + bigArchiveManager_.cacheDirectory().string());
+        // Log to console if available, otherwise stderr
+        if (console_) {
+          console_->info("BIG archive manager initialized");
+          console_->log("Game directory: " + gameDir.string());
+          console_->log("Cache directory: " + bigArchiveManager_.cacheDirectory().string());
+        } else {
+          std::cerr << "BIG archive manager initialized\n";
+          std::cerr << "Game directory: " << gameDir.string() << "\n";
+          std::cerr << "Cache directory: " << bigArchiveManager_.cacheDirectory().string() << "\n";
+        }
 
         // Scan archives to build registry
         if (assetRegistry_.scanArchives(gameDir, &error)) {
-          console_->info("Asset registry scanned");
-          console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
-          console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
-          console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+          if (console_) {
+            console_->info("Asset registry scanned");
+            console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
+            console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
+            console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+          } else {
+            std::cerr << "Asset registry scanned\n";
+            std::cerr << "Models found: " << assetRegistry_.availableModels().size() << "\n";
+            std::cerr << "Textures found: " << assetRegistry_.availableTextures().size() << "\n";
+            std::cerr << "INI files found: " << assetRegistry_.availableIniFiles().size() << "\n";
+          }
         } else {
-          console_->error("Failed to scan asset registry: " + error);
+          if (console_) {
+            console_->error("Failed to scan asset registry: " + error);
+          } else {
+            std::cerr << "Failed to scan asset registry: " << error << "\n";
+          }
         }
       } else {
-        console_->error("Failed to initialize BIG archive manager: " + error);
+        if (console_) {
+          console_->error("Failed to initialize BIG archive manager: " + error);
+        } else {
+          std::cerr << "Failed to initialize BIG archive manager: " << error << "\n";
+        }
       }
     } else {
-      console_->warning("Game directory does not exist: " + gameDir.string());
+      if (console_) {
+        console_->warning("Game directory does not exist: " + gameDir.string());
+      } else {
+        std::cerr << "Game directory does not exist: " << gameDir.string() << "\n";
+      }
     }
   }
 
