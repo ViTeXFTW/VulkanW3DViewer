@@ -113,9 +113,19 @@ void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
 }
 
 void Renderer::recreateSwapchain(int width, int height) {
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  if (recreatingSwapchain_) {
+    return;
+  }
+
+  recreatingSwapchain_ = true;
   context_->device().waitIdle();
   context_->recreateSwapchain(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
   imguiBackend_->onSwapchainRecreate();
+  recreatingSwapchain_ = false;
 }
 
 void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
@@ -334,6 +344,7 @@ void Renderer::drawFrame(const FrameContext &ctx) {
     int width, height;
     glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
+    frameWaited_ = false;
     return;
   } else if (acquireResult.result != vk::Result::eSuccess &&
              acquireResult.result != vk::Result::eSuboptimalKHR) {
@@ -381,6 +392,8 @@ void Renderer::drawFrame(const FrameContext &ctx) {
     int width, height;
     glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
+    frameWaited_ = false;
+    return;
   } else if (presentResult != vk::Result::eSuccess) {
     throw std::runtime_error("Failed to present swap chain image");
   }

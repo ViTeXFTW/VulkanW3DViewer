@@ -249,6 +249,11 @@ void Application::mainLoop() {
   while (!glfwWindowShouldClose(window_)) {
     glfwPollEvents();
 
+    // Skip rendering when window is minimized
+    if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
+      continue;
+    }
+
     // Calculate delta time
     float currentTime = static_cast<float>(glfwGetTime());
     float deltaTime = currentTime - lastFrameTime_;

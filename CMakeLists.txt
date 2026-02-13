@@ -122,6 +122,7 @@ if(NOT BUILD_TESTING)
 
     # Debug/Release definitions
     target_compile_definitions(${PROJECT_NAME} PRIVATE
+        VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
         $<$<CONFIG:Debug>:W3D_DEBUG>
     )
 

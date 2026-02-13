@@ -12,14 +12,14 @@
 #include <vector>
 
 #include "core/render_state.hpp"
-#include "render/bone_buffer.hpp"
-#include "lib/gfx/camera.hpp"
 #include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
+#include "render/bone_buffer.hpp"
 #include "render/hover_detector.hpp"
 #include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "lib/gfx/texture.hpp"
 #include "ui/imgui_backend.hpp"
 
 namespace w3d {
@@ -125,7 +125,8 @@ private:
 
   uint32_t currentFrame_ = 0;
   bool framebufferResized_ = false;
-  bool frameWaited_ = false; // Track if waitForCurrentFrame() was called this frame
+  bool frameWaited_ = false;         // Track if waitForCurrentFrame() was called this frame
+  bool recreatingSwapchain_ = false; // Prevent concurrent swapchain recreation
 
   // Default material
   Material defaultMaterial_;
