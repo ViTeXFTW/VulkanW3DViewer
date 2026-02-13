@@ -75,6 +75,7 @@
         {
             "name": "msvc-base",
             "hidden": true,
+            "generator": "Visual Studio",
             "inherits": "base"
         },
         {
