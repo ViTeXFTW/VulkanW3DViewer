@@ -11,10 +11,15 @@
 namespace w3d {
 
 SettingsWindow::SettingsWindow() {
-  // Configure the directory browser
+  // Configure the texture directory browser
   directoryBrowser_.setBrowseMode(BrowseMode::Directory);
   directoryBrowser_.setTitle("Select Texture Directory");
   directoryBrowser_.setVisible(false);
+
+  // Configure the game directory browser
+  gameDirectoryBrowser_.setBrowseMode(BrowseMode::Directory);
+  gameDirectoryBrowser_.setTitle("Select Game Directory");
+  gameDirectoryBrowser_.setVisible(false);
 }
 
 void SettingsWindow::open() {
@@ -23,12 +28,14 @@ void SettingsWindow::open() {
 
 void SettingsWindow::copySettingsToEdit(const Settings &settings) {
   editTexturePath_ = settings.texturePath;
+  editGameDirectory_ = settings.gameDirectory;
   editShowMesh_ = settings.showMesh;
   editShowSkeleton_ = settings.showSkeleton;
 }
 
 void SettingsWindow::applyAndSave(UIContext &ctx) {
   ctx.settings->texturePath = editTexturePath_;
+  ctx.settings->gameDirectory = editGameDirectory_;
   ctx.settings->showMesh = editShowMesh_;
   ctx.settings->showSkeleton = editShowSkeleton_;
   ctx.settings->saveDefault();
@@ -47,6 +54,19 @@ void SettingsWindow::draw(UIContext &ctx) {
     // Check if browser was closed (via Cancel or selection callback)
     if (!directoryBrowser_.isVisible()) {
       directoryBrowserOpen_ = false;
+      // Reopen the settings modal
+      shouldOpen_ = true;
+    }
+    return;
+  }
+
+  // Handle game directory browser being open
+  if (gameDirectoryBrowserOpen_) {
+    gameDirectoryBrowser_.draw(ctx);
+
+    // Check if browser was closed
+    if (!gameDirectoryBrowser_.isVisible()) {
+      gameDirectoryBrowserOpen_ = false;
       // Reopen the settings modal
       shouldOpen_ = true;
     }
@@ -113,6 +133,47 @@ void SettingsWindow::draw(UIContext &ctx) {
       ImGui::CloseCurrentPopup();
     }
     ImGui::TextDisabled("Leave empty to use default location");
+
+    ImGui::Spacing();
+
+    // BIG Archive Settings section
+    ImGui::SeparatorText("BIG Archive Settings");
+
+    ImGui::Text("Game Directory:");
+    ImGui::TextDisabled("Location containing W3DZH.big and TexturesZH.big");
+
+    // Use a buffer for InputText
+    char gameDirBuf[512];
+    std::strncpy(gameDirBuf, editGameDirectory_.c_str(), sizeof(gameDirBuf) - 1);
+    gameDirBuf[sizeof(gameDirBuf) - 1] = '\0';
+
+    // Input field with Browse button
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - browseButtonWidth -
+                            ImGui::GetStyle().ItemSpacing.x);
+    if (ImGui::InputText("##GameDir", gameDirBuf, sizeof(gameDirBuf))) {
+      editGameDirectory_ = gameDirBuf;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Browse...##GameDir", ImVec2(browseButtonWidth, 0))) {
+      // Initialize browser at current path or current working directory
+      if (!editGameDirectory_.empty() && std::filesystem::exists(editGameDirectory_)) {
+        gameDirectoryBrowser_.openAt(editGameDirectory_);
+      } else {
+        gameDirectoryBrowser_.openAt(std::filesystem::current_path());
+      }
+
+      // Set up callback to receive selected directory
+      gameDirectoryBrowser_.setPathSelectedCallback([this](const std::filesystem::path &path) {
+        editGameDirectory_ = path.string();
+        gameDirectoryBrowser_.setVisible(false);
+      });
+
+      gameDirectoryBrowser_.setVisible(true);
+      gameDirectoryBrowserOpen_ = true;
+
+      // Close the settings modal to allow interaction with browser
+      ImGui::CloseCurrentPopup();
+    }
 
     ImGui::Spacing();
 
