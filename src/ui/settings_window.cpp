@@ -8,7 +8,6 @@
 
 #include <imgui.h>
 
-
 namespace w3d {
 
 SettingsWindow::SettingsWindow() {
