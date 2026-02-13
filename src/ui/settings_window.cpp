@@ -1,12 +1,13 @@
 #include "settings_window.hpp"
 
 #include <cstring>
+#include <filesystem>
 
 #include "core/settings.hpp"
 #include "ui_context.hpp"
 
 #include <imgui.h>
-#include <filesystem>
+
 
 namespace w3d {
 
@@ -77,7 +78,7 @@ void SettingsWindow::draw(UIContext &ctx) {
 
     // Use a buffer for InputText
     char texturePathBuf[512];
-    std::strncpy(texturePathBuf, editTexturePath_.c_str(), sizeof(texturePathBuf) - 1);
+    strncpy_s(texturePathBuf, editTexturePath_.c_str(), sizeof(texturePathBuf) - 1);
     texturePathBuf[sizeof(texturePathBuf) - 1] = '\0';
 
     // Input field with Browse button

@@ -23,8 +23,8 @@ void FileBrowser::draw(UIContext & /*ctx*/) {
   }
 
   // Path navigation bar
-  std::strncpy(pathInputBuffer_, currentPath_.string().c_str(), sizeof(pathInputBuffer_) - 1);
-  pathInputBuffer_[sizeof(pathInputBuffer_) - 1] = '\0';
+  strncpy_s(pathInputBuffer_, sizeof(pathInputBuffer_), currentPath_.string().c_str(),
+            sizeof(pathInputBuffer_) - 1);
 
   ImGui::SetNextItemWidth(-60);
   if (ImGui::InputText("##Path", pathInputBuffer_, sizeof(pathInputBuffer_),
