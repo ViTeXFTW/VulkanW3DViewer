@@ -77,8 +77,12 @@ void SettingsWindow::draw(UIContext &ctx) {
 
     // Use a buffer for InputText
     char texturePathBuf[512];
+#ifdef _WIN32
     strncpy_s(texturePathBuf, editTexturePath_.c_str(), sizeof(texturePathBuf) - 1);
+#else
+    std::strncpy(texturePathBuf, editTexturePath_.c_str(), sizeof(texturePathBuf) - 1);
     texturePathBuf[sizeof(texturePathBuf) - 1] = '\0';
+#endif
 
     // Input field with Browse button
     float browseButtonWidth = 80.0f;
