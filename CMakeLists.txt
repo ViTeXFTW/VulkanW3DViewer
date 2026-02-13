@@ -17,7 +17,7 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
     add_custom_target(compile_commands_symlink ALL
         COMMAND ${CMAKE_COMMAND} -E create_symlink
             ${CMAKE_BINARY_DIR}/compile_commands.json
-            ${CMAKE_SOURCE_DIR}/build/compile_commands.json
+            ${CMAKE_SOURCE_DIR}/compile_commands.json
         COMMENT "Creating symlink to compile_commands.json in project root"
         VERBATIM
     )

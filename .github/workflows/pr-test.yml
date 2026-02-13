@@ -10,8 +10,31 @@ env:
   BUILD_TYPE: test
 
 jobs:
-  test-linux:
-    runs-on: ubuntu-latest
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux jobs
+          - os: ubuntu-latest
+            compiler: gcc
+            preset: gcc-test
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            compiler: clang
+            preset: clang-test
+            cc: clang
+            cxx: clang++
+          # Windows jobs
+          - os: windows-latest
+            compiler: msvc
+            preset: msvc-test
+          - os: windows-latest
+            compiler: clang
+            preset: clang-test
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -19,59 +42,25 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang \
-            cmake \
-            ninja-build
+          sudo apt-get install -y ${{ matrix.compiler }} cmake ninja-build
 
-      - name: Configure CMake
-        run: cmake --preset test
+      - name: Configure CMake (Linux)
+        if: runner.os == 'Linux'
+        run: cmake --preset ${{ matrix.preset }}
         env:
-          CC: clang
-          CXX: clang++
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
-        run: cmake --build --preset test
+        run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Run tests
-        run: ctest --preset test --output-on-failure
-
-  test-windows:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-clang
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-
-      - name: Configure CMake
-        shell: msys2 {0}
-        run: |
-          export PATH="/mingw64/bin:$PATH"
-          export CC=clang
-          export CXX=clang++
-          cmake --preset test
-
-      - name: Build
-        shell: msys2 {0}
-        run: |
-          export PATH="/mingw64/bin:$PATH"
-          cmake --build --preset test
-
-      - name: Run tests
-        shell: msys2 {0}
-        run: ctest --preset test --output-on-failure
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure
