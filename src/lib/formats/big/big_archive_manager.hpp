@@ -1,12 +1,13 @@
 #pragma once
 
-#include <bigx/archive.hpp>
 #include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <bigx/archive.hpp>
 
 namespace w3d::big {
 
@@ -28,22 +29,21 @@ public:
   /// @param gameDirectory Path to game directory containing BIG files
   /// @param outError Optional error output parameter
   /// @return true if initialization succeeded
-  bool initialize(const std::filesystem::path &gameDirectory,
-                  std::string *outError = nullptr);
+  bool initialize(const std::filesystem::path &gameDirectory, std::string *outError = nullptr);
 
   /// Extract asset to cache by archive path
   /// @param archivePath Path within the archive (e.g., "Art/W3D/model.w3d")
   /// @param outError Optional error output parameter
   /// @return Cached file path if extraction succeeded
   std::optional<std::filesystem::path> extractToCache(const std::string &archivePath,
-                                                       std::string *outError = nullptr);
+                                                      std::string *outError = nullptr);
 
   /// Extract asset to memory buffer
   /// @param archivePath Path within the archive
   /// @param outError Optional error output parameter
   /// @return Vector of bytes if extraction succeeded
   std::optional<std::vector<uint8_t>> extractToMemory(const std::string &archivePath,
-                                                       std::string *outError = nullptr);
+                                                      std::string *outError = nullptr);
 
   /// Check if initialized
   /// @return true if manager is initialized

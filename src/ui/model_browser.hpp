@@ -1,10 +1,10 @@
 #pragma once
 
-#include "ui_window.hpp"
-
 #include <functional>
 #include <string>
 #include <vector>
+
+#include "ui_window.hpp"
 
 namespace w3d {
 
@@ -28,9 +28,7 @@ public:
   }
 
   /// Set the list of available models
-  void setAvailableModels(const std::vector<std::string> &models) {
-    availableModels_ = models;
-  }
+  void setAvailableModels(const std::vector<std::string> &models) { availableModels_ = models; }
 
   /// Set the list of available textures
   void setAvailableTextures(const std::vector<std::string> &textures) {

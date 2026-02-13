@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "ui_window.hpp"
 #include "file_browser.hpp"
+#include "ui_window.hpp"
 
 namespace w3d {
 

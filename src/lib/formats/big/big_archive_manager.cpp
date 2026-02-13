@@ -1,23 +1,19 @@
 #include "big_archive_manager.hpp"
 
-#include <bigx/archive.hpp>
 #include <iostream>
 #include <system_error>
 
 #include "core/app_paths.hpp"
 #include "core/debug.hpp"
 
+#include <bigx/archive.hpp>
+
 namespace w3d::big {
 
 namespace {
-  // Known BIG archive files for C&C Generals
-  constexpr const char *kBigArchives[] = {
-      "W3DZH.big",
-      "TexturesZH.big",
-      "INIZH.big",
-      "TerrainZH.big",
-      "MapsZH.big"
-  };
+// Known BIG archive files for C&C Generals
+constexpr const char *kBigArchives[] = {"W3DZH.big", "TexturesZH.big", "INIZH.big", "TerrainZH.big",
+                                        "MapsZH.big"};
 } // namespace
 
 BigArchiveManager::~BigArchiveManager() {
@@ -65,11 +61,9 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
       archives_[archiveName] = std::move(*archive);
       loadedCount++;
       [[maybe_unused]] size_t fileCount = archive->fileCount();
-      LOG_DEBUG("[BigArchiveManager] Loaded: " << archiveName
-                << " (" << fileCount << " files)\n");
+      LOG_DEBUG("[BigArchiveManager] Loaded: " << archiveName << " (" << fileCount << " files)\n");
     } else {
-      LOG_DEBUG("[BigArchiveManager] Skipped: " << archiveName
-                << " - " << error << "\n");
+      LOG_DEBUG("[BigArchiveManager] Skipped: " << archiveName << " - " << error << "\n");
     }
   }
 
@@ -108,15 +102,15 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
           loadedCount++;
           additionalCount++;
           [[maybe_unused]] size_t fileCount = archive->fileCount();
-          LOG_DEBUG("[BigArchiveManager] Found additional BIG: " << key
-                    << " (" << fileCount << " files)\n");
+          LOG_DEBUG("[BigArchiveManager] Found additional BIG: " << key << " (" << fileCount
+                                                                 << " files)\n");
         }
       }
     }
   }
 
-  LOG_DEBUG("[BigArchiveManager] Total archives loaded: " << loadedCount
-            << " (" << additionalCount << " additional)\n");
+  LOG_DEBUG("[BigArchiveManager] Total archives loaded: " << loadedCount << " (" << additionalCount
+                                                          << " additional)\n");
 
   if (loadedCount == 0) {
     if (outError) {
@@ -129,7 +123,7 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
 }
 
 bool BigArchiveManager::initialize(const std::filesystem::path &gameDirectory,
-                                    std::string *outError) {
+                                   std::string *outError) {
   gameDirectory_ = gameDirectory;
 
   // Verify game directory exists
@@ -180,9 +174,8 @@ std::filesystem::path BigArchiveManager::getCachePath(const std::string &archive
   return cacheDirectory_ / normalizedPath;
 }
 
-std::optional<std::filesystem::path> BigArchiveManager::extractToCache(
-    const std::string &archivePath,
-    std::string *outError) {
+std::optional<std::filesystem::path>
+BigArchiveManager::extractToCache(const std::string &archivePath, std::string *outError) {
 
   if (!initialized_) {
     if (outError) {
@@ -244,9 +237,8 @@ std::optional<std::filesystem::path> BigArchiveManager::extractToCache(
   return std::nullopt;
 }
 
-std::optional<std::vector<uint8_t>> BigArchiveManager::extractToMemory(
-    const std::string &archivePath,
-    std::string *outError) {
+std::optional<std::vector<uint8_t>>
+BigArchiveManager::extractToMemory(const std::string &archivePath, std::string *outError) {
 
   if (!initialized_) {
     if (outError) {

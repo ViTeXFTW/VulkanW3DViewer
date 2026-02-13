@@ -1,3 +1,5 @@
+#include "application.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -6,7 +8,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "application.hpp"
 #include "ui/hover_tooltip.hpp"
 #include "ui/model_browser.hpp"
 #include "ui/settings_window.hpp"
@@ -14,7 +15,6 @@
 #include "ui/viewport_window.hpp"
 
 #include <imgui.h>
-
 
 namespace w3d {
 

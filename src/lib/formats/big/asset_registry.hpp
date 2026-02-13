@@ -25,8 +25,7 @@ public:
   /// @param gameDirectory Path to game directory containing BIG files
   /// @param outError Optional error output parameter
   /// @return true if scanning succeeded, false on error
-  bool scanArchives(const std::filesystem::path &gameDirectory,
-                    std::string *outError = nullptr);
+  bool scanArchives(const std::filesystem::path &gameDirectory, std::string *outError = nullptr);
 
   /// Add a custom search path
   /// @param path Directory path to add to search paths
@@ -93,8 +92,7 @@ private:
   /// @param archiveName Name identifier for the archive
   /// @param outError Optional error output parameter
   /// @return true if scanning succeeded
-  bool scanArchive(const std::filesystem::path &archivePath,
-                   const std::string &archiveName,
+  bool scanArchive(const std::filesystem::path &archivePath, const std::string &archiveName,
                    std::string *outError);
 
   /// Set up cache directory

@@ -10,23 +10,23 @@
 #include "core/render_state.hpp"
 #include "core/renderer.hpp"
 #include "core/settings.hpp"
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/formats/w3d/model_loader.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "lib/gfx/camera.hpp"
-#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/hover_detector.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "lib/gfx/texture.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
 #include "ui/ui_manager.hpp"
-#include "lib/formats/w3d/loader.hpp"
-#include "lib/formats/w3d/model_loader.hpp"
-#include "lib/formats/big/asset_registry.hpp"
-#include "lib/formats/big/big_archive_manager.hpp"
 
 namespace w3d {
 
@@ -131,8 +131,8 @@ private:
   // UI components
   ImGuiBackend imguiBackend_;
   UIManager uiManager_;
-  ConsoleWindow *console_ = nullptr;   // Owned by uiManager_
-  FileBrowser *fileBrowser_ = nullptr; // Owned by uiManager_
+  ConsoleWindow *console_ = nullptr;           // Owned by uiManager_
+  FileBrowser *fileBrowser_ = nullptr;         // Owned by uiManager_
   class ModelBrowser *modelBrowser_ = nullptr; // Owned by uiManager_
 
   // Setting Management

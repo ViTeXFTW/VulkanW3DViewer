@@ -1,21 +1,22 @@
 #include "ini_extractor.hpp"
 
-#include <bigx/archive.hpp>
 #include <system_error>
+
+#include <bigx/archive.hpp>
 
 namespace w3d::big {
 
 namespace {
-  // Known BIG archives that contain INI files
-  constexpr const char *kIniBigArchives[] = {
-      "INIZH.big",
-      "WindowsZH.big"  // May contain additional INI files
-  };
+// Known BIG archives that contain INI files
+constexpr const char *kIniBigArchives[] = {
+    "INIZH.big",
+    "WindowsZH.big" // May contain additional INI files
+};
 } // namespace
 
-std::optional<std::filesystem::path> IniExtractor::extractIni(const std::string &iniFileName,
-                                                                const std::filesystem::path &cacheDirectory,
-                                                                std::string *outError) {
+std::optional<std::filesystem::path>
+IniExtractor::extractIni(const std::string &iniFileName,
+                         const std::filesystem::path &cacheDirectory, std::string *outError) {
   // This method is meant to be used with an already-open BigArchiveManager
   // For now, it's a placeholder for future functionality
   // The actual extraction would be done via BigArchiveManager
@@ -29,7 +30,7 @@ std::optional<std::filesystem::path> IniExtractor::extractIni(const std::string 
 }
 
 std::vector<std::string> IniExtractor::listIniFiles(const std::filesystem::path &gameDirectory,
-                                                      std::string *outError) {
+                                                    std::string *outError) {
   std::vector<std::string> iniFiles;
 
   // Scan each known INI archive
@@ -45,8 +46,7 @@ std::vector<std::string> IniExtractor::listIniFiles(const std::filesystem::path 
 
     // Collect all .ini files
     for (const auto &file : archive->files()) {
-      if (file.path.length() > 4 &&
-          file.path.substr(file.path.length() - 4) == ".ini") {
+      if (file.path.length() > 4 && file.path.substr(file.path.length() - 4) == ".ini") {
         iniFiles.push_back(file.path);
       }
     }
@@ -60,8 +60,8 @@ std::vector<std::string> IniExtractor::listIniFiles(const std::filesystem::path 
 }
 
 size_t IniExtractor::extractAllIni(const std::filesystem::path &gameDirectory,
-                                    const std::filesystem::path &cacheDirectory,
-                                    std::string *outError) {
+                                   const std::filesystem::path &cacheDirectory,
+                                   std::string *outError) {
   size_t extractedCount = 0;
 
   // Create cache directory if it doesn't exist
@@ -88,8 +88,7 @@ size_t IniExtractor::extractAllIni(const std::filesystem::path &gameDirectory,
 
     // Extract all .ini files
     for (const auto &file : archive->files()) {
-      if (file.path.length() > 4 &&
-          file.path.substr(file.path.length() - 4) == ".ini") {
+      if (file.path.length() > 4 && file.path.substr(file.path.length() - 4) == ".ini") {
         // Determine cache file path
         std::filesystem::path cachePath = cacheDirectory / file.path;
 

@@ -1,6 +1,5 @@
 #include "asset_registry.hpp"
 
-#include <bigx/archive.hpp>
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
@@ -10,22 +9,24 @@
 #include "core/app_paths.hpp"
 #include "core/debug.hpp"
 
+#include <bigx/archive.hpp>
+
 namespace w3d::big {
 
 namespace {
-  // Known BIG archive files for C&C Generals
-  constexpr const char *kBigArchives[] = {
-      "W3DZH.big",      // Models
-      "TexturesZH.big", // Textures
-      "INIZH.big",      // Configuration
-      "TerrainZH.big",  // Terrain data
-      "MapsZH.big"      // Map files
-  };
+// Known BIG archive files for C&C Generals
+constexpr const char *kBigArchives[] = {
+    "W3DZH.big",      // Models
+    "TexturesZH.big", // Textures
+    "INIZH.big",      // Configuration
+    "TerrainZH.big",  // Terrain data
+    "MapsZH.big"      // Map files
+};
 
-  // Supported extensions
-  constexpr const char *kModelExtension = ".w3d";
-  constexpr const char *kTextureExtensions[] = {".dds", ".tga"};
-  constexpr const char *kIniExtension = ".ini";
+// Supported extensions
+constexpr const char *kModelExtension = ".w3d";
+constexpr const char *kTextureExtensions[] = {".dds", ".tga"};
+constexpr const char *kIniExtension = ".ini";
 } // namespace
 
 bool AssetRegistry::setupCacheDirectory(std::string *outError) {
@@ -58,7 +59,7 @@ bool AssetRegistry::setupCacheDirectory(std::string *outError) {
 }
 
 bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
-                                  std::string *outError) {
+                                 std::string *outError) {
   clear();
 
   gameDirectory_ = gameDirectory;
@@ -131,8 +132,8 @@ bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
     }
   }
 
-  LOG_DEBUG("[AssetRegistry] Total archives scanned: " << archivesFound
-            << " (" << additionalCount << " additional)\n");
+  LOG_DEBUG("[AssetRegistry] Total archives scanned: " << archivesFound << " (" << additionalCount
+                                                       << " additional)\n");
 
   if (archivesFound == 0) {
     if (outError) {
@@ -146,8 +147,7 @@ bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
 }
 
 bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
-                                 const std::string &archiveName,
-                                 std::string *outError) {
+                                const std::string &archiveName, std::string *outError) {
   std::string error;
   auto archive = ::big::Archive::open(archivePath, &error);
 
@@ -169,8 +169,7 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
     const std::string &path = file.lowercasePath;
 
     // Check for .w3d model files anywhere in the archive
-    if (path.length() > 4 &&
-        path.substr(path.length() - 4) == kModelExtension) {
+    if (path.length() > 4 && path.substr(path.length() - 4) == kModelExtension) {
       // Use the original path for archive lookups, but lowercase for the model name
       std::string originalPath = file.path;
       std::string modelName = path.substr(0, path.length() - 4); // Remove .w3d
@@ -184,16 +183,15 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
       // Log when model is skipped due to duplicate
       // (only log a few samples to avoid spam)
       else if (modelsFound < 5 || modelName.find("tank") != std::string::npos) {
-        LOG_DEBUG("[AssetRegistry] Skipped duplicate: " << modelName
-                  << " (original: " << modelArchivePaths_[modelName] << ")\n");
+        LOG_DEBUG("[AssetRegistry] Skipped duplicate: " << modelName << " (original: "
+                                                        << modelArchivePaths_[modelName] << ")\n");
       }
     }
 
     // Check for texture files
     for (const char *ext : kTextureExtensions) {
       size_t extLen = std::strlen(ext);
-      if (path.length() > extLen &&
-          path.substr(path.length() - extLen) == ext) {
+      if (path.length() > extLen && path.substr(path.length() - extLen) == ext) {
         std::string originalPath = file.path;
         std::string textureName = path.substr(0, path.length() - extLen);
 
@@ -219,9 +217,9 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
   }
 
   // Debug output
-  LOG_DEBUG("[AssetRegistry] Scanned " << archiveName << ": "
-            << modelsFound << " models, " << texturesFound << " textures, "
-            << iniFilesFound << " INI files\n");
+  LOG_DEBUG("[AssetRegistry] Scanned " << archiveName << ": " << modelsFound << " models, "
+                                       << texturesFound << " textures, " << iniFilesFound
+                                       << " INI files\n");
 
   return true;
 }
