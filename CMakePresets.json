@@ -87,6 +87,21 @@
             "name": "msvc-release",
             "displayName": "Release (MSVC)",
             "inherits": ["release", "msvc-base"]
+        },
+        {
+            "name": "clang-test",
+            "displayName": "Test (Clang)",
+            "inherits": ["test", "clang-base"]
+        },
+        {
+            "name": "gcc-test",
+            "displayName": "Test (GCC)",
+            "inherits": ["test", "gcc-base"]
+        },
+        {
+            "name": "msvc-test",
+            "displayName": "Test (MSVC)",
+            "inherits": ["test", "msvc-base"]
         }
     ],
     "buildPresets": [
@@ -125,12 +140,48 @@
         {
             "name": "msvc-release",
             "configurePreset": "msvc-release"
+        },
+        {
+            "name": "clang-test",
+            "configurePreset": "clang-test"
+        },
+        {
+            "name": "gcc-test",
+            "configurePreset": "gcc-test"
+        },
+        {
+            "name": "msvc-test",
+            "configurePreset": "msvc-test"
         }
     ],
     "testPresets": [
         {
             "name": "test",
             "configurePreset": "test",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "verbose"
+            }
+        },
+        {
+            "name": "clang-test",
+            "configurePreset": "clang-test",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "verbose"
+            }
+        },
+        {
+            "name": "gcc-test",
+            "configurePreset": "gcc-test",
+            "output": {
+                "outputOnFailure": true,
+                "verbosity": "verbose"
+            }
+        },
+        {
+            "name": "msvc-test",
+            "configurePreset": "msvc-test",
             "output": {
                 "outputOnFailure": true,
                 "verbosity": "verbose"
