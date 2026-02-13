@@ -116,11 +116,32 @@ void Application::initUI() {
 
   // Register windows with UI manager
   auto *viewport = uiManager_.addWindow<ViewportWindow>();
+  if (!viewport) {
+    throw std::runtime_error("Failed to create ViewportWindow");
+  }
+
   console_ = uiManager_.addWindow<ConsoleWindow>();
+  if (!console_) {
+    throw std::runtime_error("Failed to create ConsoleWindow");
+  }
+
   fileBrowser_ = uiManager_.addWindow<FileBrowser>();
+  if (!fileBrowser_) {
+    throw std::runtime_error("Failed to create FileBrowser");
+  }
+
   modelBrowser_ = uiManager_.addWindow<ModelBrowser>();
-  uiManager_.addWindow<HoverTooltip>();
-  uiManager_.addWindow<SettingsWindow>();
+  if (!modelBrowser_) {
+    throw std::runtime_error("Failed to create ModelBrowser");
+  }
+
+  if (!uiManager_.addWindow<HoverTooltip>()) {
+    throw std::runtime_error("Failed to create HoverTooltip");
+  }
+
+  if (!uiManager_.addWindow<SettingsWindow>()) {
+    throw std::runtime_error("Failed to create SettingsWindow");
+  }
 
   // Set initial visibility
   viewport->setVisible(true);
