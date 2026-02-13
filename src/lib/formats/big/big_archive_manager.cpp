@@ -1,5 +1,6 @@
 #include "big_archive_manager.hpp"
 
+#include <bigx/archive.hpp>
 #include <fstream>
 #include <iostream>
 #include <system_error>
@@ -55,7 +56,7 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
     std::filesystem::path archivePath = gameDirectory_ / archiveName;
 
     std::string error;
-    auto archive = big::Archive::open(archivePath, &error);
+    auto archive = ::big::Archive::open(archivePath, &error);
 
     if (archive) {
       archives_[archiveName] = std::move(*archive);
