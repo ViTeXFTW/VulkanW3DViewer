@@ -25,6 +25,8 @@
 #include "ui/ui_manager.hpp"
 #include "lib/formats/w3d/loader.hpp"
 #include "lib/formats/w3d/model_loader.hpp"
+#include "lib/formats/big/asset_registry.hpp"
+#include "lib/formats/big/big_archive_manager.hpp"
 
 namespace w3d {
 
@@ -85,6 +87,10 @@ private:
   // Model loading
   void loadW3DFile(const std::filesystem::path &path);
 
+  // BIG archive management
+  void initializeBigArchiveManager();
+  void rescanAssetRegistry();
+
   // Command line options
   std::string customTexturePath_;
   std::string initialModelPath_;
@@ -129,6 +135,10 @@ private:
 
   // Setting Management
   Settings appSettings_;
+
+  // BIG Archive Support
+  big::AssetRegistry assetRegistry_;
+  big::BigArchiveManager bigArchiveManager_;
 };
 
 } // namespace w3d
