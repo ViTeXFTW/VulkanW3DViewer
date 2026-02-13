@@ -8,11 +8,10 @@
 namespace w3d::gfx {
 
 #ifdef W3D_DEBUG
-static VKAPI_ATTR
-    VkBool32 VKAPI_CALL debugCallbackC(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                       [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                       [[maybe_unused]] void *pUserData) {
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallbackC(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, [[maybe_unused]] void *pUserData) {
 
   if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     std::cerr << "Validation: " << pCallbackData->pMessage << "\n";
@@ -114,7 +113,6 @@ void VulkanContext::cleanupSwapchain() {
 }
 
 void VulkanContext::recreateSwapchain(uint32_t width, uint32_t height) {
-  device_.waitIdle();
   cleanupSwapchain();
   createSwapchain(width, height);
   createImageViews();

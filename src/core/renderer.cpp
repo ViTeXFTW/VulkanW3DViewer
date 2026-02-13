@@ -113,16 +113,14 @@ void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
 }
 
 void Renderer::recreateSwapchain(int width, int height) {
-  if (width <= 0 || height <= 0) {
-    return;
+  auto device = context_->device();
+  for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto waitResult = device.waitForFences(inFlightFences_[i], VK_TRUE, UINT64_MAX);
+    if (waitResult != vk::Result::eSuccess) {
+      throw std::runtime_error("Failed waiting for fence during swapchain recreation");
+    }
   }
 
-  if (recreatingSwapchain_) {
-    return;
-  }
-
-  recreatingSwapchain_ = true;
-  context_->device().waitIdle();
   context_->recreateSwapchain(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
   imguiBackend_->onSwapchainRecreate();
   recreatingSwapchain_ = false;
