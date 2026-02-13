@@ -8,7 +8,7 @@
 namespace w3d {
 
 std::optional<std::filesystem::path> AppPaths::baseConfigDir() {
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
   char *appdata = nullptr;
   if (_dupenv_s(&appdata, nullptr, "APPDATA") == 0 && appdata) {
     std::filesystem::path result(appdata);
