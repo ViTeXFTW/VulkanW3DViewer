@@ -107,8 +107,7 @@ void ModelBrowser::draw(UIContext & /*ctx*/) {
 
   // Action buttons
   if (selectedIndex_ >= 0) {
-    // Find the actual model name at the selected index (after filtering)
-    int actualIndex = -1;
+    const std::string *selectedModel = nullptr;
     int filteredCount = 0;
     for (const auto &model : availableModels_) {
       std::string displayName = getDisplayName(model);
@@ -124,15 +123,15 @@ void ModelBrowser::draw(UIContext & /*ctx*/) {
         }
       }
       if (filteredCount == selectedIndex_) {
-        actualIndex = static_cast<int>(&model - &availableModels_[0]);
+        selectedModel = &model;
         break;
       }
       filteredCount++;
     }
 
-    if (actualIndex >= 0 && ImGui::Button("Load Selected")) {
+    if (selectedModel && ImGui::Button("Load Selected")) {
       if (modelSelectedCallback_) {
-        modelSelectedCallback_(availableModels_[actualIndex]);
+        modelSelectedCallback_(*selectedModel);
       }
       visible_ = false;
     }
