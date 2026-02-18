@@ -4,8 +4,8 @@
 
 #include <cmath>
 
+#include "lib/formats/w3d/types.hpp"
 #include "render/skeleton.hpp"
-#include "w3d/types.hpp"
 
 #include <gtest/gtest.h>
 

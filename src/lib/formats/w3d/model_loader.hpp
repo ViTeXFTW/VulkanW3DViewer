@@ -1,23 +1,33 @@
 #pragma once
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <filesystem>
 #include <functional>
 #include <optional>
 #include <string>
 
+#include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "render/camera.hpp"
-#include "render/hlod_model.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "render/texture.hpp"
-#include "w3d/loader.hpp"
+
+namespace w3d::big {
+class AssetRegistry;
+class BigArchiveManager;
+} // namespace w3d::big
 
 namespace w3d {
+
+// Using declarations for gfx types
+using gfx::Camera;
+using gfx::TextureManager;
+using gfx::VulkanContext;
 
 /**
  * Result of a model loading operation.
@@ -55,6 +65,18 @@ public:
    * Enable/disable debug mode for verbose logging.
    */
   void setDebugMode(bool debug) { debugMode_ = debug; }
+
+  /**
+   * Set asset registry for path resolution.
+   * @param registry Pointer to asset registry (must outlive loader)
+   */
+  void setAssetRegistry(big::AssetRegistry *registry) { assetRegistry_ = registry; }
+
+  /**
+   * Set BIG archive manager for extraction.
+   * @param manager Pointer to archive manager (must outlive loader)
+   */
+  void setBigArchiveManager(big::BigArchiveManager *manager) { bigArchiveManager_ = manager; }
 
   /**
    * Load a W3D file and upload to GPU.
@@ -96,6 +118,8 @@ private:
   std::string loadedFilePath_;
   std::string customTexturePath_;
   bool debugMode_ = false;
+  big::AssetRegistry *assetRegistry_ = nullptr;
+  big::BigArchiveManager *bigArchiveManager_ = nullptr;
 };
 
 } // namespace w3d

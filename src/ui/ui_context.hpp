@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <string>
 
 #include "core/render_state.hpp"
+#include "lib/gfx/camera.hpp"
 
 // Forward declarations to avoid header dependencies
 struct GLFWwindow;
@@ -11,7 +13,7 @@ struct GLFWwindow;
 namespace w3d {
 
 // Forward declarations
-class Camera;
+using gfx::Camera;
 class AnimationPlayer;
 class HLodModel;
 class RenderableMesh;
@@ -77,8 +79,24 @@ struct UIContext {
   /// Callback to request file open dialog
   std::function<void()> onOpenFile;
 
+  /// Callback to request model browser (for BIG archive models)
+  std::function<void()> onOpenModelBrowser;
+
+  /// Callback to clear cache and rescan BIG archives
+  std::function<void()> onClearAndRescanCache;
+
   /// Callback to exit application
   std::function<void()> onExit;
+
+  // === BIG Archive Status ===
+  /// Whether BIG archive manager is initialized
+  bool isBigArchiveInitialized = false;
+
+  /// Current cache size in bytes (for display)
+  uintmax_t cacheSize = 0;
+
+  /// Number of models found in archives
+  size_t availableModelCount = 0;
 
   // === Convenience Methods ===
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "core/buffer.hpp"
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <glm/glm.hpp>
 
@@ -8,8 +9,6 @@
 #include <vector>
 
 namespace w3d {
-
-class VulkanContext;
 
 // Storage buffer for bone matrices (SSBO)
 // Used for GPU skinning - equivalent to legacy HTreeClass::Get_Transform()
@@ -26,7 +25,7 @@ public:
   BoneMatrixBuffer &operator=(const BoneMatrixBuffer &) = delete;
 
   // Create the buffers with space for maxBones matrices
-  void create(VulkanContext &context, size_t maxBones = MAX_BONES);
+  void create(gfx::VulkanContext &context, size_t maxBones = MAX_BONES);
 
   // Update bone matrices for a specific frame
   void update(uint32_t frameIndex, const std::vector<glm::mat4> &skinningMatrices);
@@ -50,7 +49,7 @@ public:
   size_t maxBones() const { return maxBones_; }
 
 private:
-  std::array<Buffer, FRAME_COUNT> buffers_;
+  std::array<gfx::Buffer, FRAME_COUNT> buffers_;
   size_t maxBones_ = 0;
   size_t boneCount_ = 0;
 };

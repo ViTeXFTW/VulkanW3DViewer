@@ -1,5 +1,5 @@
+#include "lib/formats/w3d/types.hpp"
 #include "render/mesh_converter.hpp"
-#include "w3d/types.hpp"
 
 #include <gtest/gtest.h>
 

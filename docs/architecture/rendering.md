@@ -4,17 +4,29 @@ The rendering layer converts W3D data to GPU resources and handles visualization
 
 ## Overview
 
-Located in `src/render/`, this layer provides:
+Rendering functionality is split between two locations:
+
+- **`src/lib/formats/w3d/`** - Reusable W3D model components (HLodModel)
+- **`src/lib/gfx/`** - Reusable graphics foundation (Camera, Texture, BoundingBox)
+- **`src/render/`** - Viewer-specific rendering utilities
+
+This document covers the viewer-specific rendering utilities in `src/render/`. For graphics foundation components, see [Core Layer](core-layer.md).
+
+## Viewer-Specific Rendering Components
+
+Located in `src/render/`, these components handle the specific rendering needs of the W3D viewer:
 
 - Mesh conversion and GPU upload
-- Skeletal animation
-- LOD management
-- Camera control
-- Debug visualization
+- Skeletal animation playback
+- Bone transformation buffers
+- Raycasting and mesh picking
+- Skeleton visualization
 
 ## HLodModel
 
-`hlod_model.hpp/cpp` - Multi-LOD model representation.
+`src/lib/formats/w3d/hlod_model.hpp/cpp` - Multi-LOD model representation.
+
+The HLodModel is now part of the library layer as it represents the core W3D HLod format structure. It can be reused across different applications.
 
 ### Structure
 
@@ -43,23 +55,6 @@ int HLodModel::selectLOD(float screenSize) const {
     }
   }
   return lodArrays.size() - 1;  // Lowest detail
-}
-```
-
-### Drawing
-
-```cpp
-void HLodModel::draw(vk::CommandBuffer cmd, const Pipeline& pipeline) {
-  int lod = selectLOD(currentScreenSize);
-
-  for (const auto& mesh : lodArrays[lod].meshes) {
-    // Update bone matrices if skinned
-    if (mesh.isSkinned()) {
-      updateBoneBuffer(mesh);
-    }
-
-    mesh.draw(cmd, pipeline);
-  }
 }
 ```
 
@@ -251,7 +246,9 @@ void BoneBuffer::update(const Skeleton& skeleton) {
 
 ## Camera
 
-`camera.hpp/cpp` - Orbital camera implementation.
+`src/lib/gfx/camera.hpp/cpp` - Orbital camera implementation.
+
+The Camera class has been extracted to the library layer as it is a reusable component. See [Core Layer - Graphics Foundation](core-layer.md#graphics-foundation) for full documentation.
 
 ### State
 
@@ -274,24 +271,11 @@ glm::mat4 Camera::viewMatrix() const {
 }
 ```
 
-### Mouse Input
-
-```cpp
-void Camera::onMouseDrag(float dx, float dy) {
-  azimuth += dx * rotationSpeed;
-  elevation = glm::clamp(elevation + dy * rotationSpeed,
-                         -89.0f, 89.0f);
-}
-
-void Camera::onScroll(float delta) {
-  distance *= (1.0f - delta * zoomSpeed);
-  distance = glm::clamp(distance, minDistance, maxDistance);
-}
-```
-
 ## Texture
 
-`texture.hpp/cpp` - Texture loading and management.
+`src/lib/gfx/texture.hpp/cpp` - Texture loading and management.
+
+The Texture class has been extracted to the library layer. See [Core Layer - Graphics Foundation](core-layer.md#graphics-foundation) for full documentation.
 
 ### Texture Cache
 

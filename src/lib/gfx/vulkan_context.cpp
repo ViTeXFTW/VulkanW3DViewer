@@ -1,11 +1,11 @@
-#include "vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <set>
 #include <stdexcept>
 
-namespace w3d {
+namespace w3d::gfx {
 
 #ifdef W3D_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallbackC(
@@ -113,7 +113,6 @@ void VulkanContext::cleanupSwapchain() {
 }
 
 void VulkanContext::recreateSwapchain(uint32_t width, uint32_t height) {
-  device_.waitIdle();
   cleanupSwapchain();
   createSwapchain(width, height);
   createImageViews();
@@ -164,7 +163,7 @@ void VulkanContext::createInstance(bool enableValidation) {
     }
   }
 #else
-  (void)enableValidation; // Suppress unused parameter warning in release
+  (void)enableValidation;
 #endif
 }
 
@@ -204,7 +203,6 @@ bool VulkanContext::isDeviceSuitable(vk::PhysicalDevice device) {
   if (!indices.isComplete())
     return false;
 
-  // Check extension support
   auto extensions = device.enumerateDeviceExtensionProperties();
   std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
   for (const auto &ext : extensions) {
@@ -213,7 +211,6 @@ bool VulkanContext::isDeviceSuitable(vk::PhysicalDevice device) {
   if (!requiredExtensions.empty())
     return false;
 
-  // Check swapchain support
   auto swapchainSupport = querySwapchainSupport(device);
   if (swapchainSupport.formats.empty() || swapchainSupport.presentModes.empty()) {
     return false;
@@ -257,20 +254,14 @@ void VulkanContext::createLogicalDevice() {
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
-  // Enable device features we need
   vk::PhysicalDeviceFeatures supportedFeatures = physicalDevice_.getFeatures();
   vk::PhysicalDeviceFeatures deviceFeatures{};
 
-  // Enable anisotropic filtering if supported
   if (supportedFeatures.samplerAnisotropy) {
     deviceFeatures.samplerAnisotropy = VK_TRUE;
   }
 
-  vk::DeviceCreateInfo createInfo{{},
-                                  queueCreateInfos,
-                                  {}, // No device-level layers in modern Vulkan
-                                  deviceExtensions,
-                                  &deviceFeatures};
+  vk::DeviceCreateInfo createInfo{{}, queueCreateInfos, {}, deviceExtensions, &deviceFeatures};
 
   device_ = physicalDevice_.createDevice(createInfo);
 
@@ -436,7 +427,6 @@ void VulkanContext::createDepthResources() {
 }
 
 void VulkanContext::createRenderPass() {
-  // Color attachment
   vk::AttachmentDescription colorAttachment{{},
                                             swapchainImageFormat_,
                                             vk::SampleCountFlagBits::e1,
@@ -447,7 +437,6 @@ void VulkanContext::createRenderPass() {
                                             vk::ImageLayout::eUndefined,
                                             vk::ImageLayout::ePresentSrcKHR};
 
-  // Depth attachment
   vk::AttachmentDescription depthAttachment{{},
                                             depthFormat_,
                                             vk::SampleCountFlagBits::e1,
@@ -465,7 +454,6 @@ void VulkanContext::createRenderPass() {
   vk::SubpassDescription subpass{
       {}, vk::PipelineBindPoint::eGraphics, {}, colorAttachmentRef, {}, &depthAttachmentRef};
 
-  // Dependency to ensure external operations complete before we start
   vk::SubpassDependency dependency{VK_SUBPASS_EXTERNAL,
                                    0,
                                    vk::PipelineStageFlagBits::eColorAttachmentOutput |
@@ -538,4 +526,4 @@ void VulkanContext::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
   device_.freeCommandBuffers(commandPool_, commandBuffer);
 }
 
-} // namespace w3d
+} // namespace w3d::gfx

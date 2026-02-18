@@ -1,163 +1,60 @@
 # Core Layer
 
-The core layer provides Vulkan abstraction and GPU resource management.
+The core layer provides application orchestration and coordinates between different system components.
 
 ## Overview
 
 Located in `src/core/`, this layer handles:
 
-- Vulkan initialization
-- Swapchain management
-- Pipeline creation
-- Buffer allocation
-- Command buffer recording
+- Application lifecycle (window, main loop)
+- Rendering orchestration
+- Shared render state
+- Shader loading
+- Application settings
 
-## VulkanContext
+> **Note:** Reusable Vulkan components (VulkanContext, Buffer, Pipeline, Texture, Camera) have been extracted to `src/lib/gfx/` as part of the library layer. See [Graphics Foundation](#graphics-foundation) below.
 
-`vulkan_context.hpp/cpp` - Central Vulkan management class.
+## Application
+
+`application.hpp/cpp` - Main application class.
 
 ### Responsibilities
 
 ```mermaid
-graph LR
-    VC[VulkanContext]
-    VC --> Instance
-    VC --> Device
-    VC --> Swapchain
-    VC --> Queues
-    VC --> DepthBuffer
+graph TB
+    App[Application]
+    App --> Window
+    App --> Context[VulkanContext]
+    App --> Renderer
+    App --> UIManager
+    App --> Scene
 ```
 
-### Key Methods
+### Main Loop
 
 ```cpp
-class VulkanContext {
-public:
-  VulkanContext(GLFWwindow* window);
-  ~VulkanContext();
+void Application::run() {
+  while (!window.shouldClose()) {
+    glfwPollEvents();
 
-  // Frame management
-  uint32_t beginFrame();
-  void endFrame(uint32_t imageIndex);
+    uint32_t imageIndex = context.beginFrame();
 
-  // Accessors
-  vk::Device device() const;
-  vk::Queue graphicsQueue() const;
-  vk::CommandBuffer commandBuffer() const;
-  vk::Extent2D swapchainExtent() const;
-};
-```
+    updateScene();
+    renderer.render(scene);
 
-### Initialization Sequence
-
-1. Create Vulkan instance with validation layers
-2. Create surface from GLFW window
-3. Select physical device (GPU)
-4. Create logical device with required features
-5. Create swapchain for presentation
-6. Allocate command buffers
-
-### Swapchain Recreation
-
-Handles window resize:
-
-```cpp
-void recreateSwapchain() {
-  device.waitIdle();
-  cleanupSwapchain();
-  createSwapchain();
-  createDepthBuffer();
-  createFramebuffers();
+    context.endFrame(imageIndex);
+  }
 }
 ```
 
-## Pipeline
+### Component Ownership
 
-`pipeline.hpp/cpp` - Graphics pipeline and descriptor management.
-
-### Pipeline Components
-
-```mermaid
-graph TB
-    P[Pipeline]
-    P --> VS[Vertex Shader]
-    P --> FS[Fragment Shader]
-    P --> VL[Vertex Layout]
-    P --> DS[Descriptor Sets]
-    P --> PC[Push Constants]
-```
-
-### Descriptor Sets
-
-| Set | Binding | Type | Usage |
-|-----|---------|------|-------|
-| 0 | 0 | Uniform | View/projection matrices |
-| 0 | 1 | Uniform | Model matrix |
-| 1 | 0 | Sampler | Texture sampler |
-| 1 | 1 | Storage | Bone matrices |
-
-### Push Constants
-
-Used for per-draw data:
-
-```cpp
-struct PushConstants {
-  glm::mat4 model;
-  MaterialData material;
-};
-```
-
-### Vertex Layout
-
-```cpp
-struct Vertex {
-  glm::vec3 position;   // location 0
-  glm::vec3 normal;     // location 1
-  glm::vec2 texCoord;   // location 2
-  glm::uvec4 boneIds;   // location 3
-  glm::vec4 weights;    // location 4
-};
-```
-
-## Buffer
-
-`buffer.hpp/cpp` - GPU buffer abstraction.
-
-### Buffer Types
-
-| Type | Memory | Usage |
-|------|--------|-------|
-| Staging | Host visible | CPU → GPU transfer |
-| Vertex | Device local | Vertex data |
-| Index | Device local | Index data |
-| Uniform | Host visible | Per-frame data |
-| Storage | Device local | Bone matrices |
-
-### Usage Pattern
-
-```cpp
-// Create buffer with staging upload
-Buffer vertexBuffer(
-  context,
-  vertices.size() * sizeof(Vertex),
-  vk::BufferUsageFlagBits::eVertexBuffer,
-  vertices.data()
-);
-```
-
-### Staging Upload
-
-```mermaid
-sequenceDiagram
-    participant CPU
-    participant Staging
-    participant Device
-    participant GPU
-
-    CPU->>Staging: memcpy
-    Staging->>Device: vkCmdCopyBuffer
-    Device->>GPU: transfer complete
-```
+The Application class owns and coordinates:
+- Window (GLFW)
+- VulkanContext (from `src/lib/gfx/`)
+- Renderer
+- UIManager
+- Scene (from `src/lib/scene/`)
 
 ## Renderer
 
@@ -173,8 +70,8 @@ void Renderer::render(const Scene& scene) {
   beginRendering(cmd);
 
   // Render scene
-  for (const auto& model : scene.models) {
-    model.draw(cmd, pipeline);
+  for (const auto& renderable : scene.renderables()) {
+    renderable->draw(cmd, pipeline);
   }
 
   // Render UI
@@ -201,40 +98,6 @@ vk::RenderingInfo renderingInfo{
 cmd.beginRendering(renderingInfo);
 ```
 
-## Application
-
-`application.hpp/cpp` - Main application class.
-
-### Main Loop
-
-```cpp
-void Application::run() {
-  while (!window.shouldClose()) {
-    glfwPollEvents();
-
-    uint32_t imageIndex = context.beginFrame();
-
-    updateScene();
-    renderer.render(scene);
-
-    context.endFrame(imageIndex);
-  }
-}
-```
-
-### Component Ownership
-
-```mermaid
-graph TB
-    App[Application]
-    App --> Window
-    App --> Context[VulkanContext]
-    App --> Pipeline
-    App --> Renderer
-    App --> UIManager
-    App --> Scene
-```
-
 ## RenderState
 
 `render_state.hpp` - Centralized render state.
@@ -245,11 +108,30 @@ Shared state accessible to all rendering components:
 struct RenderState {
   glm::mat4 view;
   glm::mat4 projection;
-  Camera* camera;
+  class Camera* camera;  // From src/lib/gfx/
   float deltaTime;
   uint32_t frameNumber;
 };
 ```
+
+## Settings
+
+`settings.hpp/cpp` - Application configuration.
+
+Manages application settings including:
+- Texture search paths
+- Debug rendering options
+- Display preferences
+
+## AppPaths
+
+`app_paths.hpp/cpp` - Platform-specific path resolution.
+
+Provides cross-platform path utilities for:
+- Executable directory
+- Resource directories
+- Configuration directories
+- Cache directories
 
 ## Shader Loading
 
@@ -267,6 +149,72 @@ vk::ShaderModule createShaderModule(
   const uint32_t* code,
   size_t size
 );
+```
+
+## Graphics Foundation
+
+The following reusable graphics components are located in `src/lib/gfx/`:
+
+### VulkanContext
+
+`src/lib/gfx/vulkan_context.hpp/cpp` - Central Vulkan management class.
+
+- Instance and device creation
+- Swapchain management
+- Queue handling
+- Command buffer allocation
+- Depth buffer management
+
+### Pipeline
+
+`src/lib/gfx/pipeline.hpp/cpp` - Graphics pipeline and descriptor management.
+
+- Pipeline creation
+- Descriptor set layouts
+- Push constant configuration
+- Vertex layout definition
+
+### Buffer
+
+`src/lib/gfx/buffer.hpp/cpp` - GPU buffer abstraction.
+
+- Staging buffers (CPU-visible)
+- Device-local buffers (GPU-only)
+- Automatic buffer transfer
+
+### Camera
+
+`src/lib/gfx/camera.hpp/cpp` - Orbital camera implementation.
+
+- Mouse-controlled orbit
+- Zoom with scroll wheel
+- View/projection matrix generation
+
+### Texture
+
+`src/lib/gfx/texture.hpp/cpp` - Texture loading and management.
+
+- DDS and TGA format support
+- Texture cache
+- Mipmap generation
+
+### BoundingBox
+
+`src/lib/gfx/bounding_box.hpp` - Axis-aligned bounding box utilities.
+
+- AABB math operations
+- Frustum culling helpers
+
+### Renderable
+
+`src/lib/gfx/renderable.hpp` - Base interface for renderable objects.
+
+```cpp
+class IRenderable {
+public:
+  virtual void draw(vk::CommandBuffer cmd, const Pipeline& pipeline) = 0;
+  virtual ~IRenderable() = default;
+};
 ```
 
 ## Error Handling

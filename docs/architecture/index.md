@@ -20,27 +20,33 @@ graph TB
 
     subgraph "Rendering Layer"
         RENDER[Renderer]
-        HLOD[HLod Model]
         SKEL[Skeleton]
         ANIM[Animation Player]
     end
 
-    subgraph "Parsing Layer"
-        LOADER[W3D Loader]
-        PARSERS[Parsers]
-    end
-
-    subgraph "Core Layer"
-        CTX[Vulkan Context]
-        PIPE[Pipeline]
-        BUF[Buffer]
+    subgraph "Library Layer"
+        subgraph "Formats"
+            LOADER[W3D Loader]
+            PARSERS[Parsers]
+            HLOD[HLod Model]
+        end
+        subgraph "Graphics"
+            CTX[Vulkan Context]
+            PIPE[Pipeline]
+            BUF[Buffer]
+            CAM[Camera]
+            TEX[Texture]
+        end
+        subgraph "Scene"
+            SCENE[Scene]
+        end
     end
 
     APP --> UI
     APP --> RENDER
-    RENDER --> HLOD
     RENDER --> SKEL
     RENDER --> ANIM
+    RENDER --> HLOD
     HLOD --> LOADER
     LOADER --> PARSERS
     RENDER --> CTX
@@ -48,6 +54,7 @@ graph TB
     CTX --> BUF
     UI --> IMGUI
     IMGUI --> CTX
+    RENDER --> SCENE
 ```
 
 ## Design Principles
@@ -67,10 +74,15 @@ Each layer has a specific responsibility:
 
 | Layer | Responsibility |
 |-------|---------------|
-| **Core** | Vulkan abstraction, GPU resources |
-| **W3D** | File parsing, data structures |
-| **Render** | Model representation, animation |
+| **Core** | Application orchestration, main loop |
+| **Library** | Reusable graphics, parsing, and scene components |
+| **Render** | Viewer-specific rendering utilities |
 | **UI** | User interface, interaction |
+
+The library layer (`src/lib/`) contains components that can be reused in other projects:
+- **formats/w3d** - W3D file format parsing
+- **gfx** - Vulkan abstraction and GPU resource management
+- **scene** - Scene graph management
 
 ### Modern C++20
 
@@ -87,9 +99,12 @@ The codebase uses modern C++ features:
 ```
 src/
 ├── main.cpp              # Entry point
-├── core/                 # Vulkan foundation
-├── w3d/                  # W3D format parsing
-├── render/               # Rendering utilities
+├── core/                 # Application orchestration
+├── lib/                  # Reusable library components
+│   ├── formats/w3d/      # W3D format parsing
+│   ├── gfx/              # Graphics foundation
+│   └── scene/            # Scene management
+├── render/               # Viewer-specific rendering
 └── ui/                   # User interface
 ```
 
@@ -152,7 +167,7 @@ The `Application` class (`src/core/application.hpp`) orchestrates everything:
 
 ### Vulkan Context
 
-The `VulkanContext` class (`src/core/vulkan_context.hpp`) manages:
+The `VulkanContext` class (`src/lib/gfx/vulkan_context.hpp`) manages:
 
 - Instance and device creation
 - Swapchain management
@@ -161,7 +176,7 @@ The `VulkanContext` class (`src/core/vulkan_context.hpp`) manages:
 
 ### W3D Loader
 
-The `Loader` class (`src/w3d/loader.hpp`) provides:
+The `Loader` class (`src/lib/formats/w3d/loader.hpp`) provides:
 
 - File reading
 - Chunk parsing orchestration

@@ -1,6 +1,6 @@
 #include "bone_buffer.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -11,7 +11,7 @@ BoneMatrixBuffer::~BoneMatrixBuffer() {
   destroy();
 }
 
-void BoneMatrixBuffer::create(VulkanContext &context, size_t maxBones) {
+void BoneMatrixBuffer::create(gfx::VulkanContext &context, size_t maxBones) {
   destroy();
 
   maxBones_ = maxBones;

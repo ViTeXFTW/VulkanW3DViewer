@@ -83,6 +83,11 @@ void UIManager::drawMenuBar(UIContext &ctx) {
         ctx.onOpenFile();
       }
     }
+    if (ImGui::MenuItem("Browse Models...")) {
+      if (ctx.onOpenModelBrowser) {
+        ctx.onOpenModelBrowser();
+      }
+    }
     ImGui::Separator();
     if (ImGui::MenuItem("Settings...", "Ctrl+,")) {
       if (auto *settingsWindow = getWindow<SettingsWindow>()) {

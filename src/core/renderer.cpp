@@ -8,6 +8,13 @@
 
 namespace w3d {
 
+// Using declarations for gfx types
+using gfx::Camera;
+using gfx::MaterialPushConstant;
+using gfx::TextureManager;
+using gfx::UniformBufferObject;
+using gfx::VulkanContext;
+
 void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &imguiBackend,
                     TextureManager &textureManager, BoneMatrixBuffer &boneMatrixBuffer) {
   window_ = window;
@@ -106,9 +113,17 @@ void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
 }
 
 void Renderer::recreateSwapchain(int width, int height) {
-  context_->device().waitIdle();
+  auto device = context_->device();
+  for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto waitResult = device.waitForFences(inFlightFences_[i], VK_TRUE, UINT64_MAX);
+    if (waitResult != vk::Result::eSuccess) {
+      throw std::runtime_error("Failed waiting for fence during swapchain recreation");
+    }
+  }
+
   context_->recreateSwapchain(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
   imguiBackend_->onSwapchainRecreate();
+  recreatingSwapchain_ = false;
 }
 
 void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
@@ -327,6 +342,7 @@ void Renderer::drawFrame(const FrameContext &ctx) {
     int width, height;
     glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
+    frameWaited_ = false;
     return;
   } else if (acquireResult.result != vk::Result::eSuccess &&
              acquireResult.result != vk::Result::eSuboptimalKHR) {
@@ -374,6 +390,8 @@ void Renderer::drawFrame(const FrameContext &ctx) {
     int width, height;
     glfwGetFramebufferSize(window_, &width, &height);
     recreateSwapchain(width, height);
+    frameWaited_ = false;
+    return;
   } else if (presentResult != vk::Result::eSuccess) {
     throw std::runtime_error("Failed to present swap chain image");
   }

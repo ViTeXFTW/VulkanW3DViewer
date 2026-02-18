@@ -1,6 +1,8 @@
 #pragma once
 
-#include "core/buffer.hpp"
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/pipeline.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -13,8 +15,9 @@
 
 namespace w3d {
 
-class VulkanContext;
-class Pipeline;
+// Using declarations for gfx types
+using gfx::VertexBuffer;
+using gfx::VulkanContext;
 
 // Simple vertex for skeleton visualization (position + color)
 struct SkeletonVertex {

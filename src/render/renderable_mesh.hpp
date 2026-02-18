@@ -1,30 +1,29 @@
 #pragma once
 
-#include "core/buffer.hpp"
-#include "core/pipeline.hpp"
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/pipeline.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include <glm/glm.hpp>
 
 #include <string>
 #include <vector>
 
-#include "bounding_box.hpp"
+#include "lib/formats/w3d/types.hpp"
+#include "lib/gfx/bounding_box.hpp"
 #include "skeleton.hpp"
-#include "w3d/types.hpp"
 
 namespace w3d {
 
-class VulkanContext;
-
 // GPU resources for a single mesh
 struct MeshGPUData {
-  VertexBuffer<Vertex> vertexBuffer;
-  IndexBuffer indexBuffer;
+  gfx::VertexBuffer<gfx::Vertex> vertexBuffer;
+  gfx::IndexBuffer indexBuffer;
   std::string name;
   int32_t boneIndex = -1; // Index into skeleton hierarchy (-1 = no bone)
 
   // CPU-side copies for ray-triangle intersection
-  std::vector<Vertex> cpuVertices;
+  std::vector<gfx::Vertex> cpuVertices;
   std::vector<uint32_t> cpuIndices;
 };
 
@@ -38,10 +37,10 @@ public:
   RenderableMesh &operator=(const RenderableMesh &) = delete;
 
   // Load meshes from W3D file (without bone transforms)
-  void load(VulkanContext &context, const W3DFile &file);
+  void load(gfx::VulkanContext &context, const W3DFile &file);
 
   // Load meshes with bone transforms applied from skeleton pose
-  void loadWithPose(VulkanContext &context, const W3DFile &file, const SkeletonPose *pose);
+  void loadWithPose(gfx::VulkanContext &context, const W3DFile &file, const SkeletonPose *pose);
 
   // Free GPU resources
   void destroy();
@@ -50,7 +49,7 @@ public:
   bool hasData() const { return !meshes_.empty(); }
 
   // Get bounds for camera positioning (optionally transformed by skeleton)
-  const BoundingBox &bounds() const { return bounds_; }
+  const gfx::BoundingBox &bounds() const { return bounds_; }
 
   // Get mesh count
   size_t meshCount() const { return meshes_.size(); }
@@ -101,7 +100,7 @@ public:
 
 private:
   std::vector<MeshGPUData> meshes_;
-  BoundingBox bounds_;
+  gfx::BoundingBox bounds_;
 };
 
 // Template implementation must be in header

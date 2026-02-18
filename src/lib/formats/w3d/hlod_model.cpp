@@ -1,11 +1,12 @@
-#include "hlod_model.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
+#include "lib/gfx/bounding_box.hpp"
 
 #include <algorithm>
 #include <cmath>
 
-#include "mesh_converter.hpp"
+#include "render/mesh_converter.hpp"
 
 namespace w3d {
 
@@ -19,20 +20,18 @@ void HLodModel::destroy() {
     mesh.indexBuffer.destroy();
   }
   meshGPU_.clear();
-  meshVisibility_.clear();
 
   for (auto &mesh : skinnedMeshGPU_) {
     mesh.vertexBuffer.destroy();
     mesh.indexBuffer.destroy();
   }
   skinnedMeshGPU_.clear();
-  skinnedMeshVisibility_.clear();
 
   lodLevels_.clear();
   aggregateCount_ = 0;
   skinnedAggregateCount_ = 0;
   currentLOD_ = 0;
-  combinedBounds_ = BoundingBox{};
+  combinedBounds_ = gfx::BoundingBox{};
   name_.clear();
   hierarchyName_.clear();
 }
@@ -43,7 +42,6 @@ std::unordered_map<std::string, size_t> HLodModel::buildMeshNameMap(const W3DFil
   for (size_t i = 0; i < file.meshes.size(); ++i) {
     const auto &mesh = file.meshes[i];
 
-    // Store both full name and short name
     std::string fullName = mesh.header.containerName + "." + mesh.header.meshName;
     nameMap[fullName] = i;
     nameMap[mesh.header.meshName] = i;
@@ -55,13 +53,11 @@ std::unordered_map<std::string, size_t> HLodModel::buildMeshNameMap(const W3DFil
 std::optional<size_t>
 HLodModel::findMeshIndex(const std::unordered_map<std::string, size_t> &nameMap,
                          const W3DFile & /*file*/, const std::string &name) {
-  // Try exact match first
   auto it = nameMap.find(name);
   if (it != nameMap.end()) {
     return it->second;
   }
 
-  // Try matching just the mesh name portion (after the dot)
   size_t dotPos = name.find('.');
   if (dotPos != std::string::npos) {
     std::string shortName = name.substr(dotPos + 1);
@@ -74,20 +70,17 @@ HLodModel::findMeshIndex(const std::unordered_map<std::string, size_t> &nameMap,
   return std::nullopt;
 }
 
-void HLodModel::load(VulkanContext &context, const W3DFile &file, const SkeletonPose *pose) {
+void HLodModel::load(gfx::VulkanContext &context, const W3DFile &file, const SkeletonPose *pose) {
   destroy();
 
-  // Check if we have an HLod to process
   if (file.hlods.empty()) {
-    // No HLod - fall back to loading all meshes as a single LOD level
-    // This handles simple mesh files without hierarchy
     auto meshNameMap = buildMeshNameMap(file);
 
-    HLodLevelInfo level0;
-    level0.maxScreenSize = 0.0f; // Highest detail
+    w3d_types::HLodLevelInfo level0;
+    level0.maxScreenSize = 0.0f;
 
     for (size_t i = 0; i < file.meshes.size(); ++i) {
-      HLodMeshInfo info;
+      w3d_types::HLodMeshInfo info;
       info.meshIndex = i;
       info.boneIndex = 0;
       info.name = file.meshes[i].header.meshName;
@@ -96,21 +89,19 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
     lodLevels_.push_back(level0);
 
-    // Convert and upload all meshes
     for (size_t i = 0; i < file.meshes.size(); ++i) {
       auto converted = MeshConverter::convert(file.meshes[i]);
       if (converted.subMeshes.empty()) {
         continue;
       }
 
-      // Create one GPU mesh for each sub-mesh (each with different texture)
       for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
         const auto &subMesh = converted.subMeshes[subIdx];
         if (subMesh.vertices.empty() || subMesh.indices.empty()) {
           continue;
         }
 
-        HLodMeshGPU gpuMesh;
+        w3d_types::HLodMeshGPU gpuMesh;
         gpuMesh.baseName = converted.name;
         gpuMesh.name = converted.name;
         if (converted.subMeshes.size() > 1) {
@@ -123,15 +114,14 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         gpuMesh.lodLevel = 0;
         gpuMesh.isAggregate = false;
 
-        // Store CPU copies for ray-triangle intersection
         gpuMesh.cpuVertices = subMesh.vertices;
         gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(subMesh.bounds);
-        lodLevels_[0].bounds.expand(subMesh.bounds);
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         meshGPU_.push_back(std::move(gpuMesh));
       }
@@ -140,15 +130,12 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
     return;
   }
 
-  // Use first HLod
   const auto &hlod = file.hlods[0];
   name_ = hlod.name;
   hierarchyName_ = hlod.hierarchyName;
 
   auto meshNameMap = buildMeshNameMap(file);
 
-  // Process LOD levels (stored in reverse order in W3D - highest detail first)
-  // LOD arrays are stored with index 0 being highest detail (smallest maxScreenSize)
   lodLevels_.resize(hlod.lodArrays.size());
 
   for (size_t lodIdx = 0; lodIdx < hlod.lodArrays.size(); ++lodIdx) {
@@ -161,7 +148,7 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
     for (const auto &subObj : lodArray.subObjects) {
       auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
       if (meshIdx.has_value()) {
-        HLodMeshInfo info;
+        w3d_types::HLodMeshInfo info;
         info.meshIndex = meshIdx.value();
         info.boneIndex = subObj.boneIndex;
         info.name = subObj.name;
@@ -170,10 +157,8 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
     }
   }
 
-  // Track which meshes have been uploaded to avoid duplicates
-  std::unordered_map<size_t, size_t> uploadedMeshes; // meshIndex -> gpuIndex
+  std::unordered_map<size_t, size_t> uploadedMeshes;
 
-  // Process aggregates first (always rendered)
   for (const auto &subObj : hlod.aggregates) {
     auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
     if (!meshIdx.has_value()) {
@@ -185,20 +170,18 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
       continue;
     }
 
-    // Apply bone transform if available
     if (pose && subObj.boneIndex < pose->boneCount()) {
       glm::mat4 boneTransform = pose->boneTransform(subObj.boneIndex);
       MeshConverter::applyBoneTransform(converted, boneTransform);
     }
 
-    // Create one GPU mesh for each sub-mesh
     for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
       const auto &subMesh = converted.subMeshes[subIdx];
       if (subMesh.vertices.empty() || subMesh.indices.empty()) {
         continue;
       }
 
-      HLodMeshGPU gpuMesh;
+      w3d_types::HLodMeshGPU gpuMesh;
       gpuMesh.baseName = subObj.name;
       gpuMesh.name = subObj.name;
       if (converted.subMeshes.size() > 1) {
@@ -208,17 +191,16 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
       gpuMesh.subMeshTotal = converted.subMeshes.size();
       gpuMesh.textureName = subMesh.textureName;
       gpuMesh.boneIndex = static_cast<int32_t>(subObj.boneIndex);
-      gpuMesh.lodLevel = 0; // Aggregates don't have a specific LOD level
+      gpuMesh.lodLevel = 0;
       gpuMesh.isAggregate = true;
 
-      // Store CPU copies for ray-triangle intersection
       gpuMesh.cpuVertices = subMesh.vertices;
       gpuMesh.cpuIndices = subMesh.indices;
 
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      combinedBounds_.expand(subMesh.bounds);
+      combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
       meshGPU_.push_back(std::move(gpuMesh));
     }
@@ -228,39 +210,30 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
 
   aggregateCount_ = meshGPU_.size();
 
-  // Process each LOD level's meshes
   for (size_t lodIdx = 0; lodIdx < lodLevels_.size(); ++lodIdx) {
     auto &levelInfo = lodLevels_[lodIdx];
 
     for (const auto &meshInfo : levelInfo.meshes) {
-      // Check if this mesh is already uploaded (might be shared across LOD levels)
-      // Note: Different LOD levels typically have different meshes, but we track anyway
       auto it = uploadedMeshes.find(meshInfo.meshIndex);
-      if (it != uploadedMeshes.end()) {
-        // Mesh already uploaded - update its LOD level if this is a higher detail LOD
-        // For simplicity, we'll upload separate copies for each LOD level
-        // This allows different bone transforms per LOD if needed
-      }
+      if (it != uploadedMeshes.end()) {}
 
       auto converted = MeshConverter::convert(file.meshes[meshInfo.meshIndex]);
       if (converted.subMeshes.empty()) {
         continue;
       }
 
-      // Apply bone transform if available
       if (pose && meshInfo.boneIndex < pose->boneCount()) {
         glm::mat4 boneTransform = pose->boneTransform(meshInfo.boneIndex);
         MeshConverter::applyBoneTransform(converted, boneTransform);
       }
 
-      // Create one GPU mesh for each sub-mesh
       for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
         const auto &subMesh = converted.subMeshes[subIdx];
         if (subMesh.vertices.empty() || subMesh.indices.empty()) {
           continue;
         }
 
-        HLodMeshGPU gpuMesh;
+        w3d_types::HLodMeshGPU gpuMesh;
         gpuMesh.baseName = meshInfo.name;
         gpuMesh.name = meshInfo.name;
         if (converted.subMeshes.size() > 1) {
@@ -273,39 +246,35 @@ void HLodModel::load(VulkanContext &context, const W3DFile &file, const Skeleton
         gpuMesh.lodLevel = lodIdx;
         gpuMesh.isAggregate = false;
 
-        // Store CPU copies for ray-triangle intersection
         gpuMesh.cpuVertices = subMesh.vertices;
         gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(subMesh.bounds);
-        levelInfo.bounds.expand(subMesh.bounds);
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         meshGPU_.push_back(std::move(gpuMesh));
       }
     }
   }
 
-  // Default to highest detail LOD
   currentLOD_ = 0;
 
   // Initialize all meshes as visible
-  meshVisibility_.assign(meshGPU_.size(), true);
+  meshVisibility_.resize(meshGPU_.size(), true);
 }
 
-void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
+void HLodModel::loadSkinned(gfx::VulkanContext &context, const W3DFile &file) {
   destroy();
 
-  // Check if we have an HLod to process
   if (file.hlods.empty()) {
-    // No HLod - fall back to loading all meshes as a single LOD level
-    HLodLevelInfo level0;
+    w3d_types::HLodLevelInfo level0;
     level0.maxScreenSize = 0.0f;
 
     for (size_t i = 0; i < file.meshes.size(); ++i) {
-      HLodMeshInfo info;
+      w3d_types::HLodMeshInfo info;
       info.meshIndex = i;
       info.boneIndex = 0;
       info.name = file.meshes[i].header.meshName;
@@ -314,7 +283,6 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
 
     lodLevels_.push_back(level0);
 
-    // Convert all meshes to skinned format
     auto skinnedMeshes = MeshConverter::convertAllSkinned(file);
     for (auto &converted : skinnedMeshes) {
       for (size_t subIdx = 0; subIdx < converted.subMeshes.size(); ++subIdx) {
@@ -323,7 +291,7 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
           continue;
         }
 
-        HLodSkinnedMeshGPU gpuMesh;
+        w3d_types::HLodSkinnedMeshGPU gpuMesh;
         gpuMesh.baseName = converted.name;
         gpuMesh.name = converted.name;
         if (converted.subMeshes.size() > 1) {
@@ -337,31 +305,31 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
         gpuMesh.isAggregate = false;
         gpuMesh.hasSkinning = converted.hasSkinning;
 
-        // Store CPU copies for ray-triangle intersection
         gpuMesh.cpuVertices = subMesh.vertices;
         gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(subMesh.bounds);
-        lodLevels_[0].bounds.expand(subMesh.bounds);
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        lodLevels_[0].bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
     }
 
+    // Initialize all skinned meshes as visible
+    skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), true);
+
     return;
   }
 
-  // Use first HLod
   const auto &hlod = file.hlods[0];
   name_ = hlod.name;
   hierarchyName_ = hlod.hierarchyName;
 
   auto meshNameMap = buildMeshNameMap(file);
 
-  // Process LOD levels
   lodLevels_.resize(hlod.lodArrays.size());
 
   for (size_t lodIdx = 0; lodIdx < hlod.lodArrays.size(); ++lodIdx) {
@@ -374,7 +342,7 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
     for (const auto &subObj : lodArray.subObjects) {
       auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
       if (meshIdx.has_value()) {
-        HLodMeshInfo info;
+        w3d_types::HLodMeshInfo info;
         info.meshIndex = meshIdx.value();
         info.boneIndex = subObj.boneIndex;
         info.name = subObj.name;
@@ -383,7 +351,6 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
     }
   }
 
-  // Process aggregates first (always rendered)
   for (const auto &subObj : hlod.aggregates) {
     auto meshIdx = findMeshIndex(meshNameMap, file, subObj.name);
     if (!meshIdx.has_value()) {
@@ -402,7 +369,7 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
         continue;
       }
 
-      HLodSkinnedMeshGPU gpuMesh;
+      w3d_types::HLodSkinnedMeshGPU gpuMesh;
       gpuMesh.baseName = subObj.name;
       gpuMesh.name = subObj.name;
       if (converted.subMeshes.size() > 1) {
@@ -416,14 +383,13 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
       gpuMesh.isAggregate = true;
       gpuMesh.hasSkinning = converted.hasSkinning;
 
-      // Store CPU copies for ray-triangle intersection
       gpuMesh.cpuVertices = subMesh.vertices;
       gpuMesh.cpuIndices = subMesh.indices;
 
       gpuMesh.vertexBuffer.create(context, subMesh.vertices);
       gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-      combinedBounds_.expand(subMesh.bounds);
+      combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
       skinnedMeshGPU_.push_back(std::move(gpuMesh));
     }
@@ -431,7 +397,6 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
 
   skinnedAggregateCount_ = skinnedMeshGPU_.size();
 
-  // Process each LOD level's meshes
   for (size_t lodIdx = 0; lodIdx < lodLevels_.size(); ++lodIdx) {
     auto &levelInfo = lodLevels_[lodIdx];
 
@@ -448,7 +413,7 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
           continue;
         }
 
-        HLodSkinnedMeshGPU gpuMesh;
+        w3d_types::HLodSkinnedMeshGPU gpuMesh;
         gpuMesh.baseName = meshInfo.name;
         gpuMesh.name = meshInfo.name;
         if (converted.subMeshes.size() > 1) {
@@ -462,26 +427,24 @@ void HLodModel::loadSkinned(VulkanContext &context, const W3DFile &file) {
         gpuMesh.isAggregate = false;
         gpuMesh.hasSkinning = converted.hasSkinning;
 
-        // Store CPU copies for ray-triangle intersection
         gpuMesh.cpuVertices = subMesh.vertices;
         gpuMesh.cpuIndices = subMesh.indices;
 
         gpuMesh.vertexBuffer.create(context, subMesh.vertices);
         gpuMesh.indexBuffer.create(context, subMesh.indices);
 
-        combinedBounds_.expand(subMesh.bounds);
-        levelInfo.bounds.expand(subMesh.bounds);
+        combinedBounds_.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
+        levelInfo.bounds.expand(gfx::BoundingBox{subMesh.bounds.min, subMesh.bounds.max});
 
         skinnedMeshGPU_.push_back(std::move(gpuMesh));
       }
     }
   }
 
-  // Default to highest detail LOD
   currentLOD_ = 0;
 
   // Initialize all skinned meshes as visible
-  skinnedMeshVisibility_.assign(skinnedMeshGPU_.size(), true);
+  skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), true);
 }
 
 void HLodModel::setCurrentLOD(size_t level) {
@@ -496,42 +459,25 @@ float HLodModel::calculateScreenSize(float radius, float distance, float screenH
     return 0.0f;
   }
 
-  // Calculate the projected size of a sphere on screen
-  // This approximates the screen coverage of the bounding sphere
-
-  // Angular size of the object (in radians)
   float angularSize = 2.0f * std::atan(radius / distance);
 
-  // Convert to screen pixels using the vertical FOV
-  // The screen height corresponds to fovY radians
   float screenSize = (angularSize / fovY) * screenHeight;
 
   return screenSize;
 }
 
 void HLodModel::updateLOD(float screenHeight, float fovY, float cameraDistance) {
-  if (selectionMode_ != LODSelectionMode::Auto || lodLevels_.empty()) {
+  if (selectionMode_ != w3d_types::LODSelectionMode::Auto || lodLevels_.empty()) {
     return;
   }
 
-  // Calculate screen size based on model bounds
   float radius = combinedBounds_.radius();
   currentScreenSize_ = calculateScreenSize(radius, cameraDistance, screenHeight, fovY);
 
-  // Select appropriate LOD level
-  // LOD arrays are ordered from highest detail (index 0) to lowest detail
-  // maxScreenSize indicates the maximum screen size at which this LOD should be used
-  // Larger maxScreenSize = lower detail LOD (used when object is smaller on screen)
-
-  // Start with highest detail
   currentLOD_ = 0;
 
-  // Walk through LOD levels from highest to lowest detail
-  // Switch to lower detail if our screen size is below the threshold
   for (size_t i = 0; i < lodLevels_.size(); ++i) {
-    // maxScreenSize of 0 means "always use this LOD" (highest detail)
     if (lodLevels_[i].maxScreenSize > 0.0f && currentScreenSize_ < lodLevels_[i].maxScreenSize) {
-      // This LOD is appropriate for our screen size
       currentLOD_ = i;
     }
   }
@@ -629,21 +575,12 @@ bool HLodModel::isMeshVisible(size_t meshIndex) const {
   if (meshIndex >= meshGPU_.size()) {
     return false;
   }
-  // Check user visibility first
-  if (meshIndex < meshVisibility_.size() && !meshVisibility_[meshIndex]) {
-    return false;
-  }
   const auto &mesh = meshGPU_[meshIndex];
-  // Aggregates are always visible, otherwise check LOD level
   return mesh.isAggregate || mesh.lodLevel == currentLOD_;
 }
 
 bool HLodModel::isSkinnedMeshVisible(size_t meshIndex) const {
   if (meshIndex >= skinnedMeshGPU_.size()) {
-    return false;
-  }
-  // Check user visibility first
-  if (meshIndex < skinnedMeshVisibility_.size() && !skinnedMeshVisibility_[meshIndex]) {
     return false;
   }
   const auto &mesh = skinnedMeshGPU_[meshIndex];
@@ -676,8 +613,43 @@ std::vector<size_t> HLodModel::visibleSkinnedMeshIndices() const {
   return indices;
 }
 
-void HLodModel::draw(vk::CommandBuffer cmd) const {
-  // Draw aggregates first (always rendered unless user-hidden)
+bool HLodModel::isMeshHidden(size_t index) const {
+  if (index >= meshVisibility_.size()) {
+    return false;
+  }
+  return !meshVisibility_[index];
+}
+
+void HLodModel::setMeshHidden(size_t index, bool hidden) {
+  if (index >= meshVisibility_.size()) {
+    meshVisibility_.resize(index + 1, true);
+  }
+  meshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllMeshesHidden(bool hidden) {
+  meshVisibility_.resize(meshGPU_.size(), !hidden);
+}
+
+bool HLodModel::isSkinnedMeshHidden(size_t index) const {
+  if (index >= skinnedMeshVisibility_.size()) {
+    return false;
+  }
+  return !skinnedMeshVisibility_[index];
+}
+
+void HLodModel::setSkinnedMeshHidden(size_t index, bool hidden) {
+  if (index >= skinnedMeshVisibility_.size()) {
+    skinnedMeshVisibility_.resize(index + 1, true);
+  }
+  skinnedMeshVisibility_[index] = !hidden;
+}
+
+void HLodModel::setAllSkinnedMeshesHidden(bool hidden) {
+  skinnedMeshVisibility_.resize(skinnedMeshGPU_.size(), !hidden);
+}
+
+void HLodModel::draw(vk::CommandBuffer cmd) {
   for (size_t i = 0; i < aggregateCount_; ++i) {
     // Skip if user has hidden this mesh
     if (i < meshVisibility_.size() && !meshVisibility_[i]) {
@@ -693,7 +665,6 @@ void HLodModel::draw(vk::CommandBuffer cmd) const {
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
   }
 
-  // Draw current LOD level meshes
   for (size_t i = aggregateCount_; i < meshGPU_.size(); ++i) {
     // Skip if user has hidden this mesh
     if (i < meshVisibility_.size() && !meshVisibility_[i]) {
@@ -702,7 +673,6 @@ void HLodModel::draw(vk::CommandBuffer cmd) const {
 
     const auto &mesh = meshGPU_[i];
 
-    // Skip if not in current LOD level
     if (mesh.lodLevel != currentLOD_) {
       continue;
     }
@@ -713,42 +683,6 @@ void HLodModel::draw(vk::CommandBuffer cmd) const {
     cmd.bindIndexBuffer(mesh.indexBuffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(mesh.indexBuffer.indexCount(), 1, 0, 0, 0);
   }
-}
-
-bool HLodModel::isMeshHidden(size_t index) const {
-  if (index >= meshVisibility_.size()) {
-    return false;
-  }
-  return !meshVisibility_[index];
-}
-
-void HLodModel::setMeshHidden(size_t index, bool hidden) {
-  if (index >= meshVisibility_.size()) {
-    return;
-  }
-  meshVisibility_[index] = !hidden;
-}
-
-void HLodModel::setAllMeshesHidden(bool hidden) {
-  std::fill(meshVisibility_.begin(), meshVisibility_.end(), !hidden);
-}
-
-bool HLodModel::isSkinnedMeshHidden(size_t index) const {
-  if (index >= skinnedMeshVisibility_.size()) {
-    return false;
-  }
-  return !skinnedMeshVisibility_[index];
-}
-
-void HLodModel::setSkinnedMeshHidden(size_t index, bool hidden) {
-  if (index >= skinnedMeshVisibility_.size()) {
-    return;
-  }
-  skinnedMeshVisibility_[index] = !hidden;
-}
-
-void HLodModel::setAllSkinnedMeshesHidden(bool hidden) {
-  std::fill(skinnedMeshVisibility_.begin(), skinnedMeshVisibility_.end(), !hidden);
 }
 
 } // namespace w3d

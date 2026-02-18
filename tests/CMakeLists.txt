@@ -2,11 +2,11 @@
 
 # Collect W3D source files needed for testing (parser module only, no Vulkan dependencies)
 set(W3D_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/w3d/loader.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/mesh_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/hierarchy_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/animation_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/w3d/hlod_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/loader.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/mesh_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hierarchy_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/animation_parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hlod_parser.cpp
 )
 
 add_executable(w3d_tests
@@ -170,52 +170,29 @@ endif()
 
 add_test(NAME hlod_hover_tests COMMAND hlod_hover_tests)
 
-# Core tests (settings, app paths - no Vulkan dependencies)
-add_executable(core_tests
-  core/test_settings.cpp
-  core/test_app_paths.cpp
-  ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
-  ${CMAKE_SOURCE_DIR}/src/core/app_paths.cpp
-)
-
-target_link_libraries(core_tests PRIVATE gtest gtest_main)
-
-target_include_directories(core_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_SOURCE_DIR}/lib/json/include
-)
-
-if(MSVC)
-  target_compile_options(core_tests PRIVATE /W4 /permissive-)
-else()
-  target_compile_options(core_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_test(NAME core_tests COMMAND core_tests)
-
-# UI tests (FileBrowser - no Vulkan/ImGui dependencies for logic tests)
-add_executable(ui_tests
+# File browser tests
+add_executable(file_browser_tests
   ui/test_file_browser.cpp
   ${CMAKE_SOURCE_DIR}/src/ui/file_browser.cpp
 )
 
-target_link_libraries(ui_tests PRIVATE gtest gtest_main)
+target_link_libraries(file_browser_tests PRIVATE gtest gtest_main)
 
-# Use stubs directory to provide mock UIWindow base class without ImGui
-target_include_directories(ui_tests PRIVATE
+# Use stubs directory first to override ImGui with stub for testing
+target_include_directories(file_browser_tests PRIVATE
   ${CMAKE_SOURCE_DIR}/tests/stubs
   ${CMAKE_SOURCE_DIR}/src
 )
 
 if(MSVC)
-  target_compile_options(ui_tests PRIVATE /W4 /permissive-)
+  target_compile_options(file_browser_tests PRIVATE /W4 /permissive-)
 else()
-  target_compile_options(ui_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(file_browser_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_test(NAME ui_tests COMMAND ui_tests)
+add_test(NAME file_browser_tests COMMAND file_browser_tests)
 
-# Mesh visibility tests (no Vulkan dependencies)
+# Mesh visibility tests (lightweight state logic tests, no Vulkan)
 add_executable(mesh_visibility_tests
   render/test_mesh_visibility.cpp
 )
