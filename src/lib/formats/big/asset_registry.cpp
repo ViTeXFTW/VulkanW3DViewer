@@ -15,6 +15,7 @@ namespace w3d::big {
 
 namespace {
 // Known BIG archive files for C&C Generals
+// TODO: Add handling for user specified archieves.
 constexpr const char *kBigArchives[] = {
     "W3DZH.big",      // Models
     "TexturesZH.big", // Textures
