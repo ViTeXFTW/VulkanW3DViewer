@@ -181,10 +181,10 @@ void SettingsWindow::draw(UIContext &ctx) {
     if (ctx.isBigArchiveInitialized) {
       ImGui::SeparatorText("Cache Status");
 
-      // Format cache size
       char cacheSizeStr[64];
       if (ctx.cacheSize < 1024) {
-        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%zu B", ctx.cacheSize);
+        std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%llu B",
+                      static_cast<unsigned long long>(ctx.cacheSize));
       } else if (ctx.cacheSize < 1024 * 1024) {
         std::snprintf(cacheSizeStr, sizeof(cacheSizeStr), "%.1f KB", ctx.cacheSize / 1024.0);
       } else if (ctx.cacheSize < 1024 * 1024 * 1024) {

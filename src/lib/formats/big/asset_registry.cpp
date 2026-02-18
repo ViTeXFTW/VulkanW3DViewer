@@ -184,7 +184,7 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
       // Log when model is skipped due to duplicate
       // (only log a few samples to avoid spam)
       else if (modelsFound < 5 || modelName.find("tank") != std::string::npos) {
-        LOG_DEBUG("[AssetRegistry] Skipped duplicate: " << modelName << " (original: "
+        LOG_DEBUG("[AssetRegistry] Skipped duplicate: " << modelName << " (stored: "
                                                         << modelArchivePaths_[modelName] << ")\n");
       }
     }
@@ -196,9 +196,15 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
         std::string originalPath = file.path;
         std::string textureName = path.substr(0, path.length() - extLen);
 
+        // Extract base name (filename without path)
+        size_t lastSlash = textureName.find_last_of('/');
+        std::string baseName =
+            (lastSlash != std::string::npos) ? textureName.substr(lastSlash + 1) : textureName;
+
         // Only add if not already present
         if (textureArchivePaths_.find(textureName) == textureArchivePaths_.end()) {
           textureArchivePaths_[textureName] = originalPath;
+          textureBaseNameToPath_[baseName] = originalPath;
           availableTextures_.push_back(textureName);
           texturesFound++;
         }
@@ -248,6 +254,7 @@ void AssetRegistry::clear() {
   availableIniFiles_.clear();
   modelArchivePaths_.clear();
   textureArchivePaths_.clear();
+  textureBaseNameToPath_.clear();
 }
 
 std::string AssetRegistry::getModelArchivePath(const std::string &modelName) const {
@@ -261,10 +268,19 @@ std::string AssetRegistry::getModelArchivePath(const std::string &modelName) con
 
 std::string AssetRegistry::getTextureArchivePath(const std::string &textureName) const {
   std::string normalizedName = normalizeAssetName(textureName);
+
+  // Try full path first
   auto it = textureArchivePaths_.find(normalizedName);
   if (it != textureArchivePaths_.end()) {
     return it->second;
   }
+
+  // Try base name (filename without path)
+  auto baseIt = textureBaseNameToPath_.find(normalizedName);
+  if (baseIt != textureBaseNameToPath_.end()) {
+    return baseIt->second;
+  }
+
   return "";
 }
 

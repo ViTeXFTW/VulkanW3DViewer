@@ -84,8 +84,9 @@ private:
   std::vector<std::string> availableModels_;
   std::vector<std::string> availableTextures_;
   std::vector<std::string> availableIniFiles_;
-  std::unordered_map<std::string, std::string> modelArchivePaths_;   // name -> archive path
-  std::unordered_map<std::string, std::string> textureArchivePaths_; // name -> archive path
+  std::unordered_map<std::string, std::string> modelArchivePaths_;     // name -> archive path
+  std::unordered_map<std::string, std::string> textureArchivePaths_;   // name -> archive path
+  std::unordered_map<std::string, std::string> textureBaseNameToPath_; // base name -> full path
 
   /// Scan a single archive file
   /// @param archivePath Path to the BIG archive file
