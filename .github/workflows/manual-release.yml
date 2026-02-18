@@ -1,9 +1,12 @@
-name: Release Build
+name: Manual Release Build
 
 on:
-  push:
-    branches:
-      - 'release/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v0.2.0-alpha)'
+        required: true
+        type: string
 
 env:
   BUILD_TYPE: release
@@ -20,10 +23,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Extract version from branch name
+      - name: Set version
         id: extract-version
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
+          VERSION="${{ github.event.inputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
@@ -88,11 +91,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Extract version from branch name
+      - name: Set version
         id: extract-version
         shell: bash
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
+          VERSION="${{ github.event.inputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 

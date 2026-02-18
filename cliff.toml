@@ -1,0 +1,60 @@
+[changelog]
+header = """
+## What's Changed\n
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | upper_first }} \
+        {% if commit.github.pr_number %}(#{{ commit.github.pr_number }}){% endif %}\
+    {% endfor %}
+{% endfor %}\n
+"""
+footer = """
+{% if github.contributors | filter(attribute="is_first_time", value=true) | length != 0 %}
+  ## New Contributors
+{% endif %}\
+{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+  * @{{ contributor.username }} made their first contribution
+    {%- if contributor.pr_number %} in #{{ contributor.pr_number }}{%- endif %}
+{% endfor %}\n
+**Full Changelog**: https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}/compare/{{ previous.version }}...{{ version }}
+"""
+trim = true
+postprocessors = []
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_parsers = [
+  { message = "^feat", group = "🚀 Features" },
+  { message = "^fix", group = "🐛 Bug Fixes" },
+  { message = "^perf", group = "⚡ Performance" },
+  { message = "^refactor", group = "🔨 Refactoring" },
+  { message = "^docs", group = "📚 Documentation" },
+  { message = "^build", group = "🔧 Build System" },
+  { message = "^ci", group = "👷 CI/CD" },
+  { message = "^test", group = "✅ Tests" },
+  { message = "^style", group = "💄 Styling" },
+  { body = ".*security", group = "🔒 Security" },
+  { message = "^chore", skip = true },
+  { message = ".*\\[skip ci\\]", skip = true },
+]
+protect_breaking_commits = false
+filter_commits = true
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"
+
+[remote.github]
+owner = "ViTeXFTW"
+repo = "VulkanW3DViewer"
