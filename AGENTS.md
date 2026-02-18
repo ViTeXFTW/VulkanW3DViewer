@@ -135,3 +135,104 @@ Example:
 ### Comments
 - **No comments** in code unless specifically requested
 - Exception: Critical file format notes in W3D parser headers
+
+## Release Process
+
+Creating a new release follows a streamlined workflow with automated changelog generation:
+
+### Standard Release Workflow
+
+1. **Prepare for release**:
+   - Ensure all features/fixes are merged to `dev` branch
+   - All tests pass (`ctest --preset test`)
+   - Application runs without issues
+
+2. **Create release PR**:
+   - Create PR from `dev` → `main`
+   - **Title format (required)**: `release: vX.Y.Z` (e.g., `release: v0.2.0-alpha`)
+   - Fill out the "Release Information" section in PR template
+   - Add 2-3 bullet points highlighting key changes
+
+3. **Merge to main**:
+   - Get PR approval
+   - Merge PR to `main`
+   - GitHub Actions automatically creates a **draft release** with:
+     - Auto-generated changelog (categorized by commit type)
+     - Release tag (`vX.Y.Z`)
+     - Installation instructions
+
+4. **Build binaries locally**:
+   
+   **Linux**:
+   ```bash
+   ./scripts/rebuild.sh release -c clang
+   mkdir VulkanW3DViewer-linux-x64-vX.Y.Z
+   cp build/release/VulkanW3DViewer VulkanW3DViewer-linux-x64-vX.Y.Z/
+   cp README.md LICENSE.md VulkanW3DViewer-linux-x64-vX.Y.Z/
+   strip VulkanW3DViewer-linux-x64-vX.Y.Z/VulkanW3DViewer
+   tar -czf VulkanW3DViewer-linux-x64-vX.Y.Z.tar.gz VulkanW3DViewer-linux-x64-vX.Y.Z
+   ```
+   
+   **Windows** (PowerShell):
+   ```powershell
+   .\scripts\rebuild.ps1 release -Compiler msvc
+   mkdir VulkanW3DViewer-windows-x64-vX.Y.Z
+   cp build/release/VulkanW3DViewer.exe VulkanW3DViewer-windows-x64-vX.Y.Z/
+   cp README.md,LICENSE.md VulkanW3DViewer-windows-x64-vX.Y.Z/
+   Compress-Archive VulkanW3DViewer-windows-x64-vX.Y.Z VulkanW3DViewer-windows-x64-vX.Y.Z.zip
+   ```
+
+5. **Upload and publish**:
+   - Navigate to the draft release on GitHub
+   - Upload both `.tar.gz` (Linux) and `.zip` (Windows) files
+   - Review auto-generated changelog, edit if needed
+   - Click "Publish release"
+
+### Version Naming Convention
+
+Use semantic versioning with optional pre-release suffixes:
+- **Stable releases**: `v1.0.0`, `v1.2.3`
+- **Alpha releases**: `v0.2.0-alpha`, `v1.0.0-alpha.1`
+- **Beta releases**: `v0.3.0-beta`, `v1.0.0-beta.2`
+- **Release candidates**: `v1.0.0-rc1`, `v2.0.0-rc.2`
+
+Pre-release versions are automatically marked as "pre-release" on GitHub.
+
+### Changelog Generation
+
+The changelog is auto-generated from commit messages using conventional commits:
+- 🚀 **Features** - `feat:` commits
+- 🐛 **Bug Fixes** - `fix:` commits
+- ⚡ **Performance** - `perf:` commits
+- 🔨 **Refactoring** - `refactor:` commits
+- 📚 **Documentation** - `docs:` commits
+- 🔧 **Build System** - `build:` commits
+- 👷 **CI/CD** - `ci:` commits
+- ✅ **Tests** - `test:` commits
+- 🧹 **Chores** - `chore:` commits
+
+Ensure PR titles follow this format for proper categorization.
+
+### Manual/Emergency Release
+
+For emergency releases or if automated workflow fails:
+1. Navigate to Actions → Manual Release Build
+2. Click "Run workflow"
+3. Enter version (e.g., `v0.2.1-hotfix`)
+4. Workflow builds binaries and creates release with both platforms
+
+### Testing Changelog Locally
+
+Install git-cliff and test changelog generation:
+```bash
+# Install git-cliff
+cargo install git-cliff
+# Or download from: https://github.com/orhun/git-cliff/releases
+
+# Generate changelog for unreleased commits
+git-cliff --config cliff.toml --unreleased
+
+# Generate changelog between tags
+git-cliff --config cliff.toml v0.1.0..HEAD
+```
+
