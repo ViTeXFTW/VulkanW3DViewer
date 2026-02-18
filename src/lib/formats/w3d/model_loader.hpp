@@ -7,15 +7,20 @@
 #include <optional>
 #include <string>
 
+#include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/loader.hpp"
+#include "lib/gfx/camera.hpp"
+#include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
-#include "lib/gfx/camera.hpp"
-#include "lib/formats/w3d/hlod_model.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
-#include "lib/gfx/texture.hpp"
-#include "lib/formats/w3d/loader.hpp"
+
+namespace w3d::big {
+class AssetRegistry;
+class BigArchiveManager;
+} // namespace w3d::big
 
 namespace w3d {
 
@@ -62,6 +67,18 @@ public:
   void setDebugMode(bool debug) { debugMode_ = debug; }
 
   /**
+   * Set asset registry for path resolution.
+   * @param registry Pointer to asset registry (must outlive loader)
+   */
+  void setAssetRegistry(big::AssetRegistry *registry) { assetRegistry_ = registry; }
+
+  /**
+   * Set BIG archive manager for extraction.
+   * @param manager Pointer to archive manager (must outlive loader)
+   */
+  void setBigArchiveManager(big::BigArchiveManager *manager) { bigArchiveManager_ = manager; }
+
+  /**
    * Load a W3D file and upload to GPU.
    *
    * @param path Path to the W3D file
@@ -101,6 +118,8 @@ private:
   std::string loadedFilePath_;
   std::string customTexturePath_;
   bool debugMode_ = false;
+  big::AssetRegistry *assetRegistry_ = nullptr;
+  big::BigArchiveManager *bigArchiveManager_ = nullptr;
 };
 
 } // namespace w3d

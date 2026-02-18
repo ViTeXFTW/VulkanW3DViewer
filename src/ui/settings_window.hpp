@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "ui_window.hpp"
 #include "file_browser.hpp"
+#include "ui_window.hpp"
 
 namespace w3d {
 
@@ -35,11 +35,18 @@ private:
   /// Whether the directory browser is currently open
   bool directoryBrowserOpen_ = false;
 
+  /// Whether the game directory browser is currently open
+  bool gameDirectoryBrowserOpen_ = false;
+
   /// Directory browser for selecting texture path
   FileBrowser directoryBrowser_;
 
+  /// Directory browser for selecting game directory
+  FileBrowser gameDirectoryBrowser_;
+
   // Editable copies of settings (modified until Save/Cancel)
   std::string editTexturePath_;
+  std::string editGameDirectory_;
   bool editShowMesh_ = true;
   bool editShowSkeleton_ = true;
 
