@@ -1,0 +1,150 @@
+name: Create Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  detect-release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.check.outputs.is_release }}
+      version: ${{ steps.check.outputs.version }}
+    
+    steps:
+      - name: Check if release PR
+        id: check
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "PR Title: $PR_TITLE"
+          
+          # Check if title starts with "release:" or "Release:"
+          if [[ "$PR_TITLE" =~ ^[Rr]elease:\ v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.]+)?$ ]]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            
+            # Extract version (e.g., "release: v0.2.0-alpha" -> "v0.2.0-alpha")
+            VERSION=$(echo "$PR_TITLE" | sed -E 's/^[Rr]elease:\ (v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.]+)?)/\1/')
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Release PR detected: $VERSION"
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Not a release PR (title doesn't match pattern 'release: vX.Y.Z')"
+          fi
+
+  create-draft-release:
+    needs: detect-release
+    if: needs.detect-release.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install git-cliff
+        run: |
+          wget https://github.com/orhun/git-cliff/releases/download/v2.7.0/git-cliff-2.7.0-x86_64-unknown-linux-gnu.tar.gz
+          tar -xzf git-cliff-2.7.0-x86_64-unknown-linux-gnu.tar.gz
+          sudo mv git-cliff-2.7.0/git-cliff /usr/local/bin/
+          git-cliff --version
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.detect-release.outputs.version }}"
+          echo "Generating changelog for $VERSION"
+          
+          # Get the last release tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous release found, generating full history"
+            CHANGELOG=$(git-cliff --config cliff.toml --unreleased --strip all)
+          else
+            echo "Last release: $LAST_TAG"
+            CHANGELOG=$(git-cliff --config cliff.toml "${LAST_TAG}..HEAD" --strip all)
+          fi
+          
+          # Create changelog file
+          cat > changelog.md << EOF
+          ${CHANGELOG}
+          
+          ## Installation
+          
+          Download the appropriate binary for your platform from the assets below:
+          - **Linux**: \`VulkanW3DViewer-linux-x64-${VERSION}.tar.gz\`
+          - **Windows**: \`VulkanW3DViewer-windows-x64-${VERSION}.zip\`
+          
+          Extract and run the executable. Requires Vulkan 1.3+ compatible GPU.
+          
+          ## Build Info
+          - Built with Clang (Linux) / MSVC (Windows)
+          - Optimized release build with stripped debug symbols
+          EOF
+          
+          echo "Generated changelog:"
+          cat changelog.md
+      
+      - name: Determine if pre-release
+        id: prerelease
+        run: |
+          VERSION="${{ needs.detect-release.outputs.version }}"
+          if [[ "$VERSION" =~ -(alpha|beta|rc) ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "✅ Detected pre-release version"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "✅ Detected stable release version"
+          fi
+      
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.detect-release.outputs.version }}
+          name: Release ${{ needs.detect-release.outputs.version }}
+          body_path: changelog.md
+          draft: true
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Instructions
+        run: |
+          VERSION="${{ needs.detect-release.outputs.version }}"
+          echo "============================================"
+          echo "✅ Draft release created successfully!"
+          echo "============================================"
+          echo ""
+          echo "📋 Next steps:"
+          echo "1. Build binaries locally:"
+          echo "   Linux:   ./scripts/rebuild.sh release -c clang"
+          echo "   Windows: .\scripts\rebuild.ps1 release -Compiler msvc"
+          echo ""
+          echo "2. Package binaries:"
+          echo "   Linux:"
+          echo "     mkdir VulkanW3DViewer-linux-x64-${VERSION}"
+          echo "     cp build/release/VulkanW3DViewer VulkanW3DViewer-linux-x64-${VERSION}/"
+          echo "     cp README.md LICENSE.md VulkanW3DViewer-linux-x64-${VERSION}/"
+          echo "     tar -czf VulkanW3DViewer-linux-x64-${VERSION}.tar.gz VulkanW3DViewer-linux-x64-${VERSION}"
+          echo ""
+          echo "   Windows:"
+          echo "     mkdir VulkanW3DViewer-windows-x64-${VERSION}"
+          echo "     cp build/release/VulkanW3DViewer.exe VulkanW3DViewer-windows-x64-${VERSION}/"
+          echo "     cp README.md LICENSE.md VulkanW3DViewer-windows-x64-${VERSION}/"
+          echo "     Compress-Archive VulkanW3DViewer-windows-x64-${VERSION} VulkanW3DViewer-windows-x64-${VERSION}.zip"
+          echo ""
+          echo "3. Upload binaries to draft release:"
+          echo "   https://github.com/${{ github.repository }}/releases/tag/${{ needs.detect-release.outputs.version }}"
+          echo ""
+          echo "4. Review changelog and publish release"
+          echo "============================================"
