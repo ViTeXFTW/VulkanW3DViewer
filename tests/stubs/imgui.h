@@ -17,10 +17,7 @@ struct ImVec4 {
   ImVec4(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 };
 
-enum ImGuiKey {
-  ImGuiKey_Escape,
-  ImGuiKey_COUNT
-};
+enum ImGuiKey { ImGuiKey_Escape, ImGuiKey_COUNT };
 
 enum ImGuiTreeNodeFlags_ {
   ImGuiTreeNodeFlags_None = 0,
@@ -37,10 +34,7 @@ enum ImGuiSelectableFlags_ {
 };
 typedef int ImGuiSelectableFlags;
 
-enum ImGuiChildFlags_ {
-  ImGuiChildFlags_None = 0,
-  ImGuiChildFlags_Borders = 1 << 0
-};
+enum ImGuiChildFlags_ { ImGuiChildFlags_None = 0, ImGuiChildFlags_Borders = 1 << 0 };
 typedef int ImGuiChildFlags;
 
 enum ImGuiInputTextFlags_ {
@@ -49,16 +43,10 @@ enum ImGuiInputTextFlags_ {
 };
 typedef int ImGuiInputTextFlags;
 
-enum ImGuiWindowFlags_ {
-  ImGuiWindowFlags_None = 0,
-  ImGuiWindowFlags_AlwaysAutoResize = 1 << 1
-};
+enum ImGuiWindowFlags_ { ImGuiWindowFlags_None = 0, ImGuiWindowFlags_AlwaysAutoResize = 1 << 1 };
 typedef int ImGuiWindowFlags;
 
-enum ImGuiCond_ {
-  ImGuiCond_Always = 0,
-  ImGuiCond_Appearing = 1 << 1
-};
+enum ImGuiCond_ { ImGuiCond_Always = 0, ImGuiCond_Appearing = 1 << 1 };
 typedef int ImGuiCond;
 
 struct ImGuiStyle {
@@ -85,32 +73,56 @@ inline float GetWindowWidth() {
   return 400.0f;
 }
 
-inline bool Begin(const char *, bool * = nullptr, int = 0) { return true; }
+inline bool Begin(const char *, bool * = nullptr, int = 0) {
+  return true;
+}
 inline void End() {}
 
-inline bool BeginPopupModal(const char *, bool * = nullptr, int = 0) { return true; }
+inline bool BeginPopupModal(const char *, bool * = nullptr, int = 0) {
+  return true;
+}
 inline void EndPopup() {}
 inline void OpenPopup(const char *) {}
 inline void CloseCurrentPopup() {}
 
-inline bool BeginChild(const char *, ImVec2 = ImVec2(), bool = false, int = 0) { return true; }
+inline bool BeginChild(const char *, ImVec2 = ImVec2(), bool = false, int = 0) {
+  return true;
+}
 inline void EndChild() {}
 
-inline bool Button(const char *, ImVec2 = ImVec2(0, 0)) { return false; }
+inline bool Button(const char *, ImVec2 = ImVec2(0, 0)) {
+  return false;
+}
 inline void SameLine([[maybe_unused]] float offset = 0, [[maybe_unused]] float spacing = -1) {}
-inline bool Checkbox(const char *, bool *v) { return *v; }
-inline bool Selectable(const char *, bool = false, int = 0) { return false; }
+inline bool Checkbox(const char *, bool *v) {
+  return *v;
+}
+inline bool Selectable(const char *, bool = false, int = 0) {
+  return false;
+}
 inline void Text(const char *, ...) {}
 inline void TextDisabled(const char *, ...) {}
-inline bool TreeNode(const char *) { return false; }
+inline bool TreeNode(const char *) {
+  return false;
+}
 inline void TreePop() {}
 inline void SetNextItemWidth(float) {}
-inline bool InputText(const char *, char *, size_t, int = 0) { return false; }
-inline bool IsMouseDoubleClicked(int = 0) { return false; }
-inline bool IsKeyPressed(int, bool = false) { return false; }
+inline bool InputText(const char *, char *, size_t, int = 0) {
+  return false;
+}
+inline bool IsMouseDoubleClicked(int = 0) {
+  return false;
+}
+inline bool IsKeyPressed(int, bool = false) {
+  return false;
+}
 inline void Separator() {}
 inline void Spacing() {}
-inline ImVec2 GetMainViewport() { return ImVec2(); }
-inline ImVec2 GetCenter() { return ImVec2(0, 0); }
+inline ImVec2 GetMainViewport() {
+  return ImVec2();
+}
+inline ImVec2 GetCenter() {
+  return ImVec2(0, 0);
+}
 
 } // namespace ImGui

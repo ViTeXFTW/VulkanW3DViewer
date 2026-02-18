@@ -1,7 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
 #include "lib/gfx/vulkan_context.hpp"
+
+#include <vulkan/vulkan.hpp>
 
 #include <functional>
 
