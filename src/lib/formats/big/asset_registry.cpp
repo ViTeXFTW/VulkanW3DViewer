@@ -160,8 +160,8 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
   }
 
   size_t modelsFound = 0;
-  [[maybe_unused]] size_t texturesFound = 0;
-  [[maybe_unused]] size_t iniFilesFound = 0;
+  size_t texturesFound = 0;
+  size_t iniFilesFound = 0;
 
   // Scan files in archive
   for (const auto &file : archive->files()) {
