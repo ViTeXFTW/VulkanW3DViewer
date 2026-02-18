@@ -53,8 +53,12 @@ This section covers everything you need to know to contribute to the project.
 git clone --recursive https://github.com/ViTeXFTW/VulkanW3DViewer.git
 cd VulkanW3DViewer
 
-# Build debug version
+# Build debug version (auto-detect compiler)
 ./scripts/rebuild.sh debug
+
+# Or build with specific compiler (Linux/macOS)
+./scripts/rebuild.sh debug -c clang  # Clang
+./scripts/rebuild.sh debug -c gcc    # GCC
 
 # Run tests
 ctest --preset test
@@ -146,11 +150,17 @@ tests/
 
 ## Build Configurations
 
-| Preset | Use Case |
-|--------|----------|
-| `debug` | Development with symbols |
-| `release` | Performance testing |
-| `test` | Running test suite |
+| Preset | Compiler | Use Case |
+|--------|----------|----------|
+| `debug` | Auto-detect | Development with symbols |
+| `release` | Auto-detect | Performance testing |
+| `test` | Auto-detect | Running test suite |
+| `clang-debug` | Clang | Clang development build |
+| `clang-release` | Clang | Clang production build |
+| `gcc-debug` | GCC | GCC development build |
+| `gcc-release` | GCC | GCC production build |
+| `msvc-debug` | MSVC | Windows development (Visual Studio) |
+| `msvc-release` | MSVC | Windows production build |
 
 ## Useful Commands
 
@@ -158,9 +168,17 @@ tests/
 # Format all code
 find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i
 
-# Build and run tests
+# Build and run tests (auto-detect compiler)
 cmake --preset test && cmake --build --preset test && ctest --preset test
+
+# Build with specific compiler
+cmake --preset clang-debug && cmake --build --preset clang-debug
+cmake --preset msvc-release && cmake --build --preset msvc-release
 
 # Generate compile_commands.json for IDE
 cmake --preset debug  # Creates in build/debug/
+
+# Clean build
+./scripts/rebuild.sh debug -d  # Bash
+.\scripts\rebuild.ps1 debug -D  # PowerShell
 ```

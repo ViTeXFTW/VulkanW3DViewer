@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "lib/formats/w3d/types.hpp"
 #include "skeleton.hpp"
-#include "w3d/types.hpp"
 
 namespace w3d {
 

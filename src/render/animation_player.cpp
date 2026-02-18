@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "w3d/chunk_types.hpp"
+#include "lib/formats/w3d/chunk_types.hpp"
 
 namespace w3d {
 

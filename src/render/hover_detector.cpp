@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "hlod_model.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 #include "renderable_mesh.hpp"
 #include "skeleton.hpp"
 #include "skeleton_renderer.hpp"

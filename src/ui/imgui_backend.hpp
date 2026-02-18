@@ -1,5 +1,7 @@
 #pragma once
 
+#include "lib/gfx/vulkan_context.hpp"
+
 #include <vulkan/vulkan.hpp>
 
 #include <functional>
@@ -7,8 +9,6 @@
 struct GLFWwindow;
 
 namespace w3d {
-
-class VulkanContext;
 
 class ImGuiBackend {
 public:
@@ -19,7 +19,7 @@ public:
   ImGuiBackend &operator=(const ImGuiBackend &) = delete;
 
   // Initialize ImGui with Vulkan and GLFW
-  void init(GLFWwindow *window, VulkanContext &context);
+  void init(GLFWwindow *window, gfx::VulkanContext &context);
 
   // Cleanup resources
   void cleanup();
@@ -34,9 +34,9 @@ public:
   void onSwapchainRecreate();
 
 private:
-  void createDescriptorPool(VulkanContext &context);
+  void createDescriptorPool(gfx::VulkanContext &context);
 
-  VulkanContext *context_ = nullptr;
+  gfx::VulkanContext *context_ = nullptr;
   vk::DescriptorPool descriptorPool_;
   bool initialized_ = false;
 };

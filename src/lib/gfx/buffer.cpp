@@ -1,8 +1,8 @@
-#include "buffer.hpp"
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
-#include "vulkan_context.hpp"
 
-namespace w3d {
+namespace w3d::gfx {
 
 Buffer::~Buffer() {
   destroy();
@@ -92,7 +92,6 @@ void Buffer::upload(const void *data, vk::DeviceSize size) {
 
 void StagedBuffer::create(VulkanContext &context, const void *data, vk::DeviceSize size,
                           vk::BufferUsageFlags usage) {
-  // Create staging buffer
   Buffer stagingBuffer;
   stagingBuffer.create(context, size, vk::BufferUsageFlagBits::eTransferSrc,
                        vk::MemoryPropertyFlagBits::eHostVisible |
@@ -100,11 +99,9 @@ void StagedBuffer::create(VulkanContext &context, const void *data, vk::DeviceSi
 
   stagingBuffer.upload(data, size);
 
-  // Create device-local buffer
   buffer_.create(context, size, usage | vk::BufferUsageFlagBits::eTransferDst,
                  vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-  // Copy staging to device-local
   auto cmd = context.beginSingleTimeCommands();
 
   vk::BufferCopy copyRegion{0, 0, size};
@@ -123,4 +120,4 @@ void IndexBuffer::create(VulkanContext &context, const std::vector<uint32_t> &in
   indexCount_ = static_cast<uint32_t>(indices.size());
 }
 
-} // namespace w3d
+} // namespace w3d::gfx

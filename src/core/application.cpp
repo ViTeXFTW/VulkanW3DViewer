@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "ui/hover_tooltip.hpp"
+#include "ui/model_browser.hpp"
 #include "ui/settings_window.hpp"
 #include "ui/ui_context.hpp"
 #include "ui/viewport_window.hpp"
@@ -103,6 +104,9 @@ void Application::initVulkan() {
   }
 #endif
 
+  // Initialize BIG archive manager
+  initializeBigArchiveManager();
+
   // Initialize renderer
   renderer_.init(window_, context_, imguiBackend_, textureManager_, boneMatrixBuffer_);
 }
@@ -112,15 +116,38 @@ void Application::initUI() {
 
   // Register windows with UI manager
   auto *viewport = uiManager_.addWindow<ViewportWindow>();
+  if (!viewport) {
+    throw std::runtime_error("Failed to create ViewportWindow");
+  }
+
   console_ = uiManager_.addWindow<ConsoleWindow>();
+  if (!console_) {
+    throw std::runtime_error("Failed to create ConsoleWindow");
+  }
+
   fileBrowser_ = uiManager_.addWindow<FileBrowser>();
-  uiManager_.addWindow<HoverTooltip>();
-  uiManager_.addWindow<SettingsWindow>();
+  if (!fileBrowser_) {
+    throw std::runtime_error("Failed to create FileBrowser");
+  }
+
+  modelBrowser_ = uiManager_.addWindow<ModelBrowser>();
+  if (!modelBrowser_) {
+    throw std::runtime_error("Failed to create ModelBrowser");
+  }
+
+  if (!uiManager_.addWindow<HoverTooltip>()) {
+    throw std::runtime_error("Failed to create HoverTooltip");
+  }
+
+  if (!uiManager_.addWindow<SettingsWindow>()) {
+    throw std::runtime_error("Failed to create SettingsWindow");
+  }
 
   // Set initial visibility
   viewport->setVisible(true);
   console_->setVisible(true);
   fileBrowser_->setVisible(false);
+  modelBrowser_->setVisible(false);
 
   // Configure file browser
   fileBrowser_->setFilter(".w3d");
@@ -128,6 +155,31 @@ void Application::initUI() {
     loadW3DFile(path);
     fileBrowser_->setVisible(false);
   });
+
+  // If BIG archives are configured, default to cache directory
+  if (bigArchiveManager_.isInitialized()) {
+    std::filesystem::path cacheW3DPath = bigArchiveManager_.cacheDirectory() / "Art" / "W3D";
+    std::error_code ec;
+    if (std::filesystem::exists(cacheW3DPath, ec)) {
+      fileBrowser_->openAt(cacheW3DPath);
+    } else {
+      // Cache directory doesn't exist yet, default to cache root
+      fileBrowser_->openAt(bigArchiveManager_.cacheDirectory());
+    }
+  }
+
+  // Configure model browser
+  modelBrowser_->setModelSelectedCallback([this](const std::string &modelName) {
+    loadModelByName(modelName);
+    modelBrowser_->setVisible(false);
+  });
+
+  // If asset registry has scanned models, set up model browser
+  if (assetRegistry_.isScanned()) {
+    modelBrowser_->setAvailableModels(assetRegistry_.availableModels());
+    modelBrowser_->setAvailableTextures(assetRegistry_.availableTextures());
+    modelBrowser_->setBigArchiveMode(true);
+  }
 
   // Welcome message
   console_->info("W3D Viewer initialized");
@@ -159,6 +211,36 @@ void Application::loadW3DFile(const std::filesystem::path &path) {
   renderState_.useHLodModel = result.useHLodModel;
   renderState_.useSkinnedRendering = result.useSkinnedRendering;
   renderState_.lastAppliedFrame = -1.0f; // Reset animation state for new model
+}
+
+void Application::loadModelByName(const std::string &modelName) {
+  // This method loads a model by name from the BIG archive
+  // The model name is like "avvehicle.tank" (without .w3d extension)
+
+  console_->info("Loading model from BIG archive: " + modelName);
+
+  // Try to get archive path from registry
+  std::string archivePath;
+  if (assetRegistry_.isScanned()) {
+    archivePath = assetRegistry_.getModelArchivePath(modelName);
+  }
+
+  // If not in registry, try standard archive path
+  if (archivePath.empty()) {
+    archivePath = "Art/W3D/" + modelName + ".w3d";
+  }
+
+  // Extract to cache
+  std::string error;
+  auto cachedPath = bigArchiveManager_.extractToCache(archivePath, &error);
+  if (!cachedPath) {
+    console_->error("Failed to extract model: " + error);
+    return;
+  }
+
+  // Load from cached path
+  console_->log("Extracted to: " + cachedPath->string());
+  loadW3DFile(*cachedPath);
 }
 
 void Application::updateHover() {
@@ -226,8 +308,27 @@ void Application::drawUI() {
   ctx.hoverState = &hoverDetector_.state();
   ctx.settings = &appSettings_;
 
+  // BIG archive status
+  ctx.isBigArchiveInitialized = bigArchiveManager_.isInitialized();
+  ctx.cacheSize = bigArchiveManager_.getCacheSize();
+  ctx.availableModelCount = assetRegistry_.availableModels().size();
+
   // Set up callbacks
   ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
+  ctx.onOpenModelBrowser = [this]() {
+    // Update available models before opening
+    if (assetRegistry_.isScanned()) {
+      modelBrowser_->setAvailableModels(assetRegistry_.availableModels());
+      modelBrowser_->setAvailableTextures(assetRegistry_.availableTextures());
+      modelBrowser_->setBigArchiveMode(true);
+    }
+    modelBrowser_->setVisible(true);
+  };
+  ctx.onClearAndRescanCache = [this]() {
+    // Clear cache and rescan archives
+    bigArchiveManager_.clearCache();
+    rescanAssetRegistry();
+  };
   ctx.onExit = [this]() { glfwSetWindowShouldClose(window_, GLFW_TRUE); };
   ctx.onResetCamera = [this]() {
     if (renderState_.useHLodModel && hlodModel_.hasData()) {
@@ -248,6 +349,11 @@ void Application::mainLoop() {
 
   while (!glfwWindowShouldClose(window_)) {
     glfwPollEvents();
+
+    // Skip rendering when window is minimized
+    if (glfwGetWindowAttrib(window_, GLFW_ICONIFIED)) {
+      continue;
+    }
 
     // Calculate delta time
     float currentTime = static_cast<float>(glfwGetTime());
@@ -358,6 +464,84 @@ void Application::run() {
 
   // Save settings after cleanup (which captures final window size)
   appSettings_.saveDefault();
+}
+
+void Application::initializeBigArchiveManager() {
+  // Try to initialize from settings game directory
+  if (!appSettings_.gameDirectory.empty()) {
+    std::filesystem::path gameDir(appSettings_.gameDirectory);
+
+    // Check if directory exists
+    std::error_code ec;
+    if (std::filesystem::exists(gameDir, ec)) {
+      // Initialize BIG archive manager
+      std::string error;
+      if (bigArchiveManager_.initialize(gameDir, &error)) {
+        // Log to console if available, otherwise stderr
+        if (console_) {
+          console_->info("BIG archive manager initialized");
+          console_->log("Game directory: " + gameDir.string());
+          console_->log("Cache directory: " + bigArchiveManager_.cacheDirectory().string());
+        }
+
+        // Scan archives to build registry
+        if (assetRegistry_.scanArchives(gameDir, &error)) {
+          if (console_) {
+            console_->info("Asset registry scanned");
+            console_->log("Models found: " +
+                          std::to_string(assetRegistry_.availableModels().size()));
+            console_->log("Textures found: " +
+                          std::to_string(assetRegistry_.availableTextures().size()));
+            console_->log("INI files found: " +
+                          std::to_string(assetRegistry_.availableIniFiles().size()));
+          }
+        } else {
+          if (console_) {
+            console_->error("Failed to scan asset registry: " + error);
+          } else {
+            std::cerr << "Failed to scan asset registry: " << error << "\n";
+          }
+        }
+      } else {
+        if (console_) {
+          console_->error("Failed to initialize BIG archive manager: " + error);
+        } else {
+          std::cerr << "Failed to initialize BIG archive manager: " << error << "\n";
+        }
+      }
+    } else {
+      if (console_) {
+        console_->warning("Game directory does not exist: " + gameDir.string());
+      } else {
+        std::cerr << "Game directory does not exist: " << gameDir.string() << "\n";
+      }
+    }
+  }
+
+  // Set up managers for texture and model loading
+  textureManager_.setAssetRegistry(&assetRegistry_);
+  textureManager_.setBigArchiveManager(&bigArchiveManager_);
+  modelLoader_.setAssetRegistry(&assetRegistry_);
+  modelLoader_.setBigArchiveManager(&bigArchiveManager_);
+}
+
+void Application::rescanAssetRegistry() {
+  if (!bigArchiveManager_.isInitialized()) {
+    console_->warning("Cannot rescan: BIG archive manager not initialized");
+    return;
+  }
+
+  console_->info("Rescanning asset registry...");
+
+  std::string error;
+  if (assetRegistry_.scanArchives(bigArchiveManager_.gameDirectory(), &error)) {
+    console_->info("Asset registry rescanned");
+    console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
+    console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
+    console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+  } else {
+    console_->error("Failed to rescan asset registry: " + error);
+  }
 }
 
 } // namespace w3d

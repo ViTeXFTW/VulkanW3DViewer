@@ -1,6 +1,6 @@
 #include "renderable_mesh.hpp"
 
-#include "core/vulkan_context.hpp"
+#include "lib/gfx/vulkan_context.hpp"
 
 #include "mesh_converter.hpp"
 
@@ -10,11 +10,11 @@ RenderableMesh::~RenderableMesh() {
   destroy();
 }
 
-void RenderableMesh::load(VulkanContext &context, const W3DFile &file) {
+void RenderableMesh::load(gfx::VulkanContext &context, const W3DFile &file) {
   loadWithPose(context, file, nullptr);
 }
 
-void RenderableMesh::loadWithPose(VulkanContext &context, const W3DFile &file,
+void RenderableMesh::loadWithPose(gfx::VulkanContext &context, const W3DFile &file,
                                   const SkeletonPose *pose) {
   destroy(); // Clean up any existing data
 
@@ -94,7 +94,7 @@ void RenderableMesh::destroy() {
     mesh.indexBuffer.destroy();
   }
   meshes_.clear();
-  bounds_ = BoundingBox{};
+  bounds_ = gfx::BoundingBox{};
 }
 
 } // namespace w3d

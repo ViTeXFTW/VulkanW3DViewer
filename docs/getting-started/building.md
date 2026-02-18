@@ -9,13 +9,20 @@ The fastest way to build is using the provided build scripts:
 === "Windows (PowerShell)"
 
     ```powershell
-    .\scripts\rebuild.ps1 release
+    .\scripts\rebuild.ps1 debug                    # Auto-detect compiler
+    .\scripts\rebuild.ps1 release -Compiler msvc   # MSVC (recommended on Windows)
+    .\scripts\rebuild.ps1 debug -D                 # Clean build
+    .\scripts\rebuild.ps1 release -Compiler msvc -R # Build and run
+    .\scripts\rebuild.ps1 debug -Compiler clang    # Use Clang explicitly
     ```
 
 === "Linux/macOS"
 
     ```bash
-    ./scripts/rebuild.sh release
+    ./scripts/rebuild.sh debug                     # Auto-detect compiler
+    ./scripts/rebuild.sh release -c gcc            # Use GCC
+    ./scripts/rebuild.sh debug -c clang -d         # Clean build with Clang
+    ./scripts/rebuild.sh test                      # Build and run tests
 
     # If permission denied:
     chmod +x scripts/rebuild.sh
@@ -26,11 +33,32 @@ The fastest way to build is using the provided build scripts:
 
 The project uses CMake presets for different build configurations:
 
-| Preset | Description | Output Directory |
-|--------|-------------|------------------|
-| `debug` | Debug build with symbols, no optimization | `build/debug/` |
-| `release` | Optimized release build | `build/release/` |
-| `test` | Debug build with testing enabled | `build/test/` |
+| Preset | Compiler | Description | Output Directory |
+|--------|----------|-------------|------------------|
+| `debug` | Auto-detect | Debug build with symbols, no optimization | `build/debug/` |
+| `release` | Auto-detect | Optimized release build | `build/release/` |
+| `test` | Auto-detect | Debug build with testing enabled | `build/test/` |
+
+## Compiler Selection
+
+### Supported Compilers
+
+The project supports multiple compilers, each with their own strengths:
+
+| Compiler | Platform | Use Case |
+|----------|----------|----------|
+| **MSVC** | Windows | Recommended for Windows development. Best IDE integration with Visual Studio. |
+| **Clang** | Windows, Linux, macOS | Excellent diagnostics, fast compilation. Good cross-platform development. |
+| **GCC** | Linux, macOS | Standard on Linux systems. Excellent optimization. |
+
+### Choosing a Compiler
+
+- **Windows development**: Use MSVC for best Visual Studio integration, or Clang for better error messages
+- **Linux development**: Use GCC or Clang (both well-supported)
+- **macOS development**: Use Clang (Apple Clang is the default)
+- **Cross-platform development**: Use Clang for consistent behavior across platforms
+
+The build scripts will auto-detect the best available compiler if you don't specify one explicitly.
 
 ## Manual Build
 
@@ -39,37 +67,51 @@ If you prefer manual control over the build process:
 ### Configure
 
 ```bash
-# Debug build
-cmake --preset debug
+# Auto-detect compiler
+cmake --preset debug          # Debug build
+cmake --preset release        # Release build
+cmake --preset test           # Test build
 
-# Release build
-cmake --preset release
-
-# Test build
-cmake --preset test
+# Specific compilers
+cmake --preset msvc-debug     # MSVC debug (Windows)
+cmake --preset msvc-release   # MSVC release (Windows)
+cmake --preset clang-debug    # Clang debug
+cmake --preset clang-release  # Clang release
+cmake --preset gcc-debug      # GCC debug
+cmake --preset gcc-release    # GCC release
 ```
 
 ### Build
 
 ```bash
-# Build debug
+# Build auto-detected compiler
 cmake --build --preset debug
-
-# Build release
 cmake --build --preset release
-
-# Build tests
 cmake --build --preset test
+
+# Build specific compilers
+cmake --build --preset msvc-release
+cmake --build --preset clang-debug
+cmake --build --preset gcc-release
 ```
 
 ### Run
 
 ```bash
-# Windows
+# Windows (auto-detected compiler)
 ./build/release/VulkanW3DViewer.exe
 
-# Linux/macOS
+# Windows (MSVC)
+./build/msvc-release/VulkanW3DViewer.exe
+
+# Linux/macOS (auto-detected compiler)
 ./build/release/VulkanW3DViewer
+
+# Linux/macOS (Clang)
+./build/clang-release/VulkanW3DViewer
+
+# Linux/macOS (GCC)
+./build/gcc-release/VulkanW3DViewer
 ```
 
 ## Running Tests
@@ -95,11 +137,19 @@ ctest --preset test
 
 ### Compiler Flags
 
-The project uses strict compiler settings:
+The project uses strict compiler settings across all supported compilers:
 
+**GCC/Clang:**
 - `-Werror` - Treat warnings as errors
 - `-Wall -Wextra` - Enable comprehensive warnings
+- `-Wpedantic` - Pedantic warnings for ISO C++ conformance
 - `-std=c++20` - C++20 standard
+
+**MSVC:**
+- `/W4` - Warning level 4
+- `/permissive-` - Standards conformance mode
+- `/utf-8` - UTF-8 source and execution charset
+- `/std:c++20` - C++20 standard (implied)
 
 ### Shader Compilation
 
@@ -142,13 +192,35 @@ Shaders are automatically compiled to SPIR-V during the build process using `gls
 If you encounter issues, try a clean build:
 
 ```bash
-# Remove build directory
+# Remove specific build directory
+rm -rf build/release/          # Auto-detected compiler
+rm -rf build/msvc-release/     # MSVC
+rm -rf build/clang-release/    # Clang
+rm -rf build/gcc-release/      # GCC
+
+# Or remove all build directories
 rm -rf build/
 
 # Rebuild from scratch
 cmake --preset release
 cmake --build --preset release
 ```
+
+**Using build scripts:**
+
+=== "PowerShell"
+
+    ```powershell
+    .\scripts\rebuild.ps1 debug -D    # Clean debug build
+    .\scripts\rebuild.ps1 release -D -Compiler msvc  # Clean MSVC release build
+    ```
+
+=== "Bash"
+
+    ```bash
+    ./scripts/rebuild.sh debug -d              # Clean debug build
+    ./scripts/rebuild.sh release -c gcc -d    # Clean GCC release build
+    ```
 
 ## IDE Integration
 

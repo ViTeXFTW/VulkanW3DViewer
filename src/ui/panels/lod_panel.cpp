@@ -1,7 +1,7 @@
 #include "lod_panel.hpp"
 
 #include "../ui_context.hpp"
-#include "render/hlod_model.hpp"
+#include "lib/formats/w3d/hlod_model.hpp"
 
 #include <imgui.h>
 
@@ -17,20 +17,21 @@ void LODPanel::draw(UIContext &ctx) {
   auto &model = *ctx.hlodModel;
 
   // LOD mode selector
-  bool autoMode = model.selectionMode() == LODSelectionMode::Auto;
+  bool autoMode = model.selectionMode() == w3d_types::LODSelectionMode::Auto;
   if (ImGui::Checkbox("Auto LOD Selection", &autoMode)) {
-    model.setSelectionMode(autoMode ? LODSelectionMode::Auto : LODSelectionMode::Manual);
+    model.setSelectionMode(autoMode ? w3d_types::LODSelectionMode::Auto
+                                    : w3d_types::LODSelectionMode::Manual);
   }
 
   // Show current LOD info
   ImGui::Text("Current LOD: %zu / %zu", model.currentLOD() + 1, model.lodCount());
 
-  if (model.selectionMode() == LODSelectionMode::Auto) {
+  if (model.selectionMode() == w3d_types::LODSelectionMode::Auto) {
     ImGui::Text("Screen size: %.1f px", model.currentScreenSize());
   }
 
   // Manual LOD selector
-  if (model.selectionMode() == LODSelectionMode::Manual) {
+  if (model.selectionMode() == w3d_types::LODSelectionMode::Manual) {
     int currentLod = static_cast<int>(model.currentLOD());
     if (ImGui::SliderInt("LOD Level", &currentLod, 0, static_cast<int>(model.lodCount()) - 1)) {
       model.setCurrentLOD(static_cast<size_t>(currentLod));
