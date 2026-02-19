@@ -16,8 +16,21 @@ set(CMAKE_C_COMPILER   ${TOOLCHAIN_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)
 set(CMAKE_RC_COMPILER  ${TOOLCHAIN_PREFIX}-windres)
 
-# Target sysroot (MinGW-w64 libraries and headers)
-set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX})
+# Auto-detect sysroot from the compiler rather than hardcoding a distro-specific
+# path like /usr/x86_64-w64-mingw32 (Debian/Ubuntu default).
+execute_process(
+  COMMAND ${CMAKE_CXX_COMPILER} -print-sysroot
+  OUTPUT_VARIABLE _MINGW_SYSROOT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+  RESULT_VARIABLE _SYSROOT_RESULT
+)
+if(_SYSROOT_RESULT EQUAL 0 AND _MINGW_SYSROOT)
+  set(CMAKE_FIND_ROOT_PATH "${_MINGW_SYSROOT}")
+else()
+  # Fallback: standard location on Debian/Ubuntu
+  set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX})
+endif()
 
 # Search for *programs* (cmake, ninja, glslc) on the HOST (Linux), not in the
 # Windows sysroot. glslc must run on the build machine to compile shaders.
