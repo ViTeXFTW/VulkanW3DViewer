@@ -1,0 +1,46 @@
+name: Auto-tag Release
+ 
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+ 
+jobs:
+  tag-release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+ 
+      - name: Extract version and create tag
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          VERSION="${BRANCH#release/}"
+          echo "Tagging as: $VERSION"
+ 
+          # Validate version format (vX.Y.Z with optional pre-release suffix)
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "ERROR: Version '$VERSION' does not match expected format vX.Y.Z[-suffix]"
+            exit 1
+          fi
+ 
+          # Validate against CMakeLists.txt (warning only)
+          CMAKE_VERSION=$(grep -oP 'project\(.*VERSION\s+\K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt || echo "")
+          TAG_VERSION="${VERSION#v}"
+          TAG_BASE="${TAG_VERSION%%-*}"
+          if [ -n "$CMAKE_VERSION" ] && [ "$CMAKE_VERSION" != "$TAG_BASE" ]; then
+            echo "WARNING: CMakeLists.txt version ($CMAKE_VERSION) differs from tag version ($TAG_BASE)"
+            echo "Please ensure these are aligned."
+          fi
+ 
+          # Create and push the tag
+          git tag "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
