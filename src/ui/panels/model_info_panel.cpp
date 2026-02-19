@@ -2,9 +2,9 @@
 
 #include "../ui_context.hpp"
 #include "lib/formats/w3d/hlod_model.hpp"
+#include "lib/formats/w3d/types.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
-#include "lib/formats/w3d/types.hpp"
 
 #include <imgui.h>
 

@@ -1,5 +1,5 @@
-#include "render/animation_player.hpp"
 #include "lib/formats/w3d/types.hpp"
+#include "render/animation_player.hpp"
 
 #include <gtest/gtest.h>
 

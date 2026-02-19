@@ -6,8 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/gfx/bounding_box.hpp"
 #include "lib/formats/w3d/types.hpp"
+#include "lib/gfx/bounding_box.hpp"
 
 namespace w3d {
 

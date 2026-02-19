@@ -19,7 +19,8 @@ void LODPanel::draw(UIContext &ctx) {
   // LOD mode selector
   bool autoMode = model.selectionMode() == w3d_types::LODSelectionMode::Auto;
   if (ImGui::Checkbox("Auto LOD Selection", &autoMode)) {
-    model.setSelectionMode(autoMode ? w3d_types::LODSelectionMode::Auto : w3d_types::LODSelectionMode::Manual);
+    model.setSelectionMode(autoMode ? w3d_types::LODSelectionMode::Auto
+                                    : w3d_types::LODSelectionMode::Manual);
   }
 
   // Show current LOD info

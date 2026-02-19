@@ -9,9 +9,9 @@
 #include <string>
 #include <vector>
 
+#include "lib/formats/w3d/types.hpp"
 #include "lib/gfx/bounding_box.hpp"
 #include "skeleton.hpp"
-#include "lib/formats/w3d/types.hpp"
 
 namespace w3d {
 
