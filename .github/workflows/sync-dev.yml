@@ -1,0 +1,52 @@
+name: Sync dev with main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge main into dev
+        id: merge
+        run: |
+          git fetch origin dev || { echo "dev branch does not exist yet, skipping sync"; echo "skip=true" >> $GITHUB_OUTPUT; exit 0; }
+          git checkout dev
+
+          if git merge origin/main --no-edit -m "chore: Merge main into dev [skip ci]"; then
+            git push origin dev
+            echo "conflict=false" >> $GITHUB_OUTPUT
+          else
+            git merge --abort
+            SYNC_BRANCH="sync/main-to-dev-$(date +%Y%m%d-%H%M%S)"
+            git checkout -b "$SYNC_BRANCH" origin/main
+            git push origin "$SYNC_BRANCH"
+            echo "conflict=true" >> $GITHUB_OUTPUT
+            echo "sync_branch=$SYNC_BRANCH" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR if conflict
+        if: steps.merge.outputs.conflict == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "sync: Merge main into dev (resolve conflicts)" \
+            --body "Automated sync from main to dev after release. Manual conflict resolution required." \
+            --base dev \
+            --head "${{ steps.merge.outputs.sync_branch }}"
