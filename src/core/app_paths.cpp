@@ -9,6 +9,7 @@ namespace w3d {
 
 std::optional<std::filesystem::path> AppPaths::baseConfigDir() {
 #if defined(_WIN32) && defined(_MSC_VER)
+  // MSVC: _dupenv_s is thread-safe and avoids deprecation warnings
   char *appdata = nullptr;
   if (_dupenv_s(&appdata, nullptr, "APPDATA") == 0 && appdata) {
     std::filesystem::path result(appdata);
@@ -20,6 +21,16 @@ std::optional<std::filesystem::path> AppPaths::baseConfigDir() {
     std::filesystem::path result = std::filesystem::path(userprofile) / "AppData" / "Roaming";
     free(userprofile);
     return result;
+  }
+  return std::nullopt;
+
+#elif defined(_WIN32)
+  // MinGW-w64 and other non-MSVC Windows compilers: use standard getenv
+  if (const char *appdata = std::getenv("APPDATA")) {
+    return std::filesystem::path(appdata);
+  }
+  if (const char *userprofile = std::getenv("USERPROFILE")) {
+    return std::filesystem::path(userprofile) / "AppData" / "Roaming";
   }
   return std::nullopt;
 
