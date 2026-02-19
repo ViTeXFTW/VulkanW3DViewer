@@ -130,6 +130,7 @@ nav:
     - HLod: w3d-format/hlod.md
   - Development:
     - development/index.md
+    - Branching Strategy: development/branching-strategy.md
     - Code Style: development/code-style.md
     - Testing: development/testing.md
     - Contributing: development/contributing.md
