@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(VulkanW3DViewer VERSION 1.0.0 LANGUAGES CXX)
+project(VulkanW3DViewer VERSION 0.2.0 LANGUAGES CXX)
 
 # C++26 standard
 set(CMAKE_CXX_STANDARD 20)

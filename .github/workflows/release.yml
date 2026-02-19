@@ -2,8 +2,13 @@ name: Release Build
 
 on:
   push:
-    branches:
-      - 'release/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v0.3.0)'
+        required: true
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
@@ -18,12 +23,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
           submodules: recursive
 
-      - name: Extract version from branch name
+      - name: Extract version
         id: extract-version
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
@@ -82,12 +92,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
           submodules: recursive
 
-      - name: Extract version from branch name
+      - name: Extract version
         id: extract-version
         run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
@@ -154,7 +169,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref }}
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
@@ -172,8 +189,8 @@ jobs:
           VERSION=${{ needs.build-linux.outputs.version }}
           echo "Generating changelog for $VERSION"
 
-          # Get the last release tag
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # Get the previous release tag
+          LAST_TAG=$(git describe --tags --abbrev=0 --exclude="$VERSION" 2>/dev/null || echo "")
 
           if [ -z "$LAST_TAG" ]; then
             echo "No previous release found, generating full history"
@@ -212,15 +229,13 @@ jobs:
           cat changelog.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-linux.outputs.version }}
           name: Release ${{ needs.build-linux.outputs.version }}
           body_path: changelog.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(needs.build-linux.outputs.version, 'alpha') || contains(needs.build-linux.outputs.version, 'beta') }}
           files: |
             VulkanW3DViewer-linux-x64-${{ needs.build-linux.outputs.version }}.tar.gz
             VulkanW3DViewer-windows-x64-${{ needs.build-linux.outputs.version }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
