@@ -13,6 +13,8 @@ env:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
     outputs:
       cpp: ${{ steps.filter.outputs.cpp }}
       workflow: ${{ steps.filter.outputs.workflow }}
@@ -22,12 +24,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Detect changed files
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            cpp: 'src/**|tests/**|CMakeLists.txt|cmake/**'
-            workflow: '.github/workflows/pr-test.yml'
+            cpp:
+              - 'src/**'
+              - 'tests/**'
+              - 'CMakeLists.txt'
+              - 'cmake/**'
+              - 'shaders/**'
+            workflow:
+              - '.github/workflows/pr-test.yml'
 
   test:
     needs: changes
