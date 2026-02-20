@@ -11,32 +11,6 @@ env:
   BUILD_TYPE: test
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-    outputs:
-      cpp: ${{ steps.filter.outputs.cpp }}
-      workflow: ${{ steps.filter.outputs.workflow }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Detect changed files
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            cpp:
-              - 'src/**'
-              - 'tests/**'
-              - 'CMakeLists.txt'
-              - 'cmake/**'
-              - 'shaders/**'
-            workflow:
-              - '.github/workflows/pr-test.yml'
-
   test:
     needs: changes
     if: needs.changes.outputs.cpp == 'true'
