@@ -3,6 +3,7 @@
 Modern Vulkan-based renderer for W3D format files from Command & Conquer: Generals.
 
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://vitexftw.github.io/VulkanW3DViewer/)
+[![Tests](https://github.com/ViTeXFTW/VulkanW3DViewer/actions/workflows/pr-test.yml/badge.svg?event=push)](https://github.com/ViTeXFTW/VulkanW3DViewer/actions/workflows/pr-test.yml)
 
 > **EA has not endorsed and does not support this product.**
 
