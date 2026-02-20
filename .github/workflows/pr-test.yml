@@ -6,6 +6,9 @@ on:
       - dev
       - main
       - 'release/**'
+  push:
+    branches:
+      - main
 
 env:
   BUILD_TYPE: test
