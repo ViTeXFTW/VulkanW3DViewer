@@ -25,3 +25,6 @@
 [submodule "lib/BigXtractor"]
 	path = lib/BigXtractor
 	url = https://github.com/ViTeXFTW/BigXtractor.git
+[submodule "lib/vma"]
+	path = lib/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(VulkanW3DViewer VERSION 0.3.0 LANGUAGES CXX)
 
-# C++26 standard
+# C++20 standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -26,101 +26,155 @@ endif()
 # Testing with Google Test
 option(BUILD_TESTING "Build tests" OFF)
 
-# Only build main application if not in tests-only mode
+# Common dependencies
+# GLFW options - disable unnecessary builds
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+# Add GLFW submodule
+add_subdirectory(lib/glfw)
+
+# Add GLM submodule
+add_subdirectory(lib/glm)
+
+# BigXtractor library for BIG archive support
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(INSTALL_STANDALONE OFF CACHE BOOL "" FORCE)
+add_subdirectory(lib/BigXtractor)
+
+# ImGui sources
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+)
+
+# Common include directories for all targets
+set(COMMON_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp/Vulkan-Headers/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/CLI11/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/BigXtractor/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glfw/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
+)
+
+# Create w3d_lib static library
+# Library contains: W3D parsing, BIG archive support, rendering logic (Vulkan-free), scene management
+# Excludes: Vulkan graphics (gfx/), core app framework (core/), UI (ui/)
+# Excludes: Vulkan-dependent loaders (loader.cpp, model_loader.cpp, hlod_model.cpp) which go to executable
+file(GLOB_RECURSE LIB_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/animation_parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/chunk_types.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/chunk_reader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/hierarchy_parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/hlod_parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/mesh_parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/big/ini_extractor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/big/archive.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/big/reader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/scene/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/skeleton.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/raycast.cpp
+)
+
+add_library(w3d_lib STATIC ${LIB_SOURCES})
+
+target_include_directories(w3d_lib PUBLIC
+    ${COMMON_INCLUDE_DIRS}
+)
+
+target_link_libraries(w3d_lib PUBLIC
+    glm::glm
+    big::big
+)
+
+# Common compiler options function
+function(set_common_compile_options target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+endfunction()
+
+# Apply common options to library
+set_common_compile_options(w3d_lib)
+
+# Main application executable (requires Vulkan)
 if(NOT BUILD_TESTING)
     # Find Vulkan
     find_package(Vulkan REQUIRED)
 
-    # GLFW options - disable unnecessary builds
-    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-    # Add GLFW submodule
-    add_subdirectory(lib/glfw)
-
-    # Add GLM submodule
-    add_subdirectory(lib/glm)
-
-    # BigXtractor library for BIG archive support
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(INSTALL_STANDALONE OFF CACHE BOOL "" FORCE)
-    add_subdirectory(lib/BigXtractor)
-
-    # ImGui sources
-    set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
-    set(IMGUI_SOURCES
-        ${IMGUI_DIR}/imgui.cpp
-        ${IMGUI_DIR}/imgui_demo.cpp
-        ${IMGUI_DIR}/imgui_draw.cpp
-        ${IMGUI_DIR}/imgui_tables.cpp
-        ${IMGUI_DIR}/imgui_widgets.cpp
-        ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-        ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+    # Collect application source files
+    # Executable contains: main.cpp, core framework, UI, Vulkan graphics, and Vulkan-dependent rendering
+    # Note: skeleton.cpp and raycast.cpp are in w3d_lib (excluded here to avoid duplicates)
+    file(GLOB_RECURSE APP_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gfx/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/animation_player.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/bone_buffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/hover_detector.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/mesh_converter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/renderable_mesh.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/render/skeleton_renderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/loader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/model_loader.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/w3d/hlod_model.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/big/asset_registry.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/formats/big/big_archive_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     )
 
-    # Collect source files
-    file(GLOB_RECURSE SOURCES "src/*.cpp")
-    file(GLOB_RECURSE HEADERS "include/*.hpp" "include/*.h")
+    add_executable(${PROJECT_NAME} ${APP_SOURCES} ${IMGUI_SOURCES})
 
-    # Create executable
-    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${IMGUI_SOURCES})
-
-    # Include directories
-    # Use Vulkan headers from Vulkan-Hpp submodule (not system headers) to ensure version compatibility
     target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp/Vulkan-Headers/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/CLI11/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/BigXtractor/include
+        ${COMMON_INCLUDE_DIRS}
     )
 
-    # Link libraries
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Vulkan::Vulkan
         glfw
-        glm::glm
+        w3d_lib
         big::big
     )
 
     # Compiler-specific flags
     if(MSVC)
-        # MSVC (Microsoft Visual C++)
         target_compile_options(${PROJECT_NAME} PRIVATE
-            /permissive-           # Standards conformance
-            /utf-8                 # UTF-8 source and execution charset
-            $<$<CONFIG:Debug>:/Od /Zi /W4 >
+            $<$<CONFIG:Debug>:/Od /Zi>
             $<$<CONFIG:Release>:/O2 /GL>
         )
         target_link_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Release>:/LTCG>
         )
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        # GCC
         target_compile_options(${PROJECT_NAME} PRIVATE
-            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic -Werror>
+            $<$<CONFIG:Debug>:-O0 -g>
             $<$<CONFIG:Release>:-O3>
         )
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # Clang or AppleClang
         target_compile_options(${PROJECT_NAME} PRIVATE
-            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic -Werror>
+            $<$<CONFIG:Debug>:-O0 -g>
             $<$<CONFIG:Release>:-O3>
         )
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-        # Intel C++ Compiler
         target_compile_options(${PROJECT_NAME} PRIVATE
-            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Werror>
+            $<$<CONFIG:Debug>:-O0 -g>
             $<$<CONFIG:Release>:-O3 -ipo>
         )
     else()
-        # Unknown compiler - use basic flags
         message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
         target_compile_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Debug>:-O0 -g>
