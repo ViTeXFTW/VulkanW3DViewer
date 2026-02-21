@@ -114,7 +114,6 @@ private:
   VmaAllocation depthImageAllocation_ = nullptr;
   vk::ImageView depthImageView_;
   vk::Format depthFormat_;
-  vk::DeviceMemory depthImageMemory_;
 
   vk::CommandPool commandPool_;
 

@@ -10,13 +10,12 @@ Buffer::~Buffer() {
 
 Buffer::Buffer(Buffer &&other) noexcept
     : allocator_(other.allocator_), buffer_(other.buffer_), allocation_(other.allocation_),
-      size_(other.size_), mappedData_(other.mappedData_), memory_(other.memory_) {
+      size_(other.size_), mappedData_(other.mappedData_) {
   other.allocator_ = nullptr;
   other.buffer_ = nullptr;
   other.allocation_ = nullptr;
   other.size_ = 0;
   other.mappedData_ = nullptr;
-  other.memory_ = nullptr;
 }
 
 Buffer &Buffer::operator=(Buffer &&other) noexcept {
@@ -27,13 +26,11 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept {
     allocation_ = other.allocation_;
     size_ = other.size_;
     mappedData_ = other.mappedData_;
-    memory_ = other.memory_;
     other.allocator_ = nullptr;
     other.buffer_ = nullptr;
     other.allocation_ = nullptr;
     other.size_ = 0;
     other.mappedData_ = nullptr;
-    other.memory_ = nullptr;
   }
   return *this;
 }

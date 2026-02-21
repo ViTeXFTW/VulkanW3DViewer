@@ -37,7 +37,6 @@ public:
   void upload(const void *data, vk::DeviceSize size);
 
   vk::Buffer buffer() const { return buffer_; }
-  vk::DeviceMemory memory() const { return memory_; }
   vk::DeviceSize size() const { return size_; }
 
 private:
@@ -46,7 +45,6 @@ private:
   VmaAllocation allocation_ = nullptr;
   vk::DeviceSize size_ = 0;
   void *mappedData_ = nullptr;
-  vk::DeviceMemory memory_;
 };
 
 class StagedBuffer {
