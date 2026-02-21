@@ -534,8 +534,8 @@ vk::DescriptorImageInfo TextureManager::descriptorInfo(uint32_t index) const {
 
 void TextureManager::createImage(uint32_t width, uint32_t height, vk::Format format,
                                  vk::ImageTiling tiling, vk::ImageUsageFlags usage,
-                                 vk::MemoryPropertyFlags properties, vk::Image &image,
-                                 VmaAllocation &allocation) {
+                                 [[maybe_unused]] vk::MemoryPropertyFlags properties,
+                                 vk::Image &image, VmaAllocation &allocation) {
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
