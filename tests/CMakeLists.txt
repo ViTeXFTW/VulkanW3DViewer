@@ -192,3 +192,18 @@ else()
 endif()
 
 add_test(NAME dynamic_buffer_tests COMMAND dynamic_buffer_tests)
+
+# Mipmap calculation tests (pure math, no dependencies)
+add_executable(mipmap_tests
+  render/test_mipmap_calculation.cpp
+)
+
+target_link_libraries(mipmap_tests PRIVATE gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(mipmap_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(mipmap_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME mipmap_tests COMMAND mipmap_tests)

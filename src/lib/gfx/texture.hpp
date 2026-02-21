@@ -33,6 +33,7 @@ struct GPUTexture {
   vk::Sampler sampler;
   uint32_t width = 0;
   uint32_t height = 0;
+  uint32_t mipLevels = 1;
   std::string name;
   vk::DeviceMemory memory;
 
@@ -90,14 +91,20 @@ private:
 
   void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
                    vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image &image,
-                   VmaAllocation &allocation);
+                   VmaAllocation &allocation, uint32_t mipLevels = 1);
 
-  vk::ImageView createImageView(vk::Image image, vk::Format format);
-  vk::Sampler createSampler();
+  vk::ImageView createImageView(vk::Image image, vk::Format format, uint32_t mipLevels = 1);
+  vk::Sampler createSampler(uint32_t mipLevels = 1);
 
-  void transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+  void transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
+                             uint32_t mipLevels = 1);
 
   void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+
+  void generateMipmaps(vk::Image image, vk::Format format, uint32_t width, uint32_t height,
+                       uint32_t mipLevels);
+
+  uint32_t calculateMipLevels(uint32_t width, uint32_t height) const;
 
   uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
