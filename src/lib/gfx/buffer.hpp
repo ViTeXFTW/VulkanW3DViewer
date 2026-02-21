@@ -1,5 +1,7 @@
 #pragma once
 
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -7,6 +9,8 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+
+#include <vk_mem_alloc.h>
 
 namespace w3d::gfx {
 
@@ -37,11 +41,12 @@ public:
   vk::DeviceSize size() const { return size_; }
 
 private:
-  vk::Device device_;
+  VmaAllocator allocator_ = nullptr;
   vk::Buffer buffer_;
-  vk::DeviceMemory memory_;
+  VmaAllocation allocation_ = nullptr;
   vk::DeviceSize size_ = 0;
   void *mappedData_ = nullptr;
+  vk::DeviceMemory memory_;
 };
 
 class StagedBuffer {

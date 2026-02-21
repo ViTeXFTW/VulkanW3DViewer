@@ -48,6 +48,7 @@ void TextureManager::destroy() {
   }
 
   vk::Device device = context_->device();
+  VmaAllocator allocator = context_->allocator();
 
   for (auto &tex : textures_) {
     if (tex.sampler) {
@@ -56,11 +57,8 @@ void TextureManager::destroy() {
     if (tex.view) {
       device.destroyImageView(tex.view);
     }
-    if (tex.image) {
-      device.destroyImage(tex.image);
-    }
-    if (tex.memory) {
-      device.freeMemory(tex.memory);
+    if (tex.image && tex.allocation) {
+      vmaDestroyImage(allocator, tex.image, tex.allocation);
     }
   }
 
@@ -422,7 +420,7 @@ uint32_t TextureManager::createTexture(const std::string &name, uint32_t width, 
 
   createImage(width, height, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal,
               vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-              vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.memory);
+              vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.allocation);
 
   transitionImageLayout(tex.image, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eTransferDstOptimal);
@@ -480,7 +478,7 @@ uint32_t TextureManager::createTextureWithFormat(const std::string &name, uint32
 
   createImage(width, height, format, vk::ImageTiling::eOptimal,
               vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-              vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.memory);
+              vk::MemoryPropertyFlagBits::eDeviceLocal, tex.image, tex.allocation);
 
   transitionImageLayout(tex.image, vk::ImageLayout::eUndefined,
                         vk::ImageLayout::eTransferDstOptimal);
@@ -537,30 +535,29 @@ vk::DescriptorImageInfo TextureManager::descriptorInfo(uint32_t index) const {
 void TextureManager::createImage(uint32_t width, uint32_t height, vk::Format format,
                                  vk::ImageTiling tiling, vk::ImageUsageFlags usage,
                                  vk::MemoryPropertyFlags properties, vk::Image &image,
-                                 vk::DeviceMemory &memory) {
-  vk::Device device = context_->device();
+                                 VmaAllocation &allocation) {
+  VkImageCreateInfo imageInfo{};
+  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  imageInfo.imageType = VK_IMAGE_TYPE_2D;
+  imageInfo.format = static_cast<VkFormat>(format);
+  imageInfo.extent = {width, height, 1};
+  imageInfo.mipLevels = 1;
+  imageInfo.arrayLayers = 1;
+  imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+  imageInfo.tiling = static_cast<VkImageTiling>(tiling);
+  imageInfo.usage = static_cast<VkImageUsageFlags>(usage);
+  imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  vk::ImageCreateInfo imageInfo{
-      {},
-      vk::ImageType::e2D,
-      format,
-      {width, height, 1},
-      1,
-      1,
-      vk::SampleCountFlagBits::e1,
-      tiling,
-      usage,
-      vk::SharingMode::eExclusive
-  };
+  VmaAllocationCreateInfo allocInfo{};
+  allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
-  image = device.createImage(imageInfo);
-
-  vk::MemoryRequirements memRequirements = device.getImageMemoryRequirements(image);
-  vk::MemoryAllocateInfo allocInfo{memRequirements.size,
-                                   findMemoryType(memRequirements.memoryTypeBits, properties)};
-
-  memory = device.allocateMemory(allocInfo);
-  device.bindImageMemory(image, memory, 0);
+  VkImage vkImage;
+  if (vmaCreateImage(context_->allocator(), &imageInfo, &allocInfo, &vkImage, &allocation,
+                     nullptr) != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create image with VMA");
+  }
+  image = vkImage;
 }
 
 vk::ImageView TextureManager::createImageView(vk::Image image, vk::Format format) {

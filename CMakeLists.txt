@@ -40,6 +40,9 @@ add_subdirectory(lib/glfw)
 # Add GLM submodule
 add_subdirectory(lib/glm)
 
+# VulkanMemoryAllocator submodule
+add_subdirectory(lib/VulkanMemoryAllocator)
+
 # BigXtractor library for BIG archive support
 set(BUILD_TESTING_SAVED ${BUILD_TESTING})
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
@@ -128,6 +131,7 @@ target_include_directories(w3d_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp/Vulkan-Headers/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/Vulkan-Hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/VulkanMemoryAllocator/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/BigXtractor/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui/backends
@@ -140,6 +144,7 @@ target_link_libraries(w3d_lib PUBLIC
     glfw
     glm::glm
     bigx::bigx
+    VulkanMemoryAllocator
 )
 
 # Library compile definitions

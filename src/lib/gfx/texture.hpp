@@ -1,5 +1,7 @@
 #pragma once
 
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -8,6 +10,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <vk_mem_alloc.h>
 
 namespace w3d::gfx {
 
@@ -24,12 +28,13 @@ namespace w3d::gfx {
 
 struct GPUTexture {
   vk::Image image;
-  vk::DeviceMemory memory;
+  VmaAllocation allocation = nullptr;
   vk::ImageView view;
   vk::Sampler sampler;
   uint32_t width = 0;
   uint32_t height = 0;
   std::string name;
+  vk::DeviceMemory memory;
 
   bool valid() const { return image && view && sampler; }
 };
@@ -85,7 +90,7 @@ private:
 
   void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
                    vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image &image,
-                   vk::DeviceMemory &memory);
+                   VmaAllocation &allocation);
 
   vk::ImageView createImageView(vk::Image image, vk::Format format);
   vk::Sampler createSampler();
