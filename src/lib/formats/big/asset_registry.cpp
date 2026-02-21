@@ -150,7 +150,7 @@ bool AssetRegistry::scanArchives(const std::filesystem::path &gameDirectory,
 bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
                                 const std::string &archiveName, std::string *outError) {
   std::string error;
-  auto archive = ::big::Archive::open(archivePath, &error);
+  auto archive = ::bigx::Archive::open(archivePath, &error);
 
   if (!archive) {
     if (outError) {

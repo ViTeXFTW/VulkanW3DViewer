@@ -72,12 +72,12 @@ private:
   bool initialized_ = false;
   std::filesystem::path gameDirectory_;
   std::filesystem::path cacheDirectory_;
-  std::unordered_map<std::string, ::big::Archive> archives_;
+  std::unordered_map<std::string, ::bigx::Archive> archives_;
 
   /// Find asset in all loaded archives
   /// @param archivePath Path to search for
   /// @return File entry if found, nullptr otherwise
-  const ::big::FileEntry *findAsset(const std::string &archivePath) const;
+  const ::bigx::FileEntry *findAsset(const std::string &archivePath) const;
 
   /// Get cache file path for an archive path
   /// @param archivePath Path within the archive

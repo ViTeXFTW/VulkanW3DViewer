@@ -38,7 +38,7 @@ std::vector<std::string> IniExtractor::listIniFiles(const std::filesystem::path 
     std::filesystem::path archivePath = gameDirectory / archiveName;
 
     std::string error;
-    auto archive = ::big::Archive::open(archivePath, &error);
+    auto archive = ::bigx::Archive::open(archivePath, &error);
 
     if (!archive) {
       continue; // Skip archives that don't exist
@@ -80,7 +80,7 @@ size_t IniExtractor::extractAllIni(const std::filesystem::path &gameDirectory,
     std::filesystem::path archivePath = gameDirectory / archiveName;
 
     std::string error;
-    auto archive = ::big::Archive::open(archivePath, &error);
+    auto archive = ::bigx::Archive::open(archivePath, &error);
 
     if (!archive) {
       continue; // Skip archives that don't exist
