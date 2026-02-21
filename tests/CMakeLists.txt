@@ -207,3 +207,18 @@ else()
 endif()
 
 add_test(NAME mipmap_tests COMMAND mipmap_tests)
+
+# Pipeline create info tests (pure struct tests, no Vulkan initialization)
+add_executable(pipeline_create_info_tests
+  gfx/test_pipeline_create_info.cpp
+)
+
+target_link_libraries(pipeline_create_info_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(pipeline_create_info_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(pipeline_create_info_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME pipeline_create_info_tests COMMAND pipeline_create_info_tests)

@@ -13,17 +13,11 @@ Pipeline::~Pipeline() {
   destroy();
 }
 
-void Pipeline::create(VulkanContext &context, const std::string &vertShaderPath,
-                      const std::string &fragShaderPath) {
-  createWithTexture(context, vertShaderPath, fragShaderPath, {});
-}
-
-void Pipeline::createWithTexture(VulkanContext &context, const std::string &vertShaderPath,
-                                 const std::string &fragShaderPath, const PipelineConfig &config) {
+void Pipeline::create(VulkanContext &context, const gfx::PipelineCreateInfo &createInfo) {
   device_ = context.device();
 
-  auto vertShaderCode = readFile(vertShaderPath);
-  auto fragShaderCode = readFile(fragShaderPath);
+  auto vertShaderCode = readFile(createInfo.vertShaderPath);
+  auto fragShaderCode = readFile(createInfo.fragShaderPath);
 
   auto vertShaderModule = createShaderModule(vertShaderCode);
   auto fragShaderModule = createShaderModule(fragShaderCode);
@@ -37,14 +31,10 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
   std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo,
                                                                    fragShaderStageInfo};
 
-  auto bindingDescription = Vertex::getBindingDescription();
-  auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
-      {}, bindingDescription, attributeDescriptions};
+      {}, createInfo.vertexInput.binding, createInfo.vertexInput.attributes};
 
-  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-      {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE};
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{{}, createInfo.topology, VK_FALSE};
 
   std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport,
                                                    vk::DynamicState::eScissor};
@@ -53,31 +43,31 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
 
   vk::PipelineViewportStateCreateInfo viewportState{{}, 1, nullptr, 1, nullptr};
 
-  vk::PipelineRasterizationStateCreateInfo rasterizer{{},
-                                                      VK_FALSE,
-                                                      VK_FALSE,
-                                                      vk::PolygonMode::eFill,
-                                                      config.twoSided ? vk::CullModeFlagBits::eNone
-                                                                      : vk::CullModeFlagBits::eBack,
-                                                      vk::FrontFace::eCounterClockwise,
-                                                      VK_FALSE,
-                                                      0.0f,
-                                                      0.0f,
-                                                      0.0f,
-                                                      1.0f};
+  vk::PipelineRasterizationStateCreateInfo rasterizer{
+      {},
+      VK_FALSE,
+      VK_FALSE,
+      vk::PolygonMode::eFill,
+      createInfo.config.twoSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack,
+      vk::FrontFace::eCounterClockwise,
+      VK_FALSE,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f};
 
   vk::PipelineMultisampleStateCreateInfo multisampling{{}, vk::SampleCountFlagBits::e1, VK_FALSE};
 
   vk::PipelineDepthStencilStateCreateInfo depthStencil{
-      {},       VK_TRUE, config.depthWrite ? VK_TRUE : VK_FALSE, vk::CompareOp::eLess,
+      {},       VK_TRUE, createInfo.config.depthWrite ? VK_TRUE : VK_FALSE, vk::CompareOp::eLess,
       VK_FALSE, VK_FALSE};
 
   vk::PipelineColorBlendAttachmentState colorBlendAttachment;
-  if (config.enableBlending) {
+  if (createInfo.config.enableBlending) {
     colorBlendAttachment = vk::PipelineColorBlendAttachmentState{
         VK_TRUE,
-        config.alphaBlend ? vk::BlendFactor::eSrcAlpha : vk::BlendFactor::eOne,
-        config.alphaBlend ? vk::BlendFactor::eOneMinusSrcAlpha : vk::BlendFactor::eOne,
+        createInfo.config.alphaBlend ? vk::BlendFactor::eSrcAlpha : vk::BlendFactor::eOne,
+        createInfo.config.alphaBlend ? vk::BlendFactor::eOneMinusSrcAlpha : vk::BlendFactor::eOne,
         vk::BlendOp::eAdd,
         vk::BlendFactor::eOne,
         vk::BlendFactor::eZero,
@@ -100,21 +90,12 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
   vk::PipelineColorBlendStateCreateInfo colorBlending{
       {}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
 
-  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
-      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
-                                     vk::ShaderStageFlagBits::eVertex  },
-      vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                     vk::ShaderStageFlagBits::eFragment}
-  };
-
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
+  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, createInfo.descriptorBindings};
 
   descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);
 
-  vk::PushConstantRange pushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
-                                          sizeof(MaterialPushConstant)};
-
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_, pushConstantRange};
+  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+      {}, descriptorSetLayout_, createInfo.pushConstants};
 
   pipelineLayout_ = device_.createPipelineLayout(pipelineLayoutInfo);
 
@@ -143,131 +124,22 @@ void Pipeline::createWithTexture(VulkanContext &context, const std::string &vert
   device_.destroyShaderModule(fragShaderModule);
 }
 
+void Pipeline::createWithTexture(VulkanContext &context, const std::string &vertShaderPath,
+                                 const std::string &fragShaderPath, const PipelineConfig &config) {
+  auto createInfo = PipelineCreateInfo::standard();
+  createInfo.vertShaderPath = vertShaderPath;
+  createInfo.fragShaderPath = fragShaderPath;
+  createInfo.config = config;
+  create(context, createInfo);
+}
+
 void Pipeline::createSkinned(VulkanContext &context, const std::string &vertShaderPath,
                              const std::string &fragShaderPath, const PipelineConfig &config) {
-  device_ = context.device();
-
-  auto vertShaderCode = readFile(vertShaderPath);
-  auto fragShaderCode = readFile(fragShaderPath);
-
-  auto vertShaderModule = createShaderModule(vertShaderCode);
-  auto fragShaderModule = createShaderModule(fragShaderCode);
-
-  vk::PipelineShaderStageCreateInfo vertShaderStageInfo{
-      {}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main"};
-
-  vk::PipelineShaderStageCreateInfo fragShaderStageInfo{
-      {}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main"};
-
-  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo,
-                                                                   fragShaderStageInfo};
-
-  auto bindingDescription = SkinnedVertex::getBindingDescription();
-  auto attributeDescriptions = SkinnedVertex::getAttributeDescriptions();
-
-  vk::PipelineVertexInputStateCreateInfo vertexInputInfo{
-      {}, bindingDescription, attributeDescriptions};
-
-  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{
-      {}, vk::PrimitiveTopology::eTriangleList, VK_FALSE};
-
-  std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport,
-                                                   vk::DynamicState::eScissor};
-
-  vk::PipelineDynamicStateCreateInfo dynamicState{{}, dynamicStates};
-
-  vk::PipelineViewportStateCreateInfo viewportState{{}, 1, nullptr, 1, nullptr};
-
-  vk::PipelineRasterizationStateCreateInfo rasterizer{{},
-                                                      VK_FALSE,
-                                                      VK_FALSE,
-                                                      vk::PolygonMode::eFill,
-                                                      config.twoSided ? vk::CullModeFlagBits::eNone
-                                                                      : vk::CullModeFlagBits::eBack,
-                                                      vk::FrontFace::eCounterClockwise,
-                                                      VK_FALSE,
-                                                      0.0f,
-                                                      0.0f,
-                                                      0.0f,
-                                                      1.0f};
-
-  vk::PipelineMultisampleStateCreateInfo multisampling{{}, vk::SampleCountFlagBits::e1, VK_FALSE};
-
-  vk::PipelineDepthStencilStateCreateInfo depthStencil{
-      {},       VK_TRUE, config.depthWrite ? VK_TRUE : VK_FALSE, vk::CompareOp::eLess,
-      VK_FALSE, VK_FALSE};
-
-  vk::PipelineColorBlendAttachmentState colorBlendAttachment;
-  if (config.enableBlending) {
-    colorBlendAttachment = vk::PipelineColorBlendAttachmentState{
-        VK_TRUE,
-        config.alphaBlend ? vk::BlendFactor::eSrcAlpha : vk::BlendFactor::eOne,
-        config.alphaBlend ? vk::BlendFactor::eOneMinusSrcAlpha : vk::BlendFactor::eOne,
-        vk::BlendOp::eAdd,
-        vk::BlendFactor::eOne,
-        vk::BlendFactor::eZero,
-        vk::BlendOp::eAdd,
-        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
-  } else {
-    colorBlendAttachment = vk::PipelineColorBlendAttachmentState{
-        VK_FALSE,
-        vk::BlendFactor::eOne,
-        vk::BlendFactor::eZero,
-        vk::BlendOp::eAdd,
-        vk::BlendFactor::eOne,
-        vk::BlendFactor::eZero,
-        vk::BlendOp::eAdd,
-        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA};
-  }
-
-  vk::PipelineColorBlendStateCreateInfo colorBlending{
-      {}, VK_FALSE, vk::LogicOp::eCopy, colorBlendAttachment};
-
-  std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
-      vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
-                                     vk::ShaderStageFlagBits::eVertex  },
-      vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                     vk::ShaderStageFlagBits::eFragment},
-      vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eStorageBuffer,        1,
-                                     vk::ShaderStageFlagBits::eVertex  }
-  };
-
-  vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, bindings};
-
-  descriptorSetLayout_ = device_.createDescriptorSetLayout(layoutInfo);
-
-  vk::PushConstantRange pushConstantRange{vk::ShaderStageFlagBits::eFragment, 0,
-                                          sizeof(MaterialPushConstant)};
-
-  vk::PipelineLayoutCreateInfo pipelineLayoutInfo{{}, descriptorSetLayout_, pushConstantRange};
-
-  pipelineLayout_ = device_.createPipelineLayout(pipelineLayoutInfo);
-
-  vk::GraphicsPipelineCreateInfo pipelineInfo{{},
-                                              shaderStages,
-                                              &vertexInputInfo,
-                                              &inputAssembly,
-                                              nullptr,
-                                              &viewportState,
-                                              &rasterizer,
-                                              &multisampling,
-                                              &depthStencil,
-                                              &colorBlending,
-                                              &dynamicState,
-                                              pipelineLayout_,
-                                              context.renderPass(),
-                                              0};
-
-  auto result = device_.createGraphicsPipeline(nullptr, pipelineInfo);
-  if (result.result != vk::Result::eSuccess) {
-    throw std::runtime_error("Failed to create skinned graphics pipeline");
-  }
-  pipeline_ = result.value;
-
-  device_.destroyShaderModule(vertShaderModule);
-  device_.destroyShaderModule(fragShaderModule);
+  auto createInfo = PipelineCreateInfo::skinned();
+  createInfo.vertShaderPath = vertShaderPath;
+  createInfo.fragShaderPath = fragShaderPath;
+  createInfo.config = config;
+  create(context, createInfo);
 }
 
 void Pipeline::destroy() {
