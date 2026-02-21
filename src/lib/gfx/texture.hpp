@@ -34,6 +34,7 @@ struct GPUTexture {
   uint32_t width = 0;
   uint32_t height = 0;
   uint32_t mipLevels = 1;
+  uint32_t arrayLayers = 1;
   std::string name;
   vk::DeviceMemory memory;
 
@@ -72,6 +73,10 @@ public:
   uint32_t createTextureWithFormat(const std::string &name, uint32_t width, uint32_t height,
                                    const uint8_t *data, size_t dataSize, vk::Format format);
 
+  uint32_t createTextureArray(const std::string &name, uint32_t width, uint32_t height,
+                              uint32_t layerCount,
+                              const std::vector<std::vector<uint8_t>> &layerData);
+
   const GPUTexture &texture(uint32_t index) const;
 
   size_t textureCount() const { return textures_.size(); }
@@ -91,18 +96,20 @@ private:
 
   void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
                    vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image &image,
-                   VmaAllocation &allocation, uint32_t mipLevels = 1);
+                   VmaAllocation &allocation, uint32_t mipLevels = 1, uint32_t arrayLayers = 1);
 
-  vk::ImageView createImageView(vk::Image image, vk::Format format, uint32_t mipLevels = 1);
+  vk::ImageView createImageView(vk::Image image, vk::Format format, uint32_t mipLevels = 1,
+                                uint32_t arrayLayers = 1);
   vk::Sampler createSampler(uint32_t mipLevels = 1);
 
   void transitionImageLayout(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
-                             uint32_t mipLevels = 1);
+                             uint32_t mipLevels = 1, uint32_t arrayLayers = 1);
 
-  void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+  void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height,
+                         uint32_t arrayLayers = 1);
 
   void generateMipmaps(vk::Image image, vk::Format format, uint32_t width, uint32_t height,
-                       uint32_t mipLevels);
+                       uint32_t mipLevels, uint32_t arrayLayers = 1);
 
   uint32_t calculateMipLevels(uint32_t width, uint32_t height) const;
 
