@@ -222,3 +222,30 @@ else()
 endif()
 
 add_test(NAME pipeline_create_info_tests COMMAND pipeline_create_info_tests)
+
+# RTS camera tests (logic tests - needs ImGui)
+add_executable(rts_camera_tests
+  gfx/test_rts_camera.cpp
+)
+
+# RTS camera uses ImGui::GetIO() for input checking, so we need to link against ImGui
+target_sources(rts_camera_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_draw.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_tables.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_widgets.cpp
+)
+
+target_link_libraries(rts_camera_tests PRIVATE w3d_lib gtest gtest_main)
+
+target_include_directories(rts_camera_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/lib/imgui
+)
+
+if(MSVC)
+  target_compile_options(rts_camera_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(rts_camera_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME rts_camera_tests COMMAND rts_camera_tests)
