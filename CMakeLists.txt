@@ -86,7 +86,7 @@ if(NOT BUILD_TESTING)
         Vulkan::Vulkan
         glfw
         glm::glm
-        big::big
+        bigx::bigx
     )
 
     # Compiler-specific flags

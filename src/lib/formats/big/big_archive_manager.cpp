@@ -55,7 +55,7 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
     std::filesystem::path archivePath = gameDirectory_ / archiveName;
 
     std::string error;
-    auto archive = ::big::Archive::open(archivePath, &error);
+    auto archive = ::bigx::Archive::open(archivePath, &error);
 
     if (archive) {
       archives_[archiveName] = std::move(*archive);
@@ -95,7 +95,7 @@ bool BigArchiveManager::loadArchives(std::string *outError) {
         }
 
         std::string error;
-        auto archive = ::big::Archive::open(path, &error);
+        auto archive = ::bigx::Archive::open(path, &error);
 
         if (archive) {
           archives_[key] = std::move(*archive);
@@ -149,7 +149,7 @@ bool BigArchiveManager::initialize(const std::filesystem::path &gameDirectory,
   return true;
 }
 
-const ::big::FileEntry *BigArchiveManager::findAsset(const std::string &archivePath) const {
+const ::bigx::FileEntry *BigArchiveManager::findAsset(const std::string &archivePath) const {
   // Search in all loaded archives
   for (const auto &pair : archives_) {
     const auto *entry = pair.second.findFile(archivePath);
