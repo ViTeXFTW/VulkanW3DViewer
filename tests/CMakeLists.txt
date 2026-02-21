@@ -249,3 +249,18 @@ else()
 endif()
 
 add_test(NAME rts_camera_tests COMMAND rts_camera_tests)
+
+# Map file parser tests (no Vulkan dependencies)
+add_executable(map_tests
+  map/test_data_chunk_reader.cpp
+)
+
+target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(map_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME map_tests COMMAND map_tests)
