@@ -175,4 +175,51 @@ struct GlobalLighting {
   }
 };
 
+enum class Weather : int32_t { Normal = 0, Snowy = 1, SnowAndRain = 2 };
+
+struct WorldInfo {
+  Dict properties;
+  Weather weather = Weather::Normal;
+
+  bool isValid() const { return true; }
+};
+
+struct BuildListEntry {
+  std::string buildingName;
+  std::string templateName;
+  glm::vec3 location{0.0f, 0.0f, 0.0f};
+  float angle = 0.0f;
+  bool initiallyBuilt = false;
+  int32_t numRebuilds = 0;
+  std::string script;
+  int32_t health = 0;
+  bool isWhiner = false;
+  bool isUnsellable = false;
+  bool isRepairable = false;
+};
+
+struct Team {
+  Dict properties;
+  std::string name;
+};
+
+struct Side {
+  Dict properties;
+  std::string name;
+  std::vector<BuildListEntry> buildList;
+};
+
+struct PlayerScript {
+  std::string name;
+  std::string script;
+};
+
+struct SidesList {
+  std::vector<Side> sides;
+  std::vector<Team> teams;
+  std::vector<PlayerScript> playerScripts;
+
+  bool isValid() const { return true; }
+};
+
 } // namespace map

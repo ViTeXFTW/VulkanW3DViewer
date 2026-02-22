@@ -258,6 +258,7 @@ add_executable(map_tests
   map/test_objects_parser.cpp
   map/test_triggers_parser.cpp
   map/test_lighting_parser.cpp
+  map/test_worldinfo_sideslist_parser.cpp
 )
 
 target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)
