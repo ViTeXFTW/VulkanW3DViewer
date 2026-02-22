@@ -222,4 +222,23 @@ struct SidesList {
   bool isValid() const { return true; }
 };
 
+struct MapFile {
+  HeightMap heightMap;
+  BlendTileData blendTiles;
+  std::vector<MapObject> objects;
+  std::vector<PolygonTrigger> triggers;
+  GlobalLighting lighting;
+  WorldInfo worldInfo;
+  SidesList sides;
+  std::string sourcePath;
+
+  bool hasHeightMap() const { return heightMap.isValid(); }
+  bool hasBlendTiles() const { return blendTiles.isValid(); }
+  bool hasLighting() const { return lighting.isValid(); }
+  bool hasObjects() const { return !objects.empty(); }
+  bool hasTriggers() const { return !triggers.empty(); }
+
+  std::string describe() const;
+};
+
 } // namespace map
