@@ -132,4 +132,15 @@ struct MapObject {
   bool shouldRender() const { return (flags & FLAG_DONT_RENDER) == 0; }
 };
 
+struct PolygonTrigger {
+  std::string name;
+  int32_t id = 0;
+  bool isWaterArea = false;
+  bool isRiver = false;
+  int32_t riverStart = 0;
+  std::vector<glm::ivec3> points;
+
+  bool isValid() const { return !name.empty() && !points.empty(); }
+};
+
 } // namespace map
