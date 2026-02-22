@@ -218,7 +218,7 @@ Goal: Load `.map` files and render complete C&C Generals: Zero Hour scenes (terr
 |-------|--------|-------------|
 | 0 | Done | Architecture refactoring -- extract `w3d_lib` static library, integrate VMA, add dynamic buffers, mipmap generation, texture arrays, pipeline refactor, RTS camera |
 | 1 | Done | Map file parsing -- DataChunk reader, HeightMapData, BlendTileData, ObjectsList, PolygonTriggers, GlobalLighting, WorldInfo, SidesList |
-| 2 | Pending | INI parsing -- SAGE INI dialect parser, TerrainType definitions, Water settings |
+| 2 | Done | INI parsing -- SAGE INI dialect parser, TerrainType definitions, Water settings |
 | 3 | Pending | Terrain rendering -- heightmap mesh (32x32 chunks), texture atlas, blend system, cliff UVs, terrain shaders, frustum culling |
 | 4 | Pending | Water rendering -- polygon trigger meshes, scrolling UV shader, shoreline blending |
 | 5 | Pending | Object placement & scene graph -- scene nodes with transforms, object template resolution, instanced rendering, roads/bridges |
