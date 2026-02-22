@@ -271,3 +271,20 @@ else()
 endif()
 
 add_test(NAME map_tests COMMAND map_tests)
+
+# INI parser tests (no Vulkan dependencies)
+add_executable(ini_tests
+  ini/test_ini_parser.cpp
+  ini/test_terrain_types.cpp
+  ini/test_water_settings.cpp
+)
+
+target_link_libraries(ini_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(ini_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(ini_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME ini_tests COMMAND ini_tests)
