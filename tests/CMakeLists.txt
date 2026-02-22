@@ -255,6 +255,7 @@ add_executable(map_tests
   map/test_data_chunk_reader.cpp
   map/test_heightmap_parser.cpp
   map/test_blend_tile_parser.cpp
+  map/test_objects_parser.cpp
 )
 
 target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)

@@ -4,9 +4,12 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace map {
+
+class DataChunkReader;
 
 constexpr float MAP_XY_FACTOR = 10.0f;
 constexpr float MAP_HEIGHT_SCALE = MAP_XY_FACTOR / 16.0f;
@@ -98,6 +101,35 @@ struct BlendTileData {
     return dataSize > 0 && static_cast<int32_t>(tileNdxes.size()) == dataSize &&
            static_cast<int32_t>(blendTileNdxes.size()) == dataSize;
   }
+};
+
+enum MapObjectFlags : uint32_t {
+  FLAG_DRAWS_IN_MIRROR = 0x001,
+  FLAG_ROAD_POINT1 = 0x002,
+  FLAG_ROAD_POINT2 = 0x004,
+  FLAG_ROAD_CORNER_ANGLED = 0x008,
+  FLAG_BRIDGE_POINT1 = 0x010,
+  FLAG_BRIDGE_POINT2 = 0x020,
+  FLAG_ROAD_CORNER_TIGHT = 0x040,
+  FLAG_ROAD_JOIN = 0x080,
+  FLAG_DONT_RENDER = 0x100
+};
+
+struct DictValue;
+using Dict = std::unordered_map<std::string, DictValue>;
+
+struct MapObject {
+  glm::vec3 position{0.0f, 0.0f, 0.0f};
+  float angle = 0.0f;
+  uint32_t flags = 0;
+  std::string templateName;
+  Dict properties;
+
+  bool isRoadPoint() const { return (flags & (FLAG_ROAD_POINT1 | FLAG_ROAD_POINT2)) != 0; }
+
+  bool isBridgePoint() const { return (flags & (FLAG_BRIDGE_POINT1 | FLAG_BRIDGE_POINT2)) != 0; }
+
+  bool shouldRender() const { return (flags & FLAG_DONT_RENDER) == 0; }
 };
 
 } // namespace map
