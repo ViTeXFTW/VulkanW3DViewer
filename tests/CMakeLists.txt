@@ -253,6 +253,7 @@ add_test(NAME rts_camera_tests COMMAND rts_camera_tests)
 # Map file parser tests (no Vulkan dependencies)
 add_executable(map_tests
   map/test_data_chunk_reader.cpp
+  map/test_heightmap_parser.cpp
 )
 
 target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)
