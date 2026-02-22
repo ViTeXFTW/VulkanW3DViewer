@@ -1,6 +1,6 @@
 #include "lib/gfx/buffer.hpp"
-#include "lib/gfx/vulkan_context.hpp"
 
+#include "lib/gfx/vulkan_context.hpp"
 
 namespace w3d::gfx {
 
@@ -9,11 +9,11 @@ Buffer::~Buffer() {
 }
 
 Buffer::Buffer(Buffer &&other) noexcept
-    : device_(other.device_), buffer_(other.buffer_), memory_(other.memory_), size_(other.size_),
-      mappedData_(other.mappedData_) {
-  other.device_ = nullptr;
+    : allocator_(other.allocator_), buffer_(other.buffer_), allocation_(other.allocation_),
+      size_(other.size_), mappedData_(other.mappedData_) {
+  other.allocator_ = nullptr;
   other.buffer_ = nullptr;
-  other.memory_ = nullptr;
+  other.allocation_ = nullptr;
   other.size_ = 0;
   other.mappedData_ = nullptr;
 }
@@ -21,14 +21,14 @@ Buffer::Buffer(Buffer &&other) noexcept
 Buffer &Buffer::operator=(Buffer &&other) noexcept {
   if (this != &other) {
     destroy();
-    device_ = other.device_;
+    allocator_ = other.allocator_;
     buffer_ = other.buffer_;
-    memory_ = other.memory_;
+    allocation_ = other.allocation_;
     size_ = other.size_;
     mappedData_ = other.mappedData_;
-    other.device_ = nullptr;
+    other.allocator_ = nullptr;
     other.buffer_ = nullptr;
-    other.memory_ = nullptr;
+    other.allocation_ = nullptr;
     other.size_ = 0;
     other.mappedData_ = nullptr;
   }
@@ -37,49 +37,54 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept {
 
 void Buffer::create(VulkanContext &context, vk::DeviceSize size, vk::BufferUsageFlags usage,
                     vk::MemoryPropertyFlags properties) {
-  device_ = context.device();
+  allocator_ = context.allocator();
   size_ = size;
 
-  vk::BufferCreateInfo bufferInfo{{}, size, usage, vk::SharingMode::eExclusive};
+  VkBufferCreateInfo bufferInfo{};
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.size = size;
+  bufferInfo.usage = static_cast<VkBufferUsageFlags>(usage);
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-  buffer_ = device_.createBuffer(bufferInfo);
+  VmaAllocationCreateInfo allocInfo{};
+  if (properties & vk::MemoryPropertyFlagBits::eHostVisible) {
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocInfo.flags =
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  } else {
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+  }
 
-  auto memRequirements = device_.getBufferMemoryRequirements(buffer_);
-
-  vk::MemoryAllocateInfo allocInfo{
-      memRequirements.size, context.findMemoryType(memRequirements.memoryTypeBits, properties)};
-
-  memory_ = device_.allocateMemory(allocInfo);
-  device_.bindBufferMemory(buffer_, memory_, 0);
+  VkBuffer vkBuffer;
+  if (vmaCreateBuffer(allocator_, &bufferInfo, &allocInfo, &vkBuffer, &allocation_, nullptr) !=
+      VK_SUCCESS) {
+    throw std::runtime_error("Failed to create buffer with VMA");
+  }
+  buffer_ = vkBuffer;
 }
 
 void Buffer::destroy() {
-  if (device_) {
+  if (allocator_ && buffer_) {
     if (mappedData_) {
-      unmap();
+      mappedData_ = nullptr;
     }
-    if (buffer_) {
-      device_.destroyBuffer(buffer_);
-      buffer_ = nullptr;
-    }
-    if (memory_) {
-      device_.freeMemory(memory_);
-      memory_ = nullptr;
-    }
-    device_ = nullptr;
+    vmaDestroyBuffer(allocator_, buffer_, allocation_);
+    buffer_ = nullptr;
+    allocation_ = nullptr;
+    allocator_ = nullptr;
   }
 }
 
 void *Buffer::map() {
-  if (!mappedData_) {
-    mappedData_ = device_.mapMemory(memory_, 0, size_);
+  if (!mappedData_ && allocator_ && allocation_) {
+    vmaMapMemory(allocator_, allocation_, &mappedData_);
   }
   return mappedData_;
 }
 
 void Buffer::unmap() {
-  if (mappedData_) {
-    device_.unmapMemory(memory_);
+  if (mappedData_ && allocator_ && allocation_) {
+    vmaUnmapMemory(allocator_, allocation_);
     mappedData_ = nullptr;
   }
 }

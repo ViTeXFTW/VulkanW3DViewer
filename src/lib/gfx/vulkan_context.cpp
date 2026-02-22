@@ -34,6 +34,21 @@ void VulkanContext::init(GLFWwindow *window, bool enableValidation) {
   createSurface(window);
   pickPhysicalDevice();
   createLogicalDevice();
+
+  VmaVulkanFunctions vulkanFunctions{};
+  vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+  vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+  VmaAllocatorCreateInfo allocatorInfo{};
+  allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+  allocatorInfo.physicalDevice = physicalDevice_;
+  allocatorInfo.device = device_;
+  allocatorInfo.instance = instance_;
+  allocatorInfo.pVulkanFunctions = &vulkanFunctions;
+  if (vmaCreateAllocator(&allocatorInfo, &allocator_) != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create VMA allocator");
+  }
+
   createSwapchain(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
   createImageViews();
   createDepthResources();
@@ -56,6 +71,11 @@ void VulkanContext::cleanup() {
     if (commandPool_) {
       device_.destroyCommandPool(commandPool_);
       commandPool_ = nullptr;
+    }
+
+    if (allocator_) {
+      vmaDestroyAllocator(allocator_);
+      allocator_ = nullptr;
     }
 
     device_.destroy();
@@ -92,13 +112,10 @@ void VulkanContext::cleanupSwapchain() {
     device_.destroyImageView(depthImageView_);
     depthImageView_ = nullptr;
   }
-  if (depthImage_) {
-    device_.destroyImage(depthImage_);
+  if (depthImage_ && depthImageAllocation_) {
+    vmaDestroyImage(allocator_, depthImage_, depthImageAllocation_);
     depthImage_ = nullptr;
-  }
-  if (depthImageMemory_) {
-    device_.freeMemory(depthImageMemory_);
-    depthImageMemory_ = nullptr;
+    depthImageAllocation_ = nullptr;
   }
 
   for (auto imageView : swapchainImageViews_) {
@@ -393,28 +410,28 @@ vk::Format VulkanContext::findSupportedFormat(const std::vector<vk::Format> &can
 void VulkanContext::createDepthResources() {
   depthFormat_ = findDepthFormat();
 
-  vk::ImageCreateInfo imageInfo{
-      {},
-      vk::ImageType::e2D,
-      depthFormat_,
-      {swapchainExtent_.width, swapchainExtent_.height, 1},
-      1,
-      1,
-      vk::SampleCountFlagBits::e1,
-      vk::ImageTiling::eOptimal,
-      vk::ImageUsageFlagBits::eDepthStencilAttachment,
-      vk::SharingMode::eExclusive
-  };
+  VkImageCreateInfo imageInfo{};
+  imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  imageInfo.imageType = VK_IMAGE_TYPE_2D;
+  imageInfo.format = static_cast<VkFormat>(depthFormat_);
+  imageInfo.extent = {swapchainExtent_.width, swapchainExtent_.height, 1};
+  imageInfo.mipLevels = 1;
+  imageInfo.arrayLayers = 1;
+  imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+  imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+  imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+  imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  depthImage_ = device_.createImage(imageInfo);
+  VmaAllocationCreateInfo allocInfo{};
+  allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
-  auto memRequirements = device_.getImageMemoryRequirements(depthImage_);
-  vk::MemoryAllocateInfo allocInfo{
-      memRequirements.size,
-      findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)};
-
-  depthImageMemory_ = device_.allocateMemory(allocInfo);
-  device_.bindImageMemory(depthImage_, depthImageMemory_, 0);
+  VkImage vkImage;
+  if (vmaCreateImage(allocator_, &imageInfo, &allocInfo, &vkImage, &depthImageAllocation_,
+                     nullptr) != VK_SUCCESS) {
+    throw std::runtime_error("Failed to create depth image with VMA");
+  }
+  depthImage_ = vkImage;
 
   vk::ImageViewCreateInfo viewInfo{
       {},

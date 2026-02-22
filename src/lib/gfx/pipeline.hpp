@@ -80,6 +80,73 @@ struct PipelineConfig {
   bool twoSided = false;
 };
 
+struct VertexInputDescription {
+  vk::VertexInputBindingDescription binding;
+  std::vector<vk::VertexInputAttributeDescription> attributes;
+};
+
+struct PipelineCreateInfo {
+  std::string vertShaderPath;
+  std::string fragShaderPath;
+  VertexInputDescription vertexInput;
+  std::vector<vk::DescriptorSetLayoutBinding> descriptorBindings;
+  std::vector<vk::PushConstantRange> pushConstants;
+  vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
+  PipelineConfig config;
+
+  static PipelineCreateInfo standard() {
+    PipelineCreateInfo info;
+    info.vertShaderPath = "shaders/basic.vert.spv";
+    info.fragShaderPath = "shaders/basic.frag.spv";
+
+    auto bindingDesc = Vertex::getBindingDescription();
+    auto attrDescs = Vertex::getAttributeDescriptions();
+    info.vertexInput.binding = bindingDesc;
+    info.vertexInput.attributes =
+        std::vector<vk::VertexInputAttributeDescription>(attrDescs.begin(), attrDescs.end());
+
+    info.descriptorBindings = {
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                       vk::ShaderStageFlagBits::eVertex  },
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment}
+    };
+
+    info.pushConstants = {
+        vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(MaterialPushConstant)}
+    };
+
+    return info;
+  }
+
+  static PipelineCreateInfo skinned() {
+    PipelineCreateInfo info;
+    info.vertShaderPath = "shaders/skinned.vert.spv";
+    info.fragShaderPath = "shaders/basic.frag.spv";
+
+    auto bindingDesc = SkinnedVertex::getBindingDescription();
+    auto attrDescs = SkinnedVertex::getAttributeDescriptions();
+    info.vertexInput.binding = bindingDesc;
+    info.vertexInput.attributes =
+        std::vector<vk::VertexInputAttributeDescription>(attrDescs.begin(), attrDescs.end());
+
+    info.descriptorBindings = {
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                       vk::ShaderStageFlagBits::eVertex  },
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment},
+        vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eStorageBuffer,        1,
+                                       vk::ShaderStageFlagBits::eVertex  }
+    };
+
+    info.pushConstants = {
+        vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(MaterialPushConstant)}
+    };
+
+    return info;
+  }
+};
+
 class Pipeline {
 public:
   Pipeline() = default;
@@ -88,8 +155,7 @@ public:
   Pipeline(const Pipeline &) = delete;
   Pipeline &operator=(const Pipeline &) = delete;
 
-  void create(VulkanContext &context, const std::string &vertShaderPath,
-              const std::string &fragShaderPath);
+  void create(VulkanContext &context, const PipelineCreateInfo &createInfo);
 
   void createWithTexture(VulkanContext &context, const std::string &vertShaderPath,
                          const std::string &fragShaderPath, const PipelineConfig &config = {});

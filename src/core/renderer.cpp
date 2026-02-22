@@ -24,8 +24,8 @@ void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &im
   boneMatrixBuffer_ = &boneMatrixBuffer;
 
   // Create pipelines
-  pipeline_.create(context, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
-  skinnedPipeline_.createSkinned(context, "shaders/skinned.vert.spv", "shaders/basic.frag.spv");
+  pipeline_.create(context, gfx::PipelineCreateInfo::standard());
+  skinnedPipeline_.create(context, gfx::PipelineCreateInfo::skinned());
 
   // Create uniform buffers
   uniformBuffers_.create(context, MAX_FRAMES_IN_FLIGHT);

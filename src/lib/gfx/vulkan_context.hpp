@@ -1,5 +1,7 @@
 #pragma once
 
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -10,6 +12,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <vk_mem_alloc.h>
 
 namespace w3d::gfx {
 
@@ -59,6 +63,7 @@ public:
   uint32_t graphicsQueueFamily() const { return queueFamilies_.graphicsFamily.value(); }
   vk::RenderPass renderPass() const { return renderPass_; }
   vk::Framebuffer framebuffer(uint32_t index) const { return framebuffers_[index]; }
+  VmaAllocator allocator() const { return allocator_; }
 
   vk::CommandBuffer beginSingleTimeCommands();
   void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
@@ -106,7 +111,7 @@ private:
   vk::Extent2D swapchainExtent_;
 
   vk::Image depthImage_;
-  vk::DeviceMemory depthImageMemory_;
+  VmaAllocation depthImageAllocation_ = nullptr;
   vk::ImageView depthImageView_;
   vk::Format depthFormat_;
 
@@ -114,6 +119,8 @@ private:
 
   vk::RenderPass renderPass_;
   std::vector<vk::Framebuffer> framebuffers_;
+
+  VmaAllocator allocator_ = nullptr;
 
   bool validationEnabled_ = false;
 

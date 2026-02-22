@@ -1,14 +1,5 @@
 # W3D Parser Tests
 
-# Collect W3D source files needed for testing (parser module only, no Vulkan dependencies)
-set(W3D_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/loader.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/mesh_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hierarchy_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/animation_parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/lib/formats/w3d/hlod_parser.cpp
-)
-
 add_executable(w3d_tests
   w3d/test_chunk_reader.cpp
   w3d/test_mesh_parser.cpp
@@ -16,14 +7,9 @@ add_executable(w3d_tests
   w3d/test_animation_parser.cpp
   w3d/test_hlod_parser.cpp
   w3d/test_loader.cpp
-  ${W3D_SOURCES}
 )
 
-target_link_libraries(w3d_tests PRIVATE gtest gtest_main)
-
-target_include_directories(w3d_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(w3d_tests PRIVATE w3d_lib gtest gtest_main)
 
 # Compiler-specific flags (match main project)
 if(MSVC)
@@ -45,11 +31,7 @@ add_executable(texture_tests
   render/test_texture_loading.cpp
 )
 
-target_link_libraries(texture_tests PRIVATE gtest gtest_main)
-
-target_include_directories(texture_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(texture_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
   target_compile_options(texture_tests PRIVATE /W4 /permissive-)
@@ -64,19 +46,16 @@ target_compile_definitions(texture_tests PRIVATE
 )
 
 # Mesh converter tests (requires GLM, no Vulkan)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glm ${CMAKE_BINARY_DIR}/lib/glm)
 
 add_executable(mesh_converter_tests
   render/test_mesh_converter.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/mesh_converter.cpp
 )
 
-target_link_libraries(mesh_converter_tests PRIVATE gtest gtest_main glm::glm)
+target_link_libraries(mesh_converter_tests PRIVATE w3d_lib gtest gtest_main)
 
 # Use stubs directory first to override core/pipeline.hpp with Vulkan-free version
 target_include_directories(mesh_converter_tests PRIVATE
   ${CMAKE_SOURCE_DIR}/tests/stubs
-  ${CMAKE_SOURCE_DIR}/src
 )
 
 if(MSVC)
@@ -91,15 +70,9 @@ add_test(NAME mesh_converter_tests COMMAND mesh_converter_tests)
 add_executable(skeleton_tests
   render/test_skeleton_pose.cpp
   render/test_animation_player.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/skeleton.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/animation_player.cpp
 )
 
-target_link_libraries(skeleton_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(skeleton_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(skeleton_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
   target_compile_options(skeleton_tests PRIVATE /W4 /permissive-)
@@ -114,11 +87,7 @@ add_executable(bounding_box_tests
   render/test_bounding_box.cpp
 )
 
-target_link_libraries(bounding_box_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(bounding_box_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(bounding_box_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
   target_compile_options(bounding_box_tests PRIVATE /W4 /permissive-)
@@ -131,14 +100,9 @@ add_test(NAME bounding_box_tests COMMAND bounding_box_tests)
 # Raycast tests (requires GLM, no Vulkan)
 add_executable(raycast_tests
   render/raycast_test.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/raycast.cpp
 )
 
-target_link_libraries(raycast_tests PRIVATE gtest gtest_main glm::glm)
-
-target_include_directories(raycast_tests PRIVATE
-  ${CMAKE_SOURCE_DIR}/src
-)
+target_link_libraries(raycast_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
   target_compile_options(raycast_tests PRIVATE /W4 /permissive-)
@@ -151,15 +115,13 @@ add_test(NAME raycast_tests COMMAND raycast_tests)
 # HLod hover tests (requires GLM, no Vulkan)
 add_executable(hlod_hover_tests
   render/test_hlod_hover.cpp
-  ${CMAKE_SOURCE_DIR}/src/render/raycast.cpp
 )
 
-target_link_libraries(hlod_hover_tests PRIVATE gtest gtest_main glm::glm)
+target_link_libraries(hlod_hover_tests PRIVATE w3d_lib gtest gtest_main)
 
 # Use stubs directory first to override Vulkan-dependent headers
 target_include_directories(hlod_hover_tests PRIVATE
   ${CMAKE_SOURCE_DIR}/tests/stubs
-  ${CMAKE_SOURCE_DIR}/src
 )
 
 if(MSVC)
@@ -171,6 +133,7 @@ endif()
 add_test(NAME hlod_hover_tests COMMAND hlod_hover_tests)
 
 # File browser tests
+# Note: This test uses UI code which is NOT in w3d_lib, so it still needs direct source inclusion
 add_executable(file_browser_tests
   ui/test_file_browser.cpp
   ${CMAKE_SOURCE_DIR}/src/ui/file_browser.cpp
@@ -210,3 +173,101 @@ else()
 endif()
 
 add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)
+
+# DynamicBuffer tests (lightweight logic tests, no Vulkan initialization)
+add_executable(dynamic_buffer_tests
+  gfx/test_dynamic_buffer.cpp
+)
+
+target_link_libraries(dynamic_buffer_tests PRIVATE gtest gtest_main)
+
+target_include_directories(dynamic_buffer_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(dynamic_buffer_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(dynamic_buffer_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME dynamic_buffer_tests COMMAND dynamic_buffer_tests)
+
+# Mipmap calculation tests (pure math, no dependencies)
+add_executable(mipmap_tests
+  render/test_mipmap_calculation.cpp
+)
+
+target_link_libraries(mipmap_tests PRIVATE gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(mipmap_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(mipmap_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME mipmap_tests COMMAND mipmap_tests)
+
+# Pipeline create info tests (pure struct tests, no Vulkan initialization)
+add_executable(pipeline_create_info_tests
+  gfx/test_pipeline_create_info.cpp
+)
+
+target_link_libraries(pipeline_create_info_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(pipeline_create_info_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(pipeline_create_info_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME pipeline_create_info_tests COMMAND pipeline_create_info_tests)
+
+# RTS camera tests (logic tests - needs ImGui)
+add_executable(rts_camera_tests
+  gfx/test_rts_camera.cpp
+)
+
+# RTS camera uses ImGui::GetIO() for input checking, so we need to link against ImGui
+target_sources(rts_camera_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_draw.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_tables.cpp
+  ${CMAKE_SOURCE_DIR}/lib/imgui/imgui_widgets.cpp
+)
+
+target_link_libraries(rts_camera_tests PRIVATE w3d_lib gtest gtest_main)
+
+target_include_directories(rts_camera_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/lib/imgui
+)
+
+if(MSVC)
+  target_compile_options(rts_camera_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(rts_camera_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME rts_camera_tests COMMAND rts_camera_tests)
+
+# Map file parser tests (no Vulkan dependencies)
+add_executable(map_tests
+  map/test_data_chunk_reader.cpp
+  map/test_heightmap_parser.cpp
+  map/test_blend_tile_parser.cpp
+  map/test_objects_parser.cpp
+  map/test_triggers_parser.cpp
+  map/test_lighting_parser.cpp
+  map/test_worldinfo_sideslist_parser.cpp
+  map/test_map_loader.cpp
+)
+
+target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(map_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME map_tests COMMAND map_tests)

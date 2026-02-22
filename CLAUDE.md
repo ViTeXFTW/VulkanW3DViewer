@@ -80,9 +80,13 @@ ctest --preset test                        # Run tests
 
 ## Project Overview
 
-This is a **W3D format renderer** - a modern Vulkan-based tool for loading and rendering W3D 3D model files from Command & Conquer Generals. The project uses C++20, GLFW for windowing, Vulkan-Hpp for C++ Vulkan bindings, and GLM for math.
+This is a **W3D format renderer and map scene viewer** -- a modern Vulkan-based tool for loading and rendering W3D 3D model files and `.map` scene files from Command & Conquer Generals: Zero Hour. The goal is to produce a community rendering pipeline that can faithfully display terrain, water, placed objects, and lighting from the original game's map format, with the architecture designed to support future WorldBuilder-style editing.
 
-**W3D Format:** Westwood 3D format (chunk-based) containing meshes, hierarchies, skeletal animations, and HLod (hierarchical LOD). Reference implementation is in `legacy/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/`.
+The project uses C++20, GLFW for windowing, Vulkan-Hpp for C++ Vulkan bindings, and GLM for math.
+
+**W3D Format:** Westwood 3D format (chunk-based) containing meshes, hierarchies, skeletal animations, and HLod (hierarchical LOD). Reference implementation is in `lib/GeneralsGameCode/`.
+
+**Map Format:** DataChunk binary format (`.map` files) containing heightmap terrain, texture blending, placed objects, water areas, polygon triggers, and global lighting. Distinct from W3D chunks -- uses named chunks with a `CkMp` TOC header. See AGENTS.md for full format specification.
 
 ### Requirements
 
@@ -106,19 +110,36 @@ src/
     shader_loader.hpp         # Shader loading utilities
     settings.hpp/cpp          # Application settings
     app_paths.hpp/cpp         # Application path utilities
-  lib/                        # Reusable library components
-    formats/w3d/              # W3D format parsing
-      w3d.hpp                 # W3D module main header
-      types.hpp               # W3D data structures (Mesh, Hierarchy, Animation, etc.)
-      chunk_types.hpp         # W3D chunk type enumerations
-      chunk_reader.hpp        # Binary chunk parsing utilities
-      loader.hpp/cpp          # W3D file loading interface
-      model_loader.hpp/cpp    # High-level model interface
-      mesh_parser.hpp/cpp     # Mesh chunk parsing
-      hierarchy_parser.hpp/cpp # Skeleton/bone parsing
-      animation_parser.hpp/cpp # Animation keyframe parsing
-      hlod_parser.hpp/cpp     # Hierarchical LOD parsing
-      hlod_model.hpp/cpp      # HLod model assembly with LOD switching
+  lib/                        # Reusable library components (future w3d_lib static library)
+    formats/
+      w3d/                    # W3D binary format parsing
+        w3d.hpp               # W3D module main header
+        types.hpp             # W3D data structures (Mesh, Hierarchy, Animation, etc.)
+        chunk_types.hpp       # W3D chunk type enumerations
+        chunk_reader.hpp      # Binary chunk parsing utilities
+        loader.hpp/cpp        # W3D file loading interface
+        model_loader.hpp/cpp  # High-level model interface
+        mesh_parser.hpp/cpp   # Mesh chunk parsing
+        hierarchy_parser.hpp/cpp # Skeleton/bone parsing
+        animation_parser.hpp/cpp # Animation keyframe parsing
+        hlod_parser.hpp/cpp   # Hierarchical LOD parsing
+        hlod_model.hpp/cpp    # HLod model assembly with LOD switching
+      map/                    # Map file parsing (DataChunk format) [PLANNED]
+        data_chunk_reader.hpp/cpp  # DataChunk binary reader (CkMp TOC + named chunks)
+        map_loader.hpp/cpp    # Top-level .map file loader
+        heightmap_parser.hpp/cpp   # HeightMapData chunk (uint8 grid)
+        blend_tile_parser.hpp/cpp  # BlendTileData chunk (textures, blending, cliffs)
+        objects_parser.hpp/cpp     # ObjectsList/Object sub-chunks
+        triggers_parser.hpp/cpp    # PolygonTriggers (water areas, rivers)
+        lighting_parser.hpp/cpp    # GlobalLighting (4 time-of-day sets)
+        types.hpp             # MapFile, HeightMap, BlendTileData, MapObject, etc.
+      big/                    # BIG archive support
+        big_archive_manager.hpp/cpp  # BIG file extraction
+        asset_registry.hpp/cpp       # Asset name indexing
+      ini/                    # SAGE INI dialect parsing [PLANNED]
+        ini_parser.hpp/cpp    # Block-based INI parser
+        terrain_types.hpp/cpp # TerrainType definitions (name -> TGA)
+        water_settings.hpp/cpp # Water rendering configuration
     gfx/                      # Graphics foundation
       vulkan_context.hpp/cpp  # Device, swapchain, queues, depth buffer
       buffer.hpp/cpp          # GPU buffer management with staging
@@ -129,7 +150,7 @@ src/
       renderable.hpp          # Base renderable interface
     scene/                    # Scene management
       scene.hpp/cpp           # Scene container
-  render/                     # Rendering utilities (viewer-specific)
+  render/                     # Rendering utilities
     animation_player.hpp/cpp  # Animation playback control
     bone_buffer.hpp/cpp       # GPU buffer for bone transformations
     hover_detector.hpp/cpp    # Mesh picking via raycast
@@ -139,6 +160,14 @@ src/
     renderable_mesh.hpp/cpp   # GPU mesh representation
     skeleton.hpp/cpp          # Skeleton pose computation
     skeleton_renderer.hpp/cpp # Skeleton debug visualization
+    terrain/                  # Terrain rendering [PLANNED]
+      terrain_mesh.hpp/cpp    # Heightmap -> triangle mesh (32x32 chunks)
+      terrain_atlas.hpp/cpp   # Texture atlas builder from tile TGAs
+      terrain_blend.hpp/cpp   # Alpha blend pattern generation
+      terrain_renderable.hpp/cpp # IRenderable for terrain
+    water/                    # Water rendering [PLANNED]
+      water_mesh.hpp/cpp      # Polygon trigger -> water mesh
+      water_renderable.hpp/cpp # IRenderable for water
   ui/                         # User interface
     imgui_backend.hpp/cpp     # ImGui Vulkan integration
     ui_manager.hpp/cpp        # UI component lifecycle management
@@ -147,6 +176,7 @@ src/
     ui_panel.hpp              # Panel base class
     console_window.hpp/cpp    # Debug console UI
     file_browser.hpp/cpp      # File browser for loading W3D files
+    model_browser.hpp/cpp     # BIG archive model browser
     viewport_window.hpp/cpp   # 3D viewport
     settings_window.hpp/cpp   # Settings dialog
     hover_tooltip.hpp/cpp     # Tooltip display
@@ -161,9 +191,13 @@ shaders/
   basic.vert/frag             # Shader with texture and material support
   skinned.vert                # Skeletal animation vertex shader
   skeleton.vert/frag          # Skeleton visualization
+  terrain.vert/frag           # Terrain: base tile + blend + lighting [PLANNED]
+  water.vert/frag             # Water: scrolling UV, transparency [PLANNED]
 ```
 
 ## Implementation Phases
+
+### W3D Model Viewer (Complete)
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -175,6 +209,21 @@ shaders/
 | 6 | Done | Materials - texture manager, material push constants, shader support |
 | 7 | Done | Animations - load animation, and apply to bones |
 | 8 | Done | Render animations onto meshes |
+
+### Terrain & Map Scene Rendering (In Progress)
+
+Goal: Load `.map` files and render complete C&C Generals: Zero Hour scenes (terrain, water, objects, lighting). Architecture designed for future WorldBuilder-style editing (mutable data structures from day one). Output is a `w3d_lib` static library + the viewer application consuming it.
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 0 | Done | Architecture refactoring -- extract `w3d_lib` static library, integrate VMA, add dynamic buffers, mipmap generation, texture arrays, pipeline refactor, RTS camera |
+| 1 | Done | Map file parsing -- DataChunk reader, HeightMapData, BlendTileData, ObjectsList, PolygonTriggers, GlobalLighting, WorldInfo, SidesList |
+| 2 | Pending | INI parsing -- SAGE INI dialect parser, TerrainType definitions, Water settings |
+| 3 | Pending | Terrain rendering -- heightmap mesh (32x32 chunks), texture atlas, blend system, cliff UVs, terrain shaders, frustum culling |
+| 4 | Pending | Water rendering -- polygon trigger meshes, scrolling UV shader, shoreline blending |
+| 5 | Pending | Object placement & scene graph -- scene nodes with transforms, object template resolution, instanced rendering, roads/bridges |
+| 6 | Pending | Lighting & polish -- time-of-day lighting, shadow color, cloud shadows, minimap |
+| 7 | Pending | Map viewer UI -- map browser, map info panel, object list, time-of-day selector, layer toggles, mode switching |
 
 ## Code Style
 
@@ -191,6 +240,28 @@ shaders/
 
 ## Key Reference Files
 
-- **W3D format spec:** `legacy/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/w3d_file.h`
-- **Original mesh loading:** `legacy/GeneralsMD/Code/Libraries/Source/WWVegas/WW3D2/meshmdlio.cpp`
+### W3D Model Format
+- **W3D format spec:** `lib/GeneralsGameCode/` (original SAGE engine source)
 - **Vulkan-Hpp samples:** `lib/Vulkan-Hpp/RAII_Samples/`
+
+### Map/Terrain Format (in `lib/GeneralsGameCode/`)
+- **DataChunk reader/writer:** `Generals/Code/GameEngine/.../DataChunk.h/cpp` -- binary framing format
+- **Heightmap parser:** `Core/GameEngineDevice/.../WorldHeightMap.h/cpp` -- `ParseHeightMapData()`, `ParseBlendTileData()`, `ParseLightingData()` (2535 lines)
+- **Tile data:** `Core/GameEngineDevice/.../TileData.h/cpp` -- 64x64 pixel tile storage
+- **Terrain renderer:** `Core/GameEngineDevice/.../HeightMap.h/cpp` -- full 3D heightmap rendering
+- **Terrain textures:** `Core/GameEngineDevice/.../TerrainTex.h/cpp` -- runtime atlas generation
+- **Water rendering:** `Core/GameEngineDevice/.../W3DWater.h` + `Water/W3DWater.cpp`
+- **Map objects:** `Core/GameEngine/.../MapObject.h` -- `MAP_XY_FACTOR`, `MAP_HEIGHT_SCALE`
+- **Polygon triggers:** `Generals/Code/.../PolygonTrigger.h/cpp` -- water areas, rivers
+- **Version constants:** `GeneralsMD/Code/.../MapReaderWriterInfo.h` -- all chunk versions
+- **Map writer:** `GeneralsMD/Code/Tools/WorldBuilder/src/WHeightMapEdit.cpp` -- `saveToFile()`
+- **Terrain types:** `GeneralsMD/Code/.../TerrainTypes.h/cpp` -- INI terrain definitions
+- **Water INI:** `GeneralsMD/Code/.../INIWater.cpp` -- water settings parsing
+
+### Architecture Notes
+- Map files use **DataChunk** format (`CkMp` magic), completely separate from W3D chunk format
+- DataChunk uses named chunks (string -> ID via TOC), W3D uses numbered chunks (uint32 type IDs)
+- Both formats are binary, little-endian, chunk-based, but share no code
+- The DataChunk TOC ID space is shared between chunk names AND Dict key names
+- Dict values support 5 types: BOOL (1 byte), INT (4), REAL (4), ASCIISTRING (uint16 len + chars), UNICODESTRING (uint16 charLen + charLen*2 bytes)
+- See AGENTS.md for full map format specification and terrain rendering pipeline details

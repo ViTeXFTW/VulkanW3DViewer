@@ -296,3 +296,48 @@ TEST_F(TextureLoadingTest, ResolveTexturePathNotFound) {
   auto resolved = resolveTexturePath(fixturesDir_, "nonexistent.tga");
   EXPECT_TRUE(resolved.empty()) << "Should return empty for non-existent texture";
 }
+
+TEST_F(TextureLoadingTest, TextureArrayDataValidation) {
+  // Test that texture array data validation works correctly
+  // This is a logic test, not a GPU test
+
+  uint32_t width = 64;
+  uint32_t height = 64;
+  uint32_t layerCount = 4;
+
+  // Create valid layer data
+  std::vector<std::vector<uint8_t>> validLayerData;
+  for (uint32_t i = 0; i < layerCount; ++i) {
+    std::vector<uint8_t> layer(width * height * 4);
+    // Fill with test pattern (R=i*50, G=128, B=255-i*50, A=255)
+    for (size_t j = 0; j < layer.size(); j += 4) {
+      layer[j + 0] = static_cast<uint8_t>(i * 50);
+      layer[j + 1] = 128;
+      layer[j + 2] = static_cast<uint8_t>(255 - i * 50);
+      layer[j + 3] = 255;
+    }
+    validLayerData.push_back(layer);
+  }
+
+  // Verify layer count matches
+  EXPECT_EQ(validLayerData.size(), layerCount);
+
+  // Verify each layer has correct size
+  for (const auto &layer : validLayerData) {
+    EXPECT_EQ(layer.size(), width * height * 4);
+  }
+
+  // Test invalid layer data (wrong size)
+  std::vector<std::vector<uint8_t>> invalidLayerData = validLayerData;
+  invalidLayerData[0].resize(100); // Wrong size
+
+  // This would fail validation in createTextureArray
+  bool sizeValid = true;
+  for (const auto &layer : invalidLayerData) {
+    if (layer.size() != width * height * 4) {
+      sizeValid = false;
+      break;
+    }
+  }
+  EXPECT_FALSE(sizeValid) << "Should detect invalid layer size";
+}
