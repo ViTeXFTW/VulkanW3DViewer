@@ -143,4 +143,36 @@ struct PolygonTrigger {
   bool isValid() const { return !name.empty() && !points.empty(); }
 };
 
+enum class TimeOfDay : int32_t { Invalid = 0, Morning = 1, Afternoon = 2, Evening = 3, Night = 4 };
+
+constexpr int32_t MAX_GLOBAL_LIGHTS = 3;
+constexpr int32_t NUM_TIME_OF_DAY_SLOTS = 4;
+
+struct Light {
+  glm::vec3 ambient{0.0f, 0.0f, 0.0f};
+  glm::vec3 diffuse{0.0f, 0.0f, 0.0f};
+  glm::vec3 lightPos{0.0f, 0.0f, -1.0f};
+};
+
+struct TimeOfDayLighting {
+  Light terrainLights[MAX_GLOBAL_LIGHTS];
+  Light objectLights[MAX_GLOBAL_LIGHTS];
+};
+
+struct GlobalLighting {
+  TimeOfDay currentTimeOfDay = TimeOfDay::Morning;
+  TimeOfDayLighting timeOfDaySlots[NUM_TIME_OF_DAY_SLOTS];
+  uint32_t shadowColor = 0;
+
+  bool isValid() const { return currentTimeOfDay != TimeOfDay::Invalid; }
+
+  const TimeOfDayLighting &getCurrentLighting() const {
+    int32_t index = static_cast<int32_t>(currentTimeOfDay) - 1;
+    if (index < 0 || index >= NUM_TIME_OF_DAY_SLOTS) {
+      return timeOfDaySlots[0];
+    }
+    return timeOfDaySlots[index];
+  }
+};
+
 } // namespace map
