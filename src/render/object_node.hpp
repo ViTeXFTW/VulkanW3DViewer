@@ -33,8 +33,7 @@ public:
   void setPose(const SkeletonPose *pose) { pose_ = pose; }
   const SkeletonPose *pose() const { return pose_; }
 
-  static std::unique_ptr<ObjectNode> fromMapObject(const map::MapObject &mapObj,
-                                                   HLodModel *model);
+  static std::unique_ptr<ObjectNode> fromMapObject(const map::MapObject &mapObj, HLodModel *model);
 
 private:
   HLodModel *model_ = nullptr;

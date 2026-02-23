@@ -10,8 +10,7 @@
 
 namespace w3d {
 
-std::optional<std::filesystem::path>
-ObjectResolver::findW3DPath(const std::string &w3dName) const {
+std::optional<std::filesystem::path> ObjectResolver::findW3DPath(const std::string &w3dName) const {
   if (!assetRegistry_)
     return std::nullopt;
 

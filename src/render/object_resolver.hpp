@@ -1,5 +1,7 @@
 #pragma once
 
+#include "lib/gfx/vulkan_context.hpp"
+
 #include <glm/glm.hpp>
 
 #include <filesystem>
@@ -11,7 +13,6 @@
 #include "lib/formats/map/types.hpp"
 #include "lib/formats/w3d/hlod_model.hpp"
 #include "lib/gfx/texture.hpp"
-#include "lib/gfx/vulkan_context.hpp"
 #include "render/object_placement_utils.hpp"
 
 namespace w3d::big {
@@ -60,8 +61,7 @@ public:
   }
 
 private:
-  [[nodiscard]] std::optional<std::filesystem::path>
-  findW3DPath(const std::string &w3dName) const;
+  [[nodiscard]] std::optional<std::filesystem::path> findW3DPath(const std::string &w3dName) const;
 
   std::unordered_map<std::string, std::unique_ptr<HLodModel>> modelCache_;
   big::AssetRegistry *assetRegistry_ = nullptr;

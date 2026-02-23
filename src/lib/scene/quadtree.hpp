@@ -25,8 +25,7 @@ public:
     }
   };
 
-  Quadtree(float minX, float minZ, float maxX, float maxZ, int maxDepth = 6,
-           int maxPerNode = 8);
+  Quadtree(float minX, float minZ, float maxX, float maxZ, int maxDepth = 6, int maxPerNode = 8);
 
   void insert(SceneNode *node);
   void clear();
@@ -53,8 +52,7 @@ private:
   void queryNode(int nodeIndex, const Rect &rect, std::vector<SceneNode *> &result) const;
   void queryNodeFrustum(int nodeIndex, const gfx::Frustum &frustum,
                         std::vector<SceneNode *> &result) const;
-  [[nodiscard]] static bool rectIntersectsFrustum(const Rect &rect,
-                                                  const gfx::Frustum &frustum);
+  [[nodiscard]] static bool rectIntersectsFrustum(const Rect &rect, const gfx::Frustum &frustum);
 
   std::vector<Node> nodes_;
   int maxDepth_;

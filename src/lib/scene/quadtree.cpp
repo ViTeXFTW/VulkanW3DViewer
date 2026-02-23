@@ -67,10 +67,10 @@ void Quadtree::subdivide(int nodeIndex) {
   float midZ = (nodes_[nodeIndex].bounds.minZ + nodes_[nodeIndex].bounds.maxZ) * 0.5f;
 
   Rect quads[4] = {
-      {nodes_[nodeIndex].bounds.minX, nodes_[nodeIndex].bounds.minZ, midX, midZ},
-      {midX, nodes_[nodeIndex].bounds.minZ, nodes_[nodeIndex].bounds.maxX, midZ},
-      {nodes_[nodeIndex].bounds.minX, midZ, midX, nodes_[nodeIndex].bounds.maxZ},
-      {midX, midZ, nodes_[nodeIndex].bounds.maxX, nodes_[nodeIndex].bounds.maxZ},
+      {nodes_[nodeIndex].bounds.minX, nodes_[nodeIndex].bounds.minZ, midX,                          midZ                         },
+      {midX,                          nodes_[nodeIndex].bounds.minZ, nodes_[nodeIndex].bounds.maxX, midZ                         },
+      {nodes_[nodeIndex].bounds.minX, midZ,                          midX,                          nodes_[nodeIndex].bounds.maxZ},
+      {midX,                          midZ,                          nodes_[nodeIndex].bounds.maxX, nodes_[nodeIndex].bounds.maxZ},
   };
 
   int baseIndex = static_cast<int>(nodes_.size());

@@ -104,9 +104,8 @@ TEST_F(SceneGraphTest, QueryVisibleReturnsOnlyVisibleNodes) {
 }
 
 TEST_F(SceneGraphTest, InvisibleNodesExcludedFromQuery) {
-  glm::mat4 view =
-      glm::lookAt(glm::vec3(500.0f, 200.0f, 500.0f), glm::vec3(500.0f, 0.0f, 400.0f),
-                  glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 view = glm::lookAt(glm::vec3(500.0f, 200.0f, 500.0f), glm::vec3(500.0f, 0.0f, 400.0f),
+                               glm::vec3(0.0f, 1.0f, 0.0f));
   glm::mat4 proj = glm::perspective(glm::radians(60.0f), 1.77f, 1.0f, 2000.0f);
   Frustum frustum;
   frustum.extractFromVP(proj * view);

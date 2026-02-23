@@ -1,6 +1,6 @@
-#include "render/object_placement_utils.hpp"
-
 #include <cctype>
+
+#include "render/object_placement_utils.hpp"
 
 #include <gtest/gtest.h>
 
