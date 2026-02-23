@@ -9,7 +9,7 @@ WaterRenderable::~WaterRenderable() {
 }
 
 void WaterRenderable::load(gfx::VulkanContext &context,
-                            const std::vector<map::PolygonTrigger> &triggers) {
+                           const std::vector<map::PolygonTrigger> &triggers) {
   destroy();
 
   auto meshData = generateWaterMeshes(triggers);
@@ -49,12 +49,12 @@ void WaterRenderable::applyWaterSettings(const ini::WaterSettings &settings, ini
   pushConstant_.uScrollRate = ws.uScrollPerMs * 1000.0f; // convert ms→s
   pushConstant_.vScrollRate = ws.vScrollPerMs * 1000.0f;
   // UV scale: waterRepeatCount tiles across the water texture.
-  pushConstant_.uvScale = (ws.waterRepeatCount > 0) ? static_cast<float>(ws.waterRepeatCount)
-                                                     : 8.0f;
+  pushConstant_.uvScale =
+      (ws.waterRepeatCount > 0) ? static_cast<float>(ws.waterRepeatCount) : 8.0f;
 }
 
-void WaterRenderable::initPipeline(gfx::VulkanContext &context,
-                                    gfx::TextureManager &textureManager, uint32_t frameCount) {
+void WaterRenderable::initPipeline(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
+                                   uint32_t frameCount) {
   pipeline_.create(context, gfx::PipelineCreateInfo::water());
   descriptorManager_.create(context, pipeline_.descriptorSetLayout(), frameCount);
 
@@ -65,15 +65,15 @@ void WaterRenderable::initPipeline(gfx::VulkanContext &context,
   }
 
   // Sensible defaults so water is visible without INI.
-  pushConstant_.waterColor  = glm::vec4{0.35f, 0.55f, 0.85f, 0.75f};
+  pushConstant_.waterColor = glm::vec4{0.35f, 0.55f, 0.85f, 0.75f};
   pushConstant_.uScrollRate = 0.05f;
   pushConstant_.vScrollRate = 0.03f;
-  pushConstant_.uvScale     = 8.0f;
-  pushConstant_.time        = 0.0f;
+  pushConstant_.uvScale = 8.0f;
+  pushConstant_.time = 0.0f;
 }
 
 void WaterRenderable::updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer,
-                                         vk::DeviceSize uboSize) {
+                                        vk::DeviceSize uboSize) {
   descriptorManager_.updateUniformBuffer(frameIndex, uniformBuffer, uboSize);
 }
 
@@ -97,7 +97,7 @@ void WaterRenderable::drawWithPipeline(vk::CommandBuffer cmd, uint32_t frameInde
 
   cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
-                          descriptorManager_.descriptorSet(frameIndex), {});
+                         descriptorManager_.descriptorSet(frameIndex), {});
 
   cmd.pushConstants(pipeline_.layout(),
                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
@@ -117,7 +117,7 @@ void WaterRenderable::destroy() {
   pipeline_.destroy();
 
   waterTextureIndex_ = ~0u;
-  pushConstant_      = gfx::WaterPushConstant{};
+  pushConstant_ = gfx::WaterPushConstant{};
 }
 
 void WaterRenderable::uploadPolygons(gfx::VulkanContext &context, const WaterMeshData &meshData) {
@@ -125,22 +125,20 @@ void WaterRenderable::uploadPolygons(gfx::VulkanContext &context, const WaterMes
 
   for (size_t i = 0; i < meshData.polygons.size(); ++i) {
     const auto &src = meshData.polygons[i];
-    auto &dst       = gpuPolygons_[i];
+    auto &dst = gpuPolygons_[i];
 
     if (src.vertices.empty() || src.indices.empty()) {
       continue;
     }
 
-    dst.vertexBuffer.create(context, src.vertices.data(),
-                             sizeof(WaterVertex) * src.vertices.size(),
-                             vk::BufferUsageFlagBits::eVertexBuffer);
+    dst.vertexBuffer.create(context, src.vertices.data(), sizeof(WaterVertex) * src.vertices.size(),
+                            vk::BufferUsageFlagBits::eVertexBuffer);
 
-    dst.indexBuffer.create(context, src.indices.data(),
-                            sizeof(uint32_t) * src.indices.size(),
-                            vk::BufferUsageFlagBits::eIndexBuffer);
+    dst.indexBuffer.create(context, src.indices.data(), sizeof(uint32_t) * src.indices.size(),
+                           vk::BufferUsageFlagBits::eIndexBuffer);
 
     dst.indexCount = static_cast<uint32_t>(src.indices.size());
-    dst.bounds     = src.bounds;
+    dst.bounds = src.bounds;
   }
 }
 

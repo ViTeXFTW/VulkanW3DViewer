@@ -1,10 +1,10 @@
-#include "render/water/water_mesh.hpp"
-
-#include <gtest/gtest.h>
-
 #include <glm/glm.hpp>
 
 #include <cmath>
+
+#include "render/water/water_mesh.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace w3d::water;
 using namespace w3d;
@@ -15,16 +15,15 @@ using namespace w3d;
 
 namespace {
 
-map::PolygonTrigger makeWaterTrigger(const std::string &name,
-                                     const std::vector<glm::ivec3> &points,
+map::PolygonTrigger makeWaterTrigger(const std::string &name, const std::vector<glm::ivec3> &points,
                                      bool isWater = true) {
   map::PolygonTrigger t;
-  t.name        = name;
-  t.id          = 1;
+  t.name = name;
+  t.id = 1;
   t.isWaterArea = isWater;
-  t.isRiver     = false;
-  t.riverStart  = 0;
-  t.points      = points;
+  t.isRiver = false;
+  t.riverStart = 0;
+  t.points = points;
   return t;
 }
 
@@ -36,7 +35,7 @@ map::PolygonTrigger makeSquareTrigger(int32_t x0, int32_t y0, int32_t x1, int32_
                                         {x1, y0, z},
                                         {x1, y1, z},
                                         {x0, y1, z},
-                                    });
+  });
 }
 
 } // namespace
@@ -79,8 +78,12 @@ TEST(TriggerPointToWorld, MapYMapsToWorldZ) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 TEST(EarClipTriangulate, TriangleProducesSingleTriangle) {
-  std::vector<glm::vec2> tri = {{0, 0}, {10, 0}, {5, 10}};
-  auto indices               = earClipTriangulate(tri);
+  std::vector<glm::vec2> tri = {
+      {0,  0 },
+      {10, 0 },
+      {5,  10}
+  };
+  auto indices = earClipTriangulate(tri);
   ASSERT_EQ(indices.size(), 3u);
   // All indices must reference valid vertices.
   for (uint32_t idx : indices) {
@@ -90,8 +93,13 @@ TEST(EarClipTriangulate, TriangleProducesSingleTriangle) {
 
 TEST(EarClipTriangulate, SquareProducesTwoTriangles) {
   // CCW square
-  std::vector<glm::vec2> sq = {{0, 0}, {10, 0}, {10, 10}, {0, 10}};
-  auto indices               = earClipTriangulate(sq);
+  std::vector<glm::vec2> sq = {
+      {0,  0 },
+      {10, 0 },
+      {10, 10},
+      {0,  10}
+  };
+  auto indices = earClipTriangulate(sq);
   EXPECT_EQ(indices.size(), 6u); // 2 triangles × 3 indices
   EXPECT_EQ(indices.size() % 3, 0u);
 }
@@ -109,14 +117,26 @@ TEST(EarClipTriangulate, PentagonProducesThreeTriangles) {
 
 TEST(EarClipTriangulate, TooFewVerticesReturnsEmpty) {
   EXPECT_TRUE(earClipTriangulate({}).empty());
-  EXPECT_TRUE(earClipTriangulate({{0, 0}}).empty());
-  EXPECT_TRUE(earClipTriangulate({{0, 0}, {1, 0}}).empty());
+  EXPECT_TRUE(earClipTriangulate({
+                                     {0, 0}
+  })
+                  .empty());
+  EXPECT_TRUE(earClipTriangulate({
+                                     {0, 0},
+                                     {1, 0}
+  })
+                  .empty());
 }
 
 TEST(EarClipTriangulate, CWPolygonIsHandled) {
   // CW square – should still produce valid triangles.
-  std::vector<glm::vec2> cw = {{0, 0}, {0, 10}, {10, 10}, {10, 0}};
-  auto indices               = earClipTriangulate(cw);
+  std::vector<glm::vec2> cw = {
+      {0,  0 },
+      {0,  10},
+      {10, 10},
+      {10, 0 }
+  };
+  auto indices = earClipTriangulate(cw);
   EXPECT_EQ(indices.size(), 6u);
   for (uint32_t idx : indices) {
     EXPECT_LT(idx, static_cast<uint32_t>(cw.size()));
@@ -144,8 +164,7 @@ TEST(EarClipTriangulate, TriangleCountIsNMinus2) {
       poly.emplace_back(std::cos(angle), std::sin(angle));
     }
     auto indices = earClipTriangulate(poly);
-    EXPECT_EQ(indices.size(), static_cast<size_t>((n - 2) * 3))
-        << "For n=" << n << " vertices";
+    EXPECT_EQ(indices.size(), static_cast<size_t>((n - 2) * 3)) << "For n=" << n << " vertices";
   }
 }
 
@@ -154,21 +173,32 @@ TEST(EarClipTriangulate, TriangleCountIsNMinus2) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 TEST(GenerateWaterPolygon, NonWaterTriggerReturnsNullopt) {
-  auto trigger = makeWaterTrigger("NonWater", {{0, 0, 0}, {10, 0, 0}, {10, 10, 0}},
-                                   /*isWater=*/false);
-  auto result  = generateWaterPolygon(trigger);
+  auto trigger = makeWaterTrigger("NonWater",
+                                  {
+                                      {0,  0,  0},
+                                      {10, 0,  0},
+                                      {10, 10, 0}
+  },
+                                  /*isWater=*/false);
+  auto result = generateWaterPolygon(trigger);
   EXPECT_FALSE(result.has_value());
 }
 
 TEST(GenerateWaterPolygon, TooFewPointsReturnsNullopt) {
-  auto trigger = makeWaterTrigger("TwoPoints", {{0, 0, 0}, {10, 0, 0}});
-  auto result  = generateWaterPolygon(trigger);
+  auto trigger = makeWaterTrigger("TwoPoints", {
+                                                   {0,  0, 0},
+                                                   {10, 0, 0}
+  });
+  auto result = generateWaterPolygon(trigger);
   EXPECT_FALSE(result.has_value());
 }
 
 TEST(GenerateWaterPolygon, TriangleProducesValidPolygon) {
-  auto trigger =
-      makeWaterTrigger("Tri", {{0, 0, 10}, {10, 0, 10}, {5, 10, 10}});
+  auto trigger = makeWaterTrigger("Tri", {
+                                             {0,  0,  10},
+                                             {10, 0,  10},
+                                             {5,  10, 10}
+  });
   auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
@@ -179,7 +209,7 @@ TEST(GenerateWaterPolygon, TriangleProducesValidPolygon) {
 
 TEST(GenerateWaterPolygon, SquareProducesCorrectIndexCount) {
   auto trigger = makeSquareTrigger(0, 0, 10, 10, 20);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   EXPECT_EQ(result->vertices.size(), 4u);
@@ -188,24 +218,28 @@ TEST(GenerateWaterPolygon, SquareProducesCorrectIndexCount) {
 
 TEST(GenerateWaterPolygon, WaterSurfaceIsFlatAtHeight) {
   // All points at z=20 in trigger coords → world Y = 20 * MAP_HEIGHT_SCALE
-  int32_t trigZ  = 20;
+  int32_t trigZ = 20;
   float expected = static_cast<float>(trigZ) * map::MAP_HEIGHT_SCALE;
 
   auto trigger = makeSquareTrigger(0, 0, 10, 10, trigZ);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   for (const auto &v : result->vertices) {
-    EXPECT_NEAR(v.position.y, expected, 0.001f)
-        << "All vertices must be at the water height";
+    EXPECT_NEAR(v.position.y, expected, 0.001f) << "All vertices must be at the water height";
   }
 }
 
 TEST(GenerateWaterPolygon, WaterHeightMatchesAveragedZCoord) {
   // Mix of slightly different z values to test averaging.
-  auto trigger = makeWaterTrigger("MixedZ",
-                                   {{0, 0, 10}, {10, 0, 12}, {10, 10, 10}, {0, 10, 12}});
-  auto result  = generateWaterPolygon(trigger);
+  auto trigger =
+      makeWaterTrigger("MixedZ", {
+                                     {0,  0,  10},
+                                     {10, 0,  12},
+                                     {10, 10, 10},
+                                     {0,  10, 12}
+  });
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   float avgZ = (10.0f + 12.0f + 10.0f + 12.0f) / 4.0f;
@@ -215,14 +249,14 @@ TEST(GenerateWaterPolygon, WaterHeightMatchesAveragedZCoord) {
 
 TEST(GenerateWaterPolygon, BoundsAreValid) {
   auto trigger = makeSquareTrigger(0, 0, 5, 5, 10);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->bounds.valid());
 }
 
 TEST(GenerateWaterPolygon, BoundsContainAllVertices) {
   auto trigger = makeSquareTrigger(2, 3, 8, 9, 15);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   const auto &bb = result->bounds;
@@ -238,7 +272,7 @@ TEST(GenerateWaterPolygon, BoundsContainAllVertices) {
 
 TEST(GenerateWaterPolygon, TexCoordsAreNormalisedByMapXYFactor) {
   auto trigger = makeSquareTrigger(0, 0, 1, 1, 10);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   // For a unit square (1 map cell), the UV difference should be 1.0.
@@ -253,7 +287,7 @@ TEST(GenerateWaterPolygon, TexCoordsAreNormalisedByMapXYFactor) {
 
 TEST(GenerateWaterPolygon, IndicesReferenceValidVertices) {
   auto trigger = makeSquareTrigger(0, 0, 10, 10, 5);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
 
   uint32_t nv = static_cast<uint32_t>(result->vertices.size());
@@ -264,7 +298,7 @@ TEST(GenerateWaterPolygon, IndicesReferenceValidVertices) {
 
 TEST(GenerateWaterPolygon, IndicesFormCompleteTriangles) {
   auto trigger = makeSquareTrigger(0, 0, 10, 10, 5);
-  auto result  = generateWaterPolygon(trigger);
+  auto result = generateWaterPolygon(trigger);
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(result->indices.size() % 3, 0u);
 }
@@ -281,7 +315,12 @@ TEST(GenerateWaterMeshes, EmptyTriggersProducesEmpty) {
 
 TEST(GenerateWaterMeshes, NonWaterTriggersAreSkipped) {
   std::vector<map::PolygonTrigger> triggers;
-  triggers.push_back(makeWaterTrigger("Land", {{0, 0, 0}, {10, 0, 0}, {5, 10, 0}},
+  triggers.push_back(makeWaterTrigger("Land",
+                                      {
+                                          {0,  0,  0},
+                                          {10, 0,  0},
+                                          {5,  10, 0}
+  },
                                       /*isWater=*/false));
   auto data = generateWaterMeshes(triggers);
   EXPECT_TRUE(data.polygons.empty());
@@ -306,7 +345,13 @@ TEST(GenerateWaterMeshes, MultipleWaterTriggersAllIncluded) {
 TEST(GenerateWaterMeshes, MixedTriggersOnlyWaterOnes) {
   std::vector<map::PolygonTrigger> triggers;
   triggers.push_back(makeSquareTrigger(0, 0, 5, 5, 10));
-  triggers.push_back(makeWaterTrigger("Land", {{0, 0, 0}, {5, 0, 0}, {5, 5, 0}}, false));
+  triggers.push_back(makeWaterTrigger("Land",
+                                      {
+                                          {0, 0, 0},
+                                          {5, 0, 0},
+                                          {5, 5, 0}
+  },
+                                      false));
   triggers.push_back(makeSquareTrigger(10, 10, 15, 15, 10));
   auto data = generateWaterMeshes(triggers);
   EXPECT_EQ(data.polygons.size(), 2u);
@@ -350,7 +395,7 @@ TEST(WaterMesh, WaterHeightConsistentWithTerrainScale) {
   // Heightmap value 128 → world height 128 * MAP_HEIGHT_SCALE.
   // Water at trigger Z=128 should be at the same world Y.
   float terrainHeight = 128.0f * map::MAP_HEIGHT_SCALE;
-  auto world          = triggerPointToWorld({0, 0, 128});
+  auto world = triggerPointToWorld({0, 0, 128});
   EXPECT_NEAR(world.y, terrainHeight, 0.001f);
 }
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include "lib/gfx/buffer.hpp"
+#include "lib/gfx/pipeline.hpp"
+
 #include <vulkan/vulkan.hpp>
 
 #include <glm/glm.hpp>
@@ -11,8 +14,6 @@
 #include "lib/formats/ini/water_settings.hpp"
 #include "lib/formats/map/types.hpp"
 #include "lib/gfx/bounding_box.hpp"
-#include "lib/gfx/buffer.hpp"
-#include "lib/gfx/pipeline.hpp"
 #include "lib/gfx/renderable.hpp"
 #include "lib/gfx/texture.hpp"
 #include "render/water/water_mesh.hpp"
@@ -60,7 +61,7 @@ public:
 
   // Apply INI water appearance settings (scroll rates, color, opacity).
   void applyWaterSettings(const ini::WaterSettings &settings,
-                           ini::TimeOfDay tod = ini::TimeOfDay::Morning);
+                          ini::TimeOfDay tod = ini::TimeOfDay::Morning);
 
   // Advance animation time by deltaSeconds.
   void update(float deltaSeconds);

@@ -222,9 +222,9 @@ struct PipelineCreateInfo {
 
     // Alpha blending on, depth writes off (render after terrain).
     info.config.enableBlending = true;
-    info.config.alphaBlend     = true;
-    info.config.depthWrite     = false;
-    info.config.twoSided       = true; // water visible from above and below
+    info.config.alphaBlend = true;
+    info.config.depthWrite = false;
+    info.config.twoSided = true; // water visible from above and below
 
     return info;
   }

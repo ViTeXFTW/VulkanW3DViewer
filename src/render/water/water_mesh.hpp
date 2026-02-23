@@ -49,11 +49,9 @@ struct WaterMeshData {
 
 // Generate a flat water mesh for a single water PolygonTrigger.
 // Returns an empty optional if the trigger is not a valid water area.
-[[nodiscard]] std::optional<WaterPolygon>
-generateWaterPolygon(const map::PolygonTrigger &trigger);
+[[nodiscard]] std::optional<WaterPolygon> generateWaterPolygon(const map::PolygonTrigger &trigger);
 
 // Generate water meshes for all water PolygonTriggers in a map file.
-[[nodiscard]] WaterMeshData
-generateWaterMeshes(const std::vector<map::PolygonTrigger> &triggers);
+[[nodiscard]] WaterMeshData generateWaterMeshes(const std::vector<map::PolygonTrigger> &triggers);
 
 } // namespace w3d::water
