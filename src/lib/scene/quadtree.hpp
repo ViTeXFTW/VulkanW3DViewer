@@ -48,7 +48,7 @@ private:
 
   [[nodiscard]] Rect nodeWorldRect(const SceneNode *node) const;
   void insertInto(int nodeIndex, const Entry &entry, int depth);
-  void subdivide(int nodeIndex);
+  void subdivide(int nodeIndex, int depth);
   void queryNode(int nodeIndex, const Rect &rect, std::vector<SceneNode *> &result) const;
   void queryNodeFrustum(int nodeIndex, const gfx::Frustum &frustum,
                         std::vector<SceneNode *> &result) const;

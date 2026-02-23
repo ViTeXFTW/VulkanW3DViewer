@@ -35,7 +35,7 @@ void Quadtree::insertInto(int nodeIndex, const Entry &entry, int depth) {
   if (n.isLeaf) {
     n.entries.push_back(entry);
     if (static_cast<int>(n.entries.size()) > maxPerNode_ && depth < maxDepth_) {
-      subdivide(nodeIndex);
+      subdivide(nodeIndex, depth);
     }
     return;
   }
@@ -62,7 +62,7 @@ void Quadtree::insertInto(int nodeIndex, const Entry &entry, int depth) {
   }
 }
 
-void Quadtree::subdivide(int nodeIndex) {
+void Quadtree::subdivide(int nodeIndex, int depth) {
   float midX = (nodes_[nodeIndex].bounds.minX + nodes_[nodeIndex].bounds.maxX) * 0.5f;
   float midZ = (nodes_[nodeIndex].bounds.minZ + nodes_[nodeIndex].bounds.maxZ) * 0.5f;
 
@@ -91,7 +91,7 @@ void Quadtree::subdivide(int nodeIndex) {
   nodes_[nodeIndex].entries.clear();
 
   for (const auto &entry : entries) {
-    insertInto(nodeIndex, entry, 1);
+    insertInto(nodeIndex, entry, depth);
   }
 }
 

@@ -129,7 +129,9 @@ struct MapObject {
 
   bool isBridgePoint() const { return (flags & (FLAG_BRIDGE_POINT1 | FLAG_BRIDGE_POINT2)) != 0; }
 
-  bool shouldRender() const { return (flags & FLAG_DONT_RENDER) == 0; }
+  bool shouldRender() const {
+    return (flags & FLAG_DONT_RENDER) == 0 && !isRoadPoint() && !isBridgePoint();
+  }
 };
 
 struct PolygonTrigger {
