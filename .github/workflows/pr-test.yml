@@ -1,7 +1,10 @@
 name: PR Test
 
 on:
-  pull_request:
+  workflow_run:
+    workflows: ['clang-format']
+    types:
+      - completed
     branches:
       - dev
       - main
