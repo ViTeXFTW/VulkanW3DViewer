@@ -1,0 +1,66 @@
+name: Main Branch Tests
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: test
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux jobs
+          - os: ubuntu-latest
+            compiler: gcc
+            preset: gcc-test
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            compiler: clang
+            preset: clang-test
+            cc: clang
+            cxx: clang++
+          # Windows jobs
+          - os: windows-latest
+            compiler: msvc
+            preset: msvc-test
+          - os: windows-latest
+            compiler: clang
+            preset: clang-test
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.compiler }} cmake ninja-build
+
+      - name: Configure CMake (Linux)
+        if: runner.os == 'Linux'
+        run: cmake --preset ${{ matrix.preset }}
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Run tests
+        run: ctest --preset ${{ matrix.preset }} --output-on-failure
