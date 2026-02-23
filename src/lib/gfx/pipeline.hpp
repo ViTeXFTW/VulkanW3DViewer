@@ -61,6 +61,10 @@ struct UniformBufferObject {
   alignas(16) glm::mat4 model;
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
+  // Scene lighting (populated from map GlobalLighting; defaults used when no map is loaded)
+  alignas(16) glm::vec4 lightDirection; // xyz = direction toward light, w = unused
+  alignas(16) glm::vec4 ambientColor;   // xyz = RGB ambient, w = unused
+  alignas(16) glm::vec4 diffuseColor;   // xyz = RGB diffuse, w = unused
 };
 
 struct MaterialPushConstant {
@@ -78,6 +82,13 @@ struct TerrainPushConstant {
   alignas(16) glm::vec4 diffuseColor;
   alignas(16) glm::vec3 lightDirection;
   alignas(4) uint32_t useTexture;
+  // Phase 6.2 – shadow color (decoded from GlobalLighting::shadowColor ARGB uint32)
+  alignas(16) glm::vec4 shadowColor;
+  // Phase 6.3 – cloud shadow animation parameters
+  alignas(4) float cloudScrollU; // cloud UV horizontal scroll speed (world units/sec)
+  alignas(4) float cloudScrollV; // cloud UV vertical scroll speed (world units/sec)
+  alignas(4) float cloudTime;    // accumulated time for cloud UV offset
+  alignas(4) float cloudStrength; // 0 = no shadow, 1 = full shadow intensity
 };
 
 struct WaterPushConstant {
@@ -122,7 +133,8 @@ struct PipelineCreateInfo {
 
     info.descriptorBindings = {
         vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
-                                       vk::ShaderStageFlagBits::eVertex  },
+                                       vk::ShaderStageFlagBits::eVertex |
+                                           vk::ShaderStageFlagBits::eFragment},
         vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
                                        vk::ShaderStageFlagBits::eFragment}
     };
@@ -147,7 +159,8 @@ struct PipelineCreateInfo {
 
     info.descriptorBindings = {
         vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
-                                       vk::ShaderStageFlagBits::eVertex  },
+                                       vk::ShaderStageFlagBits::eVertex |
+                                           vk::ShaderStageFlagBits::eFragment},
         vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
                                        vk::ShaderStageFlagBits::eFragment},
         vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eStorageBuffer,        1,

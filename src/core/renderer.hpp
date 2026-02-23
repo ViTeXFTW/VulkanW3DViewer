@@ -17,6 +17,7 @@
 #include "lib/gfx/texture.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/hover_detector.hpp"
+#include "render/lighting_state.hpp"
 #include "render/material.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton_renderer.hpp"
@@ -89,6 +90,13 @@ public:
    */
   uint32_t currentFrame() const { return currentFrame_; }
 
+  /**
+   * Set the active scene lighting state (Phase 6.1).
+   * The pointer is non-owning and must outlive the Renderer.
+   * Pass nullptr to revert to hard-coded defaults.
+   */
+  void setLighting(const LightingState *lighting) { lightingState_ = lighting; }
+
   // Accessors
   gfx::Pipeline &pipeline() { return pipeline_; }
   gfx::Pipeline &skinnedPipeline() { return skinnedPipeline_; }
@@ -109,6 +117,7 @@ private:
   ImGuiBackend *imguiBackend_ = nullptr;
   gfx::TextureManager *textureManager_ = nullptr;
   BoneMatrixBuffer *boneMatrixBuffer_ = nullptr;
+  const LightingState *lightingState_ = nullptr; // optional scene lighting (Phase 6.1)
 
   // Pipelines and descriptors
   gfx::Pipeline pipeline_;
