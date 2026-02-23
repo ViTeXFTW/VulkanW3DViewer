@@ -318,3 +318,33 @@ else()
 endif()
 
 add_test(NAME frustum_tests COMMAND frustum_tests)
+
+# Terrain atlas tests (requires GLM, no Vulkan)
+add_executable(terrain_atlas_tests
+  terrain/test_terrain_atlas.cpp
+)
+
+target_link_libraries(terrain_atlas_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_atlas_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_atlas_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_atlas_tests COMMAND terrain_atlas_tests)
+
+# Terrain blend pattern tests (requires GLM, no Vulkan)
+add_executable(terrain_blend_tests
+  terrain/test_terrain_blend.cpp
+)
+
+target_link_libraries(terrain_blend_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_blend_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_blend_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_blend_tests COMMAND terrain_blend_tests)

@@ -159,11 +159,12 @@ struct PipelineCreateInfo {
     info.fragShaderPath = "shaders/terrain.frag.spv";
 
     info.vertexInput.binding =
-        vk::VertexInputBindingDescription{0, 32, vk::VertexInputRate::eVertex};
+        vk::VertexInputBindingDescription{0, 40, vk::VertexInputRate::eVertex};
     info.vertexInput.attributes = {
         vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0 },
         vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, 12},
-        vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32Sfloat,    24}
+        vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32Sfloat,    24},
+        vk::VertexInputAttributeDescription{3, 0, vk::Format::eR32G32Sfloat,    32}
     };
 
     info.descriptorBindings = {

@@ -15,6 +15,7 @@
 #include "lib/gfx/frustum.hpp"
 #include "lib/gfx/renderable.hpp"
 #include "lib/gfx/texture.hpp"
+#include "render/terrain/terrain_atlas.hpp"
 #include "render/terrain/terrain_mesh.hpp"
 
 namespace w3d::gfx {
@@ -47,6 +48,10 @@ public:
   void load(gfx::VulkanContext &context, const map::HeightMap &heightMap,
             const map::GlobalLighting &lighting);
 
+  void loadWithBlendData(gfx::VulkanContext &context, const map::HeightMap &heightMap,
+                         const map::BlendTileData &blendTileData,
+                         const std::vector<TileUV> &tileUVs, const map::GlobalLighting &lighting);
+
   void draw(vk::CommandBuffer cmd) override;
 
   const gfx::BoundingBox &bounds() const override { return bounds_; }
@@ -67,6 +72,9 @@ public:
   void initPipeline(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
                     uint32_t frameCount);
 
+  void initPipelineWithAtlas(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
+                             const TerrainAtlasData &atlasData, uint32_t frameCount);
+
   void updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer, vk::DeviceSize uboSize);
 
   void drawWithPipeline(vk::CommandBuffer cmd, uint32_t frameIndex);
@@ -75,6 +83,8 @@ public:
 
   uint32_t visibleChunkCount() const { return visibleChunkCount_; }
   uint32_t totalChunkCount() const { return static_cast<uint32_t>(gpuChunks_.size()); }
+
+  bool hasAtlas() const { return atlasTextureIndex_ != ~0u; }
 
 private:
   void uploadChunks(gfx::VulkanContext &context, const TerrainMeshData &meshData);
@@ -89,6 +99,8 @@ private:
   gfx::Frustum frustum_;
   uint32_t visibleChunkCount_ = 0;
   bool frustumValid_ = false;
+
+  uint32_t atlasTextureIndex_ = ~0u;
 };
 
 } // namespace w3d::terrain

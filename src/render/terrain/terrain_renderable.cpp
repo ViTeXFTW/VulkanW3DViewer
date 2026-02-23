@@ -48,6 +48,23 @@ void TerrainRenderable::updateFrustum(const glm::mat4 &viewProjection) {
   frustumValid_ = true;
 }
 
+void TerrainRenderable::loadWithBlendData(gfx::VulkanContext &context,
+                                          const map::HeightMap &heightMap,
+                                          const map::BlendTileData &blendTileData,
+                                          const std::vector<TileUV> &tileUVs,
+                                          const map::GlobalLighting &lighting) {
+  destroy();
+
+  auto meshData = generateTerrainMeshFromBlendData(heightMap, blendTileData, tileUVs);
+  if (meshData.chunks.empty()) {
+    return;
+  }
+
+  bounds_ = meshData.totalBounds;
+  setLighting(lighting);
+  uploadChunks(context, meshData);
+}
+
 void TerrainRenderable::destroy() {
   for (auto &chunk : gpuChunks_) {
     chunk.destroy();
@@ -56,6 +73,7 @@ void TerrainRenderable::destroy() {
   bounds_ = gfx::BoundingBox{};
   frustumValid_ = false;
   visibleChunkCount_ = 0;
+  atlasTextureIndex_ = ~0u;
 
   descriptorManager_.destroy();
   pipeline_.destroy();
@@ -68,7 +86,7 @@ void TerrainRenderable::setLighting(const map::GlobalLighting &lighting) {
   pushConstant_.ambientColor = glm::vec4(light.ambient, 1.0f);
   pushConstant_.diffuseColor = glm::vec4(light.diffuse, 1.0f);
   pushConstant_.lightDirection = light.lightPos;
-  pushConstant_.useTexture = 0;
+  pushConstant_.useTexture = hasAtlas() ? 1u : 0u;
 }
 
 void TerrainRenderable::initPipeline(gfx::VulkanContext &context,
@@ -80,6 +98,31 @@ void TerrainRenderable::initPipeline(gfx::VulkanContext &context,
   const auto &defaultTex = textureManager.texture(0);
   for (uint32_t i = 0; i < frameCount; ++i) {
     descriptorManager_.updateTexture(i, defaultTex.view, defaultTex.sampler);
+  }
+}
+
+void TerrainRenderable::initPipelineWithAtlas(gfx::VulkanContext &context,
+                                              gfx::TextureManager &textureManager,
+                                              const TerrainAtlasData &atlasData,
+                                              uint32_t frameCount) {
+  pipeline_.create(context, gfx::PipelineCreateInfo::terrain());
+  descriptorManager_.create(context, pipeline_.descriptorSetLayout(), frameCount);
+
+  if (atlasData.isValid()) {
+    atlasTextureIndex_ = textureManager.createTexture(
+        "terrain_atlas", static_cast<uint32_t>(atlasData.atlasWidth),
+        static_cast<uint32_t>(atlasData.atlasHeight), atlasData.pixels.data());
+
+    const auto &atlasTex = textureManager.texture(atlasTextureIndex_);
+    for (uint32_t i = 0; i < frameCount; ++i) {
+      descriptorManager_.updateTexture(i, atlasTex.view, atlasTex.sampler);
+    }
+    pushConstant_.useTexture = 1u;
+  } else {
+    const auto &defaultTex = textureManager.texture(0);
+    for (uint32_t i = 0; i < frameCount; ++i) {
+      descriptorManager_.updateTexture(i, defaultTex.view, defaultTex.sampler);
+    }
   }
 }
 
