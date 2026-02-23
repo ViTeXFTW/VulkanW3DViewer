@@ -3,9 +3,8 @@
 //
 // No Vulkan dependency – minimap generation is purely CPU-side.
 
-#include "render/terrain/terrain_minimap.hpp"
-
 #include "lib/formats/map/types.hpp"
+#include "render/terrain/terrain_minimap.hpp"
 
 #include <gtest/gtest.h>
 
@@ -34,8 +33,7 @@ static HeightMap makeGradient(int32_t w, int32_t h) {
   for (int32_t y = 0; y < h; ++y) {
     for (int32_t x = 0; x < w; ++x) {
       // height increases left to right, bottom to top
-      hm.data[static_cast<size_t>(y * w + x)] =
-          static_cast<uint8_t>((x + y) * 255 / (w + h - 2));
+      hm.data[static_cast<size_t>(y * w + x)] = static_cast<uint8_t>((x + y) * 255 / (w + h - 2));
     }
   }
   return hm;
@@ -142,7 +140,7 @@ TEST(MinimapGenerator, GradientTerrainProducesVaryingColors) {
   };
 
   size_t topRight = static_cast<size_t>((15) * 16 + 15); // y=15, x=15 → highest
-  size_t bottomLeft = 0;                                  // y=0,  x=0  → lowest
+  size_t bottomLeft = 0;                                 // y=0,  x=0  → lowest
 
   EXPECT_GT(brightness(topRight), brightness(bottomLeft));
 }

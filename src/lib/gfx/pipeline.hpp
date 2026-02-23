@@ -85,9 +85,9 @@ struct TerrainPushConstant {
   // Phase 6.2 – shadow color (decoded from GlobalLighting::shadowColor ARGB uint32)
   alignas(16) glm::vec4 shadowColor;
   // Phase 6.3 – cloud shadow animation parameters
-  alignas(4) float cloudScrollU; // cloud UV horizontal scroll speed (world units/sec)
-  alignas(4) float cloudScrollV; // cloud UV vertical scroll speed (world units/sec)
-  alignas(4) float cloudTime;    // accumulated time for cloud UV offset
+  alignas(4) float cloudScrollU;  // cloud UV horizontal scroll speed (world units/sec)
+  alignas(4) float cloudScrollV;  // cloud UV vertical scroll speed (world units/sec)
+  alignas(4) float cloudTime;     // accumulated time for cloud UV offset
   alignas(4) float cloudStrength; // 0 = no shadow, 1 = full shadow intensity
 };
 
@@ -136,7 +136,7 @@ struct PipelineCreateInfo {
                                        vk::ShaderStageFlagBits::eVertex |
                                            vk::ShaderStageFlagBits::eFragment},
         vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                       vk::ShaderStageFlagBits::eFragment}
+                                       vk::ShaderStageFlagBits::eFragment    }
     };
 
     info.pushConstants = {
@@ -162,9 +162,9 @@ struct PipelineCreateInfo {
                                        vk::ShaderStageFlagBits::eVertex |
                                            vk::ShaderStageFlagBits::eFragment},
         vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
-                                       vk::ShaderStageFlagBits::eFragment},
+                                       vk::ShaderStageFlagBits::eFragment    },
         vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eStorageBuffer,        1,
-                                       vk::ShaderStageFlagBits::eVertex  }
+                                       vk::ShaderStageFlagBits::eVertex      }
     };
 
     info.pushConstants = {

@@ -52,8 +52,8 @@ MinimapGenerator::MinimapImage MinimapGenerator::generate(const map::HeightMap &
 // ── Scaled generation ─────────────────────────────────────────────────────────
 
 MinimapGenerator::MinimapImage MinimapGenerator::generateScaled(const map::HeightMap &heightMap,
-                                                                 uint32_t targetWidth,
-                                                                 uint32_t targetHeight) {
+                                                                uint32_t targetWidth,
+                                                                uint32_t targetHeight) {
   if (!heightMap.isValid() || targetWidth == 0 || targetHeight == 0) {
     return {};
   }
@@ -84,8 +84,10 @@ MinimapGenerator::MinimapImage MinimapGenerator::generateScaled(const map::Heigh
       float sx = (static_cast<float>(x) + 0.5f) * scaleX - 0.5f;
       float sy = (static_cast<float>(y) + 0.5f) * scaleY - 0.5f;
 
-      int32_t x0 = std::clamp(static_cast<int32_t>(std::floor(sx)), 0, static_cast<int32_t>(srcW) - 1);
-      int32_t y0 = std::clamp(static_cast<int32_t>(std::floor(sy)), 0, static_cast<int32_t>(srcH) - 1);
+      int32_t x0 =
+          std::clamp(static_cast<int32_t>(std::floor(sx)), 0, static_cast<int32_t>(srcW) - 1);
+      int32_t y0 =
+          std::clamp(static_cast<int32_t>(std::floor(sy)), 0, static_cast<int32_t>(srcH) - 1);
       int32_t x1 = std::min(x0 + 1, static_cast<int32_t>(srcW) - 1);
       int32_t y1 = std::min(y0 + 1, static_cast<int32_t>(srcH) - 1);
 
@@ -103,8 +105,8 @@ MinimapGenerator::MinimapImage MinimapGenerator::generateScaled(const map::Heigh
       float h01 = getH(x0, y1);
       float h11 = getH(x1, y1);
 
-      float h = h00 * (1.0f - fx) * (1.0f - fy) + h10 * fx * (1.0f - fy) +
-                h01 * (1.0f - fx) * fy + h11 * fx * fy;
+      float h = h00 * (1.0f - fx) * (1.0f - fy) + h10 * fx * (1.0f - fy) + h01 * (1.0f - fx) * fy +
+                h11 * fx * fy;
 
       size_t idx = (static_cast<size_t>(y) * outW + x) * 4u;
       heightToColor(h, img.pixels[idx + 0], img.pixels[idx + 1], img.pixels[idx + 2]);

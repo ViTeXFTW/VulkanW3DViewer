@@ -1,9 +1,9 @@
 #pragma once
 
-#include "lib/formats/map/types.hpp"
-
 #include <cstdint>
 #include <vector>
+
+#include "lib/formats/map/types.hpp"
 
 namespace w3d::terrain {
 

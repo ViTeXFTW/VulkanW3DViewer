@@ -1,9 +1,10 @@
 #pragma once
 
-#include "lib/formats/map/types.hpp"
 #include "lib/gfx/pipeline.hpp"
 
 #include <glm/glm.hpp>
+
+#include "lib/formats/map/types.hpp"
 
 namespace w3d {
 

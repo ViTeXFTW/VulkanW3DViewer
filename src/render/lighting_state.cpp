@@ -35,7 +35,7 @@ void LightingState::setGlobalLighting(const map::GlobalLighting &lighting) {
   hasLighting_ = true;
   // Pick the time-of-day stored in the map, but fall back to Morning for Invalid.
   timeOfDay_ = (lighting.currentTimeOfDay != map::TimeOfDay::Invalid) ? lighting.currentTimeOfDay
-                                                                       : map::TimeOfDay::Morning;
+                                                                      : map::TimeOfDay::Morning;
 }
 
 void LightingState::setTimeOfDay(map::TimeOfDay tod) {
