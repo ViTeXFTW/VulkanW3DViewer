@@ -80,29 +80,13 @@ void TerrainRenderable::destroy() {
 }
 
 void TerrainRenderable::setLighting(const map::GlobalLighting &lighting) {
-  const auto &current = lighting.getCurrentLighting();
-  const auto &light = current.terrainLights[0];
-
-  pushConstant_.ambientColor = glm::vec4(light.ambient, 1.0f);
-  pushConstant_.diffuseColor = glm::vec4(light.diffuse, 1.0f);
-  pushConstant_.lightDirection = light.lightPos;
-  pushConstant_.useTexture = hasAtlas() ? 1u : 0u;
-
-  // Phase 6.2 – shadow colour decoded from ARGB uint32
-  uint32_t argb = lighting.shadowColor;
-  float sa = static_cast<float>((argb >> 24) & 0xFFu) / 255.0f;
-  float sr = static_cast<float>((argb >> 16) & 0xFFu) / 255.0f;
-  float sg = static_cast<float>((argb >> 8) & 0xFFu) / 255.0f;
-  float sb = static_cast<float>((argb) & 0xFFu) / 255.0f;
-  pushConstant_.shadowColor = glm::vec4(sr, sg, sb, sa);
+  LightingState tempState;
+  tempState.setGlobalLighting(lighting);
+  applyLightingState(tempState);
 }
 
 void TerrainRenderable::applyLightingState(const LightingState &lightingState) {
   pushConstant_ = lightingState.makeTerrainPushConstant(hasAtlas());
-}
-
-void TerrainRenderable::update(float deltaSeconds) {
-  pushConstant_.cloudTime += deltaSeconds;
 }
 
 void TerrainRenderable::initPipeline(gfx::VulkanContext &context,
