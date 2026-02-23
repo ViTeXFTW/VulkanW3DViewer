@@ -80,6 +80,14 @@ struct TerrainPushConstant {
   alignas(4) uint32_t useTexture;
 };
 
+struct WaterPushConstant {
+  alignas(16) glm::vec4 waterColor; // rgb = diffuse tint, a = opacity
+  alignas(4) float time;            // elapsed seconds for UV animation
+  alignas(4) float uScrollRate;     // primary scroll speed in U (units/sec)
+  alignas(4) float vScrollRate;     // primary scroll speed in V (units/sec)
+  alignas(4) float uvScale;         // world-units-to-UV tiling scale
+};
+
 struct PipelineConfig {
   bool enableBlending = false;
   bool alphaBlend = false;
@@ -177,6 +185,46 @@ struct PipelineCreateInfo {
     info.pushConstants = {
         vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(TerrainPushConstant)}
     };
+
+    return info;
+  }
+
+  // Water surface pipeline:
+  //   vertex layout : position (vec3) + texCoord (vec2)  = 20 bytes
+  //   descriptor set: binding 0 = UBO (vert), binding 1 = water texture (frag)
+  //   push constants: WaterPushConstant (vert + frag)
+  //   blending      : alpha blend enabled, depth writes disabled
+  static PipelineCreateInfo water() {
+    PipelineCreateInfo info;
+    info.vertShaderPath = "shaders/water.vert.spv";
+    info.fragShaderPath = "shaders/water.frag.spv";
+
+    // WaterVertex: position (vec3 = 12 B) + texCoord (vec2 = 8 B) = 20 B
+    info.vertexInput.binding =
+        vk::VertexInputBindingDescription{0, 20, vk::VertexInputRate::eVertex};
+    info.vertexInput.attributes = {
+        vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0 },
+        vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32Sfloat,    12}
+    };
+
+    info.descriptorBindings = {
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                       vk::ShaderStageFlagBits::eVertex  },
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment}
+    };
+
+    // Push constants are needed in both stages (time/scroll in vert, color in frag).
+    info.pushConstants = {
+        vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                              0, sizeof(WaterPushConstant)}
+    };
+
+    // Alpha blending on, depth writes off (render after terrain).
+    info.config.enableBlending = true;
+    info.config.alphaBlend = true;
+    info.config.depthWrite = false;
+    info.config.twoSided = true; // water visible from above and below
 
     return info;
   }
