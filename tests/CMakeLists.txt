@@ -363,3 +363,42 @@ else()
 endif()
 
 add_test(NAME water_mesh_tests COMMAND water_mesh_tests)
+
+# Scene graph tests (SceneNode, Quadtree, SceneGraph - no Vulkan initialization)
+add_executable(scene_tests
+  scene/test_scene_node.cpp
+  scene/test_quadtree.cpp
+  scene/test_scene_graph.cpp
+)
+
+target_link_libraries(scene_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(scene_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(scene_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME scene_tests COMMAND scene_tests)
+
+# Object placement utils tests (Vulkan-free static utility functions)
+add_executable(object_resolver_tests
+  scene/test_object_resolver.cpp
+  ${CMAKE_SOURCE_DIR}/src/render/object_placement_utils.cpp
+)
+
+target_link_libraries(object_resolver_tests PRIVATE glm::glm gtest gtest_main)
+
+target_include_directories(object_resolver_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/lib/Vulkan-Hpp/Vulkan-Headers/include
+  ${CMAKE_SOURCE_DIR}/lib/Vulkan-Hpp
+)
+
+if(MSVC)
+  target_compile_options(object_resolver_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(object_resolver_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME object_resolver_tests COMMAND object_resolver_tests)
