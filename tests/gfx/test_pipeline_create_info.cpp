@@ -78,8 +78,8 @@ TEST(PipelineCreateInfoTest, TerrainPresetHasCorrectDefaults) {
   EXPECT_EQ(info.topology, vk::PrimitiveTopology::eTriangleList);
 
   EXPECT_EQ(info.vertexInput.binding.binding, 0);
-  EXPECT_EQ(info.vertexInput.binding.stride, 32);
-  EXPECT_EQ(info.vertexInput.attributes.size(), 3);
+  EXPECT_EQ(info.vertexInput.binding.stride, 40u);
+  EXPECT_EQ(info.vertexInput.attributes.size(), 4u);
 
   EXPECT_EQ(info.vertexInput.attributes[0].location, 0);
   EXPECT_EQ(info.vertexInput.attributes[0].format, vk::Format::eR32G32B32Sfloat);
@@ -92,6 +92,10 @@ TEST(PipelineCreateInfoTest, TerrainPresetHasCorrectDefaults) {
   EXPECT_EQ(info.vertexInput.attributes[2].location, 2);
   EXPECT_EQ(info.vertexInput.attributes[2].format, vk::Format::eR32G32Sfloat);
   EXPECT_EQ(info.vertexInput.attributes[2].offset, 24u);
+
+  EXPECT_EQ(info.vertexInput.attributes[3].location, 3);
+  EXPECT_EQ(info.vertexInput.attributes[3].format, vk::Format::eR32G32Sfloat);
+  EXPECT_EQ(info.vertexInput.attributes[3].offset, 32u);
 
   EXPECT_EQ(info.descriptorBindings.size(), 2);
   EXPECT_EQ(info.descriptorBindings[0].binding, 0);
@@ -106,6 +110,6 @@ TEST(PipelineCreateInfoTest, TerrainPresetHasCorrectDefaults) {
 TEST(PipelineCreateInfoTest, TerrainVertexSizeMatchesStride) {
   auto info = PipelineCreateInfo::terrain();
 
-  EXPECT_EQ(info.vertexInput.binding.stride, 32u);
-  EXPECT_EQ(sizeof(float) * 3 + sizeof(float) * 3 + sizeof(float) * 2, 32u);
+  EXPECT_EQ(info.vertexInput.binding.stride, 40u);
+  EXPECT_EQ(sizeof(float) * 3 + sizeof(float) * 3 + sizeof(float) * 2 + sizeof(float) * 2, 40u);
 }

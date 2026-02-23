@@ -1,3 +1,4 @@
+#include <cstring>
 #include <vector>
 
 #include "../../src/lib/formats/map/data_chunk_reader.hpp"

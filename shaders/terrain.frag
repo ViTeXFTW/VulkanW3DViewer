@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragWorldPos;
+layout(location = 3) in vec2 fragAtlasCoord;
 
 layout(location = 0) out vec4 outColor;
 
@@ -20,7 +21,7 @@ void main() {
 
   vec3 baseColor;
   if (material.useTexture == 1u) {
-    baseColor = texture(texSampler, fragTexCoord).rgb;
+    baseColor = texture(texSampler, fragAtlasCoord).rgb;
   } else {
     float height = fragWorldPos.y;
     float t = clamp(height / 100.0, 0.0, 1.0);
