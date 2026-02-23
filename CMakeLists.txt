@@ -176,34 +176,68 @@ target_compile_definitions(w3d_lib PUBLIC
 )
 
 # Compiler-specific flags for library
-if(MSVC)
-    target_compile_options(w3d_lib PRIVATE
-        /permissive-
-        /utf-8
-        $<$<CONFIG:Debug>:/Od /Zi /W4>
-        $<$<CONFIG:Release>:/O2 /GL>
-    )
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(w3d_lib PRIVATE
-        $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic>
-        $<$<CONFIG:Release>:-O3>
-    )
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(w3d_lib PRIVATE
-        $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic>
-        $<$<CONFIG:Release>:-O3>
-    )
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-    target_compile_options(w3d_lib PRIVATE
-        $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra>
-        $<$<CONFIG:Release>:-O3 -ipo>
-    )
+if(BUILD_TESTING)
+    # Test builds use relaxed warnings to reduce noise from submodule headers
+    if(MSVC)
+        target_compile_options(w3d_lib PRIVATE
+            /permissive-
+            /utf-8
+            $<$<CONFIG:Debug>:/Od /Zi /W3>
+            $<$<CONFIG:Release>:/O2 /GL>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall>
+            $<$<CONFIG:Release>:-O3 -ipo>
+        )
+    else()
+        message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g>
+            $<$<CONFIG:Release>:-O3>
+        )
+    endif()
 else()
-    message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
-    target_compile_options(w3d_lib PRIVATE
-        $<$<CONFIG:Debug>:-O0 -g>
-        $<$<CONFIG:Release>:-O3>
-    )
+    # Non-test builds use strict warnings
+    if(MSVC)
+        target_compile_options(w3d_lib PRIVATE
+            /permissive-
+            /utf-8
+            $<$<CONFIG:Debug>:/Od /Zi /W4>
+            $<$<CONFIG:Release>:/O2 /GL>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra -Wpedantic>
+            $<$<CONFIG:Release>:-O3>
+        )
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g -Wall -Wextra>
+            $<$<CONFIG:Release>:-O3 -ipo>
+        )
+    else()
+        message(WARNING "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
+        target_compile_options(w3d_lib PRIVATE
+            $<$<CONFIG:Debug>:-O0 -g>
+            $<$<CONFIG:Release>:-O3>
+        )
+    endif()
 endif()
 
 # Compile and embed shaders for the library (skip for tests - use stubs)

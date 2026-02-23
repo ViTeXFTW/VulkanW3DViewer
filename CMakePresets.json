@@ -27,12 +27,19 @@
             }
         },
         {
-            "name": "test",
-            "displayName": "Debug with Tests",
-            "inherits": "debug",
+            "name": "test-base",
+            "displayName": "Test Base (Debug + Tests)",
+            "hidden": true,
+            "inherits": "base",
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
                 "BUILD_TESTING": "ON"
             }
+        },
+        {
+            "name": "test",
+            "displayName": "Debug with Tests",
+            "inherits": "test-base"
         },
         {
             "name": "clang-base",
@@ -91,17 +98,17 @@
         {
             "name": "clang-test",
             "displayName": "Test (Clang)",
-            "inherits": ["test", "clang-base"]
+            "inherits": ["test-base", "clang-base"]
         },
         {
             "name": "gcc-test",
             "displayName": "Test (GCC)",
-            "inherits": ["test", "gcc-base"]
+            "inherits": ["test-base", "gcc-base"]
         },
         {
             "name": "msvc-test",
             "displayName": "Test (MSVC)",
-            "inherits": ["test", "msvc-base"]
+            "inherits": ["test-base", "msvc-base"]
         }
     ],
     "buildPresets": [
