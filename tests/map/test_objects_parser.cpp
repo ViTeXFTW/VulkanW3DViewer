@@ -358,12 +358,12 @@ TEST_F(ObjectsParserTest, TestsObjectFlagHelpers) {
   obj.flags = FLAG_ROAD_POINT1;
   EXPECT_TRUE(obj.isRoadPoint());
   EXPECT_FALSE(obj.isBridgePoint());
-  EXPECT_TRUE(obj.shouldRender());
+  EXPECT_FALSE(obj.shouldRender()); // road points are placement markers, not renderable
 
   obj.flags = FLAG_BRIDGE_POINT2;
   EXPECT_FALSE(obj.isRoadPoint());
   EXPECT_TRUE(obj.isBridgePoint());
-  EXPECT_TRUE(obj.shouldRender());
+  EXPECT_FALSE(obj.shouldRender()); // bridge points are placement markers, not renderable
 
   obj.flags = FLAG_DONT_RENDER;
   EXPECT_FALSE(obj.isRoadPoint());

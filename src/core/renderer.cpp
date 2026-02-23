@@ -109,6 +109,18 @@ void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
                               0.01f, 10000.0f);
   ubo.proj[1][1] *= -1; // Flip Y for Vulkan
 
+  // Phase 6.1 – scene lighting.  Populate from LightingState if available,
+  // otherwise use the hard-coded defaults that match the pre-Phase-6 behaviour.
+  if (lightingState_ != nullptr) {
+    ubo.lightDirection = glm::vec4(lightingState_->objectLightDirection(), 0.0f);
+    ubo.ambientColor = glm::vec4(lightingState_->objectAmbient(), 1.0f);
+    ubo.diffuseColor = glm::vec4(lightingState_->objectDiffuse(), 1.0f);
+  } else {
+    ubo.lightDirection = glm::vec4(LightingState::kDefaultLightDirection, 0.0f);
+    ubo.ambientColor = glm::vec4(LightingState::kDefaultAmbient, 1.0f);
+    ubo.diffuseColor = glm::vec4(LightingState::kDefaultDiffuse, 1.0f);
+  }
+
   uniformBuffers_.update(frameIndex, ubo);
 }
 

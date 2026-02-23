@@ -171,6 +171,7 @@ target_link_libraries(w3d_lib PUBLIC
 # Library compile definitions
 target_compile_definitions(w3d_lib PUBLIC
     VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
+    GLFW_INCLUDE_NONE  # Suppress GLFW's OpenGL header inclusion (we use Vulkan only)
     $<$<CONFIG:Debug>:W3D_DEBUG>
 )
 

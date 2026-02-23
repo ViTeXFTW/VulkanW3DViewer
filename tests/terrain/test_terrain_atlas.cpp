@@ -1,3 +1,5 @@
+#include <array>
+
 #include "render/terrain/terrain_atlas.hpp"
 
 #include <gtest/gtest.h>

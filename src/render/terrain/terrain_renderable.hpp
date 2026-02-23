@@ -15,6 +15,7 @@
 #include "lib/gfx/frustum.hpp"
 #include "lib/gfx/renderable.hpp"
 #include "lib/gfx/texture.hpp"
+#include "render/lighting_state.hpp"
 #include "render/terrain/terrain_atlas.hpp"
 #include "render/terrain/terrain_mesh.hpp"
 
@@ -64,7 +65,23 @@ public:
 
   void destroy();
 
+  /** Apply lighting from a parsed GlobalLighting chunk (legacy helper). */
   void setLighting(const map::GlobalLighting &lighting);
+
+  /**
+   * Apply lighting from a LightingState (Phase 6.1/6.2/6.3).
+   * The LightingState handles
+   * time-of-day selection, shadow colour, and cloud
+   * animation – so prefer this over
+   * setLighting() when a LightingState is
+   * available.
+   *
+   * This should be called each
+   * frame to get the updated push constant with
+   * the current cloud animation time from
+   * LightingState.
+   */
+  void applyLightingState(const LightingState &lightingState);
 
   gfx::Pipeline &pipeline() { return pipeline_; }
   gfx::DescriptorManager &descriptorManager() { return descriptorManager_; }

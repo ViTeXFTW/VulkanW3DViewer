@@ -7,6 +7,16 @@ layout(location = 3) in vec3 fragWorldPos;
 
 layout(location = 0) out vec4 outColor;
 
+// UBO – now includes scene lighting (Phase 6.1)
+layout(set = 0, binding = 0) uniform UniformBufferObject {
+  mat4 model;
+  mat4 view;
+  mat4 proj;
+  vec4 lightDirection; // xyz = direction toward light source (not normalised here)
+  vec4 ambientColor;   // xyz = RGB ambient
+  vec4 diffuseColor;   // xyz = RGB diffuse
+} ubo;
+
 // Texture sampler
 layout(set = 0, binding = 1) uniform sampler2D texSampler;
 
@@ -26,11 +36,6 @@ const uint FLAG_HAS_TEXTURE = 1u;
 const uint FLAG_HAS_ALPHA_TEST = 2u;
 const uint FLAG_TWO_SIDED = 4u;
 const uint FLAG_UNLIT = 8u;
-
-// Simple directional light
-const vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
-const vec3 lightColor = vec3(1.0, 1.0, 1.0);
-const float ambientStrength = 0.3;
 
 void main() {
   vec3 normal = normalize(fragNormal);
@@ -60,15 +65,20 @@ void main() {
   if ((material.flags & FLAG_UNLIT) != 0u) {
     result = baseColor.rgb + material.emissiveColor.rgb;
   } else {
+    // Use scene lighting from UBO (populated by LightingState / Renderer).
+    // lightDirection.xyz points *toward* the light, so negate for the
+    // diffuse dot product (which expects a vector from surface to light).
+    vec3 lightDir = normalize(ubo.lightDirection.xyz);
+
     // Ambient
-    vec3 ambient = ambientStrength * lightColor;
+    vec3 ambient = ubo.ambientColor.rgb * baseColor.rgb;
 
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
+    vec3 diffuse = ubo.diffuseColor.rgb * diff * baseColor.rgb;
 
     // Combine lighting with base color
-    result = (ambient + diffuse) * baseColor.rgb;
+    result = ambient + diffuse;
 
     // Add emissive
     result += material.emissiveColor.rgb;

@@ -402,3 +402,33 @@ else()
 endif()
 
 add_test(NAME object_resolver_tests COMMAND object_resolver_tests)
+
+# LightingState tests (Phase 6.1/6.2/6.3 – no Vulkan dependency)
+add_executable(lighting_state_tests
+  render/test_lighting_state.cpp
+)
+
+target_link_libraries(lighting_state_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(lighting_state_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(lighting_state_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME lighting_state_tests COMMAND lighting_state_tests)
+
+# Terrain minimap tests (Phase 6.4 – no Vulkan dependency)
+add_executable(terrain_minimap_tests
+  terrain/test_terrain_minimap.cpp
+)
+
+target_link_libraries(terrain_minimap_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_minimap_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_minimap_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_minimap_tests COMMAND terrain_minimap_tests)

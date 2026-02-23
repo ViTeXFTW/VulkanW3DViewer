@@ -80,13 +80,13 @@ void TerrainRenderable::destroy() {
 }
 
 void TerrainRenderable::setLighting(const map::GlobalLighting &lighting) {
-  const auto &current = lighting.getCurrentLighting();
-  const auto &light = current.terrainLights[0];
+  LightingState tempState;
+  tempState.setGlobalLighting(lighting);
+  applyLightingState(tempState);
+}
 
-  pushConstant_.ambientColor = glm::vec4(light.ambient, 1.0f);
-  pushConstant_.diffuseColor = glm::vec4(light.diffuse, 1.0f);
-  pushConstant_.lightDirection = light.lightPos;
-  pushConstant_.useTexture = hasAtlas() ? 1u : 0u;
+void TerrainRenderable::applyLightingState(const LightingState &lightingState) {
+  pushConstant_ = lightingState.makeTerrainPushConstant(hasAtlas());
 }
 
 void TerrainRenderable::initPipeline(gfx::VulkanContext &context,
