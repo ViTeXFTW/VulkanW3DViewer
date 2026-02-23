@@ -73,6 +73,13 @@ struct MaterialPushConstant {
   alignas(4) uint32_t useTexture;
 };
 
+struct TerrainPushConstant {
+  alignas(16) glm::vec4 ambientColor;
+  alignas(16) glm::vec4 diffuseColor;
+  alignas(16) glm::vec3 lightDirection;
+  alignas(4) uint32_t useTexture;
+};
+
 struct PipelineConfig {
   bool enableBlending = false;
   bool alphaBlend = false;
@@ -141,6 +148,33 @@ struct PipelineCreateInfo {
 
     info.pushConstants = {
         vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(MaterialPushConstant)}
+    };
+
+    return info;
+  }
+
+  static PipelineCreateInfo terrain() {
+    PipelineCreateInfo info;
+    info.vertShaderPath = "shaders/terrain.vert.spv";
+    info.fragShaderPath = "shaders/terrain.frag.spv";
+
+    info.vertexInput.binding =
+        vk::VertexInputBindingDescription{0, 32, vk::VertexInputRate::eVertex};
+    info.vertexInput.attributes = {
+        vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0 },
+        vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, 12},
+        vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32Sfloat,    24}
+    };
+
+    info.descriptorBindings = {
+        vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
+                                       vk::ShaderStageFlagBits::eVertex  },
+        vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment}
+    };
+
+    info.pushConstants = {
+        vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(TerrainPushConstant)}
     };
 
     return info;

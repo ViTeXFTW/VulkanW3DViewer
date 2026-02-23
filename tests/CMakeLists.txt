@@ -288,3 +288,33 @@ else()
 endif()
 
 add_test(NAME ini_tests COMMAND ini_tests)
+
+# Terrain mesh generation tests (requires GLM, no Vulkan)
+add_executable(terrain_mesh_tests
+  terrain/test_terrain_mesh.cpp
+)
+
+target_link_libraries(terrain_mesh_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_mesh_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_mesh_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_mesh_tests COMMAND terrain_mesh_tests)
+
+# Frustum culling tests (requires GLM, no Vulkan)
+add_executable(frustum_tests
+  terrain/test_frustum.cpp
+)
+
+target_link_libraries(frustum_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(frustum_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(frustum_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME frustum_tests COMMAND frustum_tests)
