@@ -87,8 +87,7 @@ std::vector<TileUV> computeTileUVTable(const std::vector<map::TextureClass> &tex
   return result;
 }
 
-TerrainAtlasData buildProceduralAtlas(int32_t numTiles, int32_t atlasWidth,
-                                      int32_t tilePixelSize) {
+TerrainAtlasData buildProceduralAtlas(int32_t numTiles, int32_t atlasWidth, int32_t tilePixelSize) {
   if (numTiles <= 0 || atlasWidth <= 0 || tilePixelSize <= 0) {
     return {};
   }

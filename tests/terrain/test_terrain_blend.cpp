@@ -10,8 +10,7 @@ class TerrainBlendTest : public ::testing::Test {};
 TEST_F(TerrainBlendTest, GenerateBlendPatternHasCorrectSize) {
   auto pattern = generateBlendPattern(BlendDirection::Horizontal);
   EXPECT_EQ(pattern.size, BLEND_PATTERN_SIZE);
-  EXPECT_EQ(static_cast<int32_t>(pattern.alpha.size()),
-            BLEND_PATTERN_SIZE * BLEND_PATTERN_SIZE);
+  EXPECT_EQ(static_cast<int32_t>(pattern.alpha.size()), BLEND_PATTERN_SIZE * BLEND_PATTERN_SIZE);
 }
 
 TEST_F(TerrainBlendTest, GenerateBlendPatternAlphaValuesInRange) {
@@ -103,8 +102,7 @@ TEST_F(TerrainBlendTest, AllPatternsHaveCorrectDimensions) {
   auto patterns = generateAllBlendPatterns();
   for (const auto &pattern : patterns) {
     EXPECT_EQ(pattern.size, BLEND_PATTERN_SIZE);
-    EXPECT_EQ(static_cast<int32_t>(pattern.alpha.size()),
-              BLEND_PATTERN_SIZE * BLEND_PATTERN_SIZE);
+    EXPECT_EQ(static_cast<int32_t>(pattern.alpha.size()), BLEND_PATTERN_SIZE * BLEND_PATTERN_SIZE);
   }
 }
 
@@ -189,9 +187,8 @@ TEST_F(TerrainBlendTest, DiagonalRightPatternHasCorrectGradient) {
   auto pattern = generateBlendPattern(BlendDirection::DiagonalRight);
 
   uint8_t topLeft = pattern.alpha[0];
-  uint8_t bottomRight =
-      pattern.alpha[static_cast<size_t>((BLEND_PATTERN_SIZE - 1) * BLEND_PATTERN_SIZE +
-                                        BLEND_PATTERN_SIZE - 1)];
+  uint8_t bottomRight = pattern.alpha[static_cast<size_t>(
+      (BLEND_PATTERN_SIZE - 1) * BLEND_PATTERN_SIZE + BLEND_PATTERN_SIZE - 1)];
 
   EXPECT_LT(topLeft, bottomRight);
 }

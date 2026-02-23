@@ -17,42 +17,42 @@ BlendPattern generateBlendPattern(BlendDirection direction) {
       float value = 0.0f;
 
       switch (direction) {
-        case BlendDirection::Horizontal:
-          value = nx;
-          break;
-        case BlendDirection::HorizontalInv:
-          value = 1.0f - nx;
-          break;
-        case BlendDirection::Vertical:
-          value = ny;
-          break;
-        case BlendDirection::VerticalInv:
-          value = 1.0f - ny;
-          break;
-        case BlendDirection::DiagonalRight:
-          value = std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::DiagonalRightInv:
-          value = 1.0f - std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::DiagonalLeft:
-          value = std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::DiagonalLeftInv:
-          value = 1.0f - std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::LongDiagonal:
-          value = std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::LongDiagonalInv:
-          value = 1.0f - std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::LongDiagonalAlt:
-          value = std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
-          break;
-        case BlendDirection::LongDiagonalAltInv:
-          value = 1.0f - std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
-          break;
+      case BlendDirection::Horizontal:
+        value = nx;
+        break;
+      case BlendDirection::HorizontalInv:
+        value = 1.0f - nx;
+        break;
+      case BlendDirection::Vertical:
+        value = ny;
+        break;
+      case BlendDirection::VerticalInv:
+        value = 1.0f - ny;
+        break;
+      case BlendDirection::DiagonalRight:
+        value = std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::DiagonalRightInv:
+        value = 1.0f - std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::DiagonalLeft:
+        value = std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::DiagonalLeftInv:
+        value = 1.0f - std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::LongDiagonal:
+        value = std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::LongDiagonalInv:
+        value = 1.0f - std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::LongDiagonalAlt:
+        value = std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
+        break;
+      case BlendDirection::LongDiagonalAltInv:
+        value = 1.0f - std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
+        break;
       }
 
       size_t idx = static_cast<size_t>(y * BLEND_PATTERN_SIZE + x);
@@ -94,17 +94,20 @@ BlendDirection blendDirectionFromInfo(const map::BlendTileInfo &info) {
   if (info.longDiagonal != 0) {
     bool alt = (info.inverted & map::FLIPPED_MASK) != 0;
     bool inv = (info.inverted & map::INVERTED_MASK) != 0;
-    if (alt && inv) return BlendDirection::LongDiagonalAltInv;
-    if (alt) return BlendDirection::LongDiagonalAlt;
-    if (inv) return BlendDirection::LongDiagonalInv;
+    if (alt && inv)
+      return BlendDirection::LongDiagonalAltInv;
+    if (alt)
+      return BlendDirection::LongDiagonalAlt;
+    if (inv)
+      return BlendDirection::LongDiagonalInv;
     return BlendDirection::LongDiagonal;
   }
   return BlendDirection::Horizontal;
 }
 
 bool cellHasBlend(const map::BlendTileInfo &info) {
-  return info.horiz != 0 || info.vert != 0 || info.rightDiagonal != 0 ||
-         info.leftDiagonal != 0 || info.longDiagonal != 0;
+  return info.horiz != 0 || info.vert != 0 || info.rightDiagonal != 0 || info.leftDiagonal != 0 ||
+         info.longDiagonal != 0;
 }
 
 } // namespace w3d::terrain

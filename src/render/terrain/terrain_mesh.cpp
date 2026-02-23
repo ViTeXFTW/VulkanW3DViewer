@@ -142,7 +142,7 @@ TerrainMeshData generateTerrainMesh(const map::HeightMap &heightMap, int32_t chu
 namespace {
 
 glm::vec2 cliffAtlasUV(const map::CliffInfo &cliff, int32_t cornerIdx,
-                        const std::vector<TileUV> &tileUVs) {
+                       const std::vector<TileUV> &tileUVs) {
   if (cliff.tileIndex < 0 || static_cast<size_t>(cliff.tileIndex) >= tileUVs.size()) {
     return {0.0f, 0.0f};
   }
@@ -152,23 +152,23 @@ glm::vec2 cliffAtlasUV(const map::CliffInfo &cliff, int32_t cornerIdx,
   float localU = 0.0f;
   float localV = 0.0f;
   switch (cornerIdx) {
-    case 0:
-      localU = cliff.u0;
-      localV = cliff.v0;
-      break;
-    case 1:
-      localU = cliff.u1;
-      localV = cliff.v1;
-      break;
-    case 2:
-      localU = cliff.u2;
-      localV = cliff.v2;
-      break;
-    case 3:
-    default:
-      localU = cliff.u3;
-      localV = cliff.v3;
-      break;
+  case 0:
+    localU = cliff.u0;
+    localV = cliff.v0;
+    break;
+  case 1:
+    localU = cliff.u1;
+    localV = cliff.v1;
+    break;
+  case 2:
+    localU = cliff.u2;
+    localV = cliff.v2;
+    break;
+  case 3:
+  default:
+    localU = cliff.u3;
+    localV = cliff.v3;
+    break;
   }
 
   return {tile.u + localU * tile.uSize, tile.v + localV * tile.vSize};
@@ -208,8 +208,8 @@ TerrainChunk generateChunkFromBlendData(const map::HeightMap &heightMap,
       if (!blendTileData.cliffInfoNdxes.empty() &&
           cellIdx < static_cast<int32_t>(blendTileData.cliffInfoNdxes.size())) {
         cliffNdx = static_cast<int32_t>(blendTileData.cliffInfoNdxes[static_cast<size_t>(cellIdx)]);
-        isCliff = cliffNdx > 0 &&
-                  (cliffNdx - 1) < static_cast<int32_t>(blendTileData.cliffInfos.size());
+        isCliff =
+            cliffNdx > 0 && (cliffNdx - 1) < static_cast<int32_t>(blendTileData.cliffInfos.size());
       }
 
       TileUV cellTileUV{};
@@ -288,8 +288,7 @@ TerrainMeshData generateTerrainMeshFromBlendData(const map::HeightMap &heightMap
 
   for (int32_t cy = 0; cy < meshData.chunksY; ++cy) {
     for (int32_t cx = 0; cx < meshData.chunksX; ++cx) {
-      auto chunk = generateChunkFromBlendData(heightMap, blendTileData, tileUVs, cx, cy,
-                                              chunkSize);
+      auto chunk = generateChunkFromBlendData(heightMap, blendTileData, tileUVs, cx, cy, chunkSize);
       meshData.totalBounds.expand(chunk.bounds);
       meshData.chunks.push_back(std::move(chunk));
     }

@@ -50,8 +50,7 @@ public:
 
   void loadWithBlendData(gfx::VulkanContext &context, const map::HeightMap &heightMap,
                          const map::BlendTileData &blendTileData,
-                         const std::vector<TileUV> &tileUVs,
-                         const map::GlobalLighting &lighting);
+                         const std::vector<TileUV> &tileUVs, const map::GlobalLighting &lighting);
 
   void draw(vk::CommandBuffer cmd) override;
 

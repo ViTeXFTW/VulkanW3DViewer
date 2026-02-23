@@ -33,9 +33,9 @@ struct TerrainAtlasData {
 
 [[nodiscard]] TileUV decodeTileNdxUV(int16_t tileNdx, const std::vector<TileUV> &tileUVs);
 
-[[nodiscard]] std::vector<TileUV> computeTileUVTable(
-    const std::vector<map::TextureClass> &textureClasses, int32_t atlasWidth = 2048,
-    int32_t tilePixelSize = 64);
+[[nodiscard]] std::vector<TileUV>
+computeTileUVTable(const std::vector<map::TextureClass> &textureClasses, int32_t atlasWidth = 2048,
+                   int32_t tilePixelSize = 64);
 
 [[nodiscard]] TerrainAtlasData buildProceduralAtlas(int32_t numTiles, int32_t atlasWidth = 2048,
                                                     int32_t tilePixelSize = 64);
