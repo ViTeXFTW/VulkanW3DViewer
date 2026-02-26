@@ -432,3 +432,25 @@ else()
 endif()
 
 add_test(NAME terrain_minimap_tests COMMAND terrain_minimap_tests)
+
+# Map browser and map UI tests (Phase 7)
+# UI code is NOT in w3d_lib, so source files are included directly
+add_executable(map_browser_tests
+  ui/test_map_browser.cpp
+  ${CMAKE_SOURCE_DIR}/src/ui/map_browser.cpp
+)
+
+target_link_libraries(map_browser_tests PRIVATE w3d_lib gtest gtest_main)
+
+target_include_directories(map_browser_tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/tests/stubs
+  ${CMAKE_SOURCE_DIR}/src
+)
+
+if(MSVC)
+  target_compile_options(map_browser_tests PRIVATE /W3 /permissive-)
+else()
+  target_compile_options(map_browser_tests PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+add_test(NAME map_browser_tests COMMAND map_browser_tests)

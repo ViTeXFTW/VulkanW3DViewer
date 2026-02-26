@@ -118,11 +118,95 @@ inline bool IsKeyPressed(int, bool = false) {
 }
 inline void Separator() {}
 inline void Spacing() {}
-inline ImVec2 GetMainViewport() {
-  return ImVec2();
+inline void Indent([[maybe_unused]] float indent_w = 0.0f) {}
+inline void Unindent([[maybe_unused]] float indent_w = 0.0f) {}
+inline void BulletText(const char *, ...) {}
+inline void TextColored([[maybe_unused]] const ImVec4 &col, const char *, ...) {}
+inline bool CollapsingHeader(const char *, [[maybe_unused]] int flags = 0) {
+  return true;
 }
-inline ImVec2 GetCenter() {
-  return ImVec2(0, 0);
+inline bool Combo(const char *, int *, const char *const[], [[maybe_unused]] int = 0) {
+  return false;
 }
+inline bool ColorEdit3(const char *, float *, [[maybe_unused]] int flags = 0) {
+  return false;
+}
+inline bool IsItemHovered([[maybe_unused]] int flags = 0) {
+  return false;
+}
+inline void BeginTooltip() {}
+inline void EndTooltip() {}
+inline void PushID(const char *) {}
+inline void PushID(int) {}
+inline void PopID() {}
+
+// Menu bar stubs
+inline bool BeginMenuBar() {
+  return true;
+}
+inline void EndMenuBar() {}
+inline bool BeginMenu(const char *) {
+  return false;
+}
+inline void EndMenu() {}
+inline bool MenuItem(const char *, const char * = nullptr, bool * = nullptr, bool = true) {
+  return false;
+}
+
+} // namespace ImGui
+
+// Types that need to be defined before dockspace stubs
+typedef unsigned int ImGuiID;
+
+enum ImGuiStyleVar_ {
+  ImGuiStyleVar_WindowRounding = 0,
+  ImGuiStyleVar_WindowBorderSize = 1,
+  ImGuiStyleVar_WindowPadding = 2
+};
+typedef int ImGuiStyleVar;
+
+enum ImGuiDockNodeFlags_ {
+  ImGuiDockNodeFlags_None = 0,
+  ImGuiDockNodeFlags_PassthruCentralNode = 1
+};
+typedef int ImGuiDockNodeFlags;
+
+enum ImGuiInputFlags_ { ImGuiInputFlags_None = 0, ImGuiInputFlags_RouteGlobal = 1 };
+typedef int ImGuiInputFlags;
+
+enum ImGuiMod_ { ImGuiMod_Ctrl = 1 << 12 };
+
+enum ImGuiColorEditFlags_ { ImGuiColorEditFlags_NoInputs = 1 << 5 };
+typedef int ImGuiColorEditFlags;
+
+struct ImGuiViewport {
+  ImVec2 Pos;
+  ImVec2 Size;
+  ImGuiID ID;
+  ImVec2 GetCenter() const { return ImVec2(Pos.x + Size.x * 0.5f, Pos.y + Size.y * 0.5f); }
+};
+
+// Dockspace stubs (must be after ImGuiViewport definition)
+namespace ImGui {
+
+inline ImGuiViewport *GetMainViewport() {
+  static ImGuiViewport vp;
+  return &vp;
+}
+
+inline void SetNextWindowPos(ImVec2) {}
+inline void SetNextWindowSize(ImVec2) {}
+inline void SetNextWindowViewport(ImGuiID) {}
+inline void PushStyleVar(ImGuiStyleVar, float) {}
+inline void PushStyleVar(ImGuiStyleVar, ImVec2) {}
+inline void PopStyleVar(int = 1) {}
+inline ImGuiID GetID(const char *) {
+  return 0;
+}
+inline void DockSpace(ImGuiID, ImVec2 = ImVec2(), ImGuiDockNodeFlags = 0) {}
+inline bool Shortcut(int, int = 0) {
+  return false;
+}
+inline void ShowDemoWindow(bool * = nullptr) {}
 
 } // namespace ImGui

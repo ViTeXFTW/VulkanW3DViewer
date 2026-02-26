@@ -7,29 +7,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "types.hpp"
+
 namespace map {
 
 constexpr uint32_t DATA_CHUNK_MAGIC = 0x704D6B43;
 constexpr uint32_t CHUNK_HEADER_SIZE = 10;
-
-enum class DataType : uint8_t { Bool = 0, Int = 1, Real = 2, AsciiString = 3, UnicodeString = 4 };
-
-struct DictValue {
-  DataType type;
-  union {
-    bool boolValue;
-    int32_t intValue;
-    float realValue;
-  };
-  std::string stringValue;
-
-  static DictValue makeBool(bool value);
-  static DictValue makeInt(int32_t value);
-  static DictValue makeReal(float value);
-  static DictValue makeString(std::string value);
-};
-
-using Dict = std::unordered_map<std::string, DictValue>;
 
 struct ChunkHeader {
   uint32_t id;
