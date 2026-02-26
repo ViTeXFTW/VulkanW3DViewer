@@ -260,6 +260,7 @@ add_executable(map_tests
   map/test_lighting_parser.cpp
   map/test_worldinfo_sideslist_parser.cpp
   map/test_map_loader.cpp
+  map/test_refpack.cpp
 )
 
 target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)

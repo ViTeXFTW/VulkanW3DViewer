@@ -8,6 +8,7 @@
 #include "heightmap_parser.hpp"
 #include "lighting_parser.hpp"
 #include "objects_parser.hpp"
+#include "refpack.hpp"
 #include "sideslist_parser.hpp"
 #include "triggers_parser.hpp"
 #include "worldinfo_parser.hpp"
@@ -47,8 +48,20 @@ std::optional<MapFile> MapLoader::load(const std::filesystem::path &path, std::s
 
 std::optional<MapFile> MapLoader::loadFromMemory(const uint8_t *data, size_t size,
                                                  std::string *outError) {
+  std::vector<uint8_t> decompressedStorage;
+  std::span<const uint8_t> parseData(data, size);
+
+  if (refpack::isCompressed(parseData)) {
+    auto decompressed = refpack::decompress(parseData, outError);
+    if (!decompressed) {
+      return std::nullopt;
+    }
+    decompressedStorage = std::move(*decompressed);
+    parseData = std::span<const uint8_t>(decompressedStorage);
+  }
+
   DataChunkReader reader;
-  auto tocError = reader.loadFromMemory(std::span<const uint8_t>(data, size));
+  auto tocError = reader.loadFromMemory(parseData);
   if (tocError) {
     if (outError) {
       *outError = "Failed to parse TOC: " + *tocError;
