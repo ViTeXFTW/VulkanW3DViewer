@@ -20,8 +20,6 @@ public:
 private:
   static std::optional<BuildListEntry> parseBuildListEntry(DataChunkReader &reader,
                                                            uint16_t version, std::string *outError);
-  static std::optional<std::vector<PlayerScript>> parsePlayerScriptsList(DataChunkReader &reader,
-                                                                         std::string *outError);
 };
 
 } // namespace map

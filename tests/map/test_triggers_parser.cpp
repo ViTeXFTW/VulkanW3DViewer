@@ -314,6 +314,7 @@ TEST_F(TriggersParserTest, ParsesVersion4Trigger) {
   appendInt(data, 1);
 
   appendString(data, "V4Trigger");
+  appendString(data, "Default");
   appendInt(data, 400);
   appendByte(data, 0);
   appendByte(data, 0);
@@ -351,6 +352,7 @@ TEST_F(TriggersParserTest, ParsesVersion4Trigger) {
 
   const auto &trigger = (*triggers)[0];
   EXPECT_EQ(trigger.name, "V4Trigger");
+  EXPECT_EQ(trigger.layerName, "Default");
   EXPECT_EQ(trigger.id, 400);
 }
 

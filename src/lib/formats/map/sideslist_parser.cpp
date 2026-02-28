@@ -80,61 +80,6 @@ std::optional<BuildListEntry> SidesListParser::parseBuildListEntry(DataChunkRead
   return entry;
 }
 
-std::optional<std::vector<PlayerScript>>
-SidesListParser::parsePlayerScriptsList(DataChunkReader &reader, std::string *outError) {
-  std::vector<PlayerScript> scripts;
-
-  auto header = reader.openChunk(outError);
-  if (!header) {
-    return std::nullopt;
-  }
-
-  auto chunkName = reader.lookupName(header->id);
-  if (!chunkName || *chunkName != "PlayerScriptsList") {
-    if (outError) {
-      *outError = "Expected PlayerScriptsList chunk, got: " + (chunkName ? *chunkName : "unknown");
-    }
-    return std::nullopt;
-  }
-
-  auto numPlayers = reader.readInt(outError);
-  if (!numPlayers) {
-    reader.closeChunk();
-    return std::nullopt;
-  }
-
-  for (int32_t i = 0; i < *numPlayers; ++i) {
-    auto numScripts = reader.readInt(outError);
-    if (!numScripts) {
-      reader.closeChunk();
-      return std::nullopt;
-    }
-
-    for (int32_t j = 0; j < *numScripts; ++j) {
-      PlayerScript script;
-
-      auto name = reader.readAsciiString(outError);
-      if (!name) {
-        reader.closeChunk();
-        return std::nullopt;
-      }
-      script.name = std::move(*name);
-
-      auto scriptText = reader.readAsciiString(outError);
-      if (!scriptText) {
-        reader.closeChunk();
-        return std::nullopt;
-      }
-      script.script = std::move(*scriptText);
-
-      scripts.push_back(std::move(script));
-    }
-  }
-
-  reader.closeChunk();
-  return scripts;
-}
-
 std::optional<SidesList> SidesListParser::parse(DataChunkReader &reader, uint16_t version,
                                                 std::string *outError) {
   if (version < K_SIDES_DATA_VERSION_1 || version > K_SIDES_DATA_VERSION_3) {
@@ -205,11 +150,10 @@ std::optional<SidesList> SidesListParser::parse(DataChunkReader &reader, uint16_
     }
   }
 
-  auto scripts = parsePlayerScriptsList(reader, outError);
-  if (!scripts) {
-    return std::nullopt;
-  }
-  sidesList.playerScripts = std::move(*scripts);
+  // Skip PlayerScriptsList sub-chunk - it's a complex scripting system
+  // we don't need for terrain/scene rendering. The closeChunk() call
+  // in map_loader will skip all remaining data including this sub-chunk.
+  sidesList.playerScripts.clear();
 
   return sidesList;
 }

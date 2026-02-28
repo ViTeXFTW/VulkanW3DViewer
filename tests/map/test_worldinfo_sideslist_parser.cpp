@@ -273,9 +273,8 @@ TEST_F(WorldInfoSidesListTest, ParsesSidesListVersion3) {
   ASSERT_EQ(sidesList->teams.size(), 1);
   EXPECT_EQ(sidesList->teams[0].name, "skirmishTeam0");
 
-  ASSERT_EQ(sidesList->playerScripts.size(), 1);
-  EXPECT_EQ(sidesList->playerScripts[0].name, "InitialCameraPosition");
-  EXPECT_EQ(sidesList->playerScripts[0].script, "CameraPosition 100 200 300");
+  // PlayerScriptsList is now skipped (nested sub-chunk containing AI scripts)
+  ASSERT_EQ(sidesList->playerScripts.size(), 0);
 }
 
 TEST_F(WorldInfoSidesListTest, ParsesEmptySidesList) {

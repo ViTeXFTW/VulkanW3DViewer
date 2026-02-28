@@ -390,3 +390,191 @@ TEST_F(DataChunkReaderTest, DetectsEndOfFile) {
 
   EXPECT_TRUE(reader.atEnd());
 }
+
+TEST_F(DataChunkReaderTest, RejectsReadByteExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 2);
+  data.push_back(0x42);
+  data.push_back(0x43);
+  data.push_back(0x44);
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  auto b1 = reader.readByte();
+  ASSERT_TRUE(b1.has_value());
+  EXPECT_EQ(*b1, 0x42);
+
+  auto b2 = reader.readByte();
+  ASSERT_TRUE(b2.has_value());
+  EXPECT_EQ(*b2, 0x43);
+
+  std::string error;
+  auto b3 = reader.readByte(&error);
+  EXPECT_FALSE(b3.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadIntExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 4);
+  appendInt32(data, 100);
+  appendInt32(data, 200);
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  auto i1 = reader.readInt();
+  ASSERT_TRUE(i1.has_value());
+  EXPECT_EQ(*i1, 100);
+
+  std::string error;
+  auto i2 = reader.readInt(&error);
+  EXPECT_FALSE(i2.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadRealExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 4);
+  appendFloat(data, 3.14f);
+  appendFloat(data, 2.71f);
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  auto f1 = reader.readReal();
+  ASSERT_TRUE(f1.has_value());
+  EXPECT_FLOAT_EQ(*f1, 3.14f);
+
+  std::string error;
+  auto f2 = reader.readReal(&error);
+  EXPECT_FALSE(f2.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadAsciiStringLengthExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 1);
+  appendAsciiString(data, "Test");
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  std::string error;
+  auto s = reader.readAsciiString(&error);
+  EXPECT_FALSE(s.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadAsciiStringDataExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 5);
+  appendAsciiString(data, "HelloWorld");
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  std::string error;
+  auto s = reader.readAsciiString(&error);
+  EXPECT_FALSE(s.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadBytesExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1}
+  });
+  appendChunkHeader(data, 1, 1, 5);
+  for (int i = 0; i < 10; ++i) {
+    data.push_back(static_cast<uint8_t>(i));
+  }
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  uint8_t buffer[10];
+  std::string error;
+  bool success = reader.readBytes(buffer, 10, &error);
+  EXPECT_FALSE(success);
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, RejectsReadDictPairCountExceedingChunk) {
+  auto data = buildTOC({
+      {"Test", 1},
+      {"key",  2}
+  });
+  appendChunkHeader(data, 1, 1, 1);
+  uint16_t pairCount = 1;
+  data.insert(data.end(), reinterpret_cast<const uint8_t *>(&pairCount),
+              reinterpret_cast<const uint8_t *>(&pairCount) + 2);
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+  reader.openChunk();
+
+  std::string error;
+  auto dict = reader.readDict(&error);
+  EXPECT_FALSE(dict.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+}
+
+TEST_F(DataChunkReaderTest, ValidatesNestedChunkBoundaries) {
+  auto data = buildTOC({
+      {"Parent", 1},
+      {"Child",  2}
+  });
+
+  appendChunkHeader(data, 1, 1, 0);
+  size_t parentSizePos = data.size() - 4;
+
+  appendChunkHeader(data, 2, 1, 4);
+  appendInt32(data, 100);
+
+  int32_t parentSize = static_cast<int32_t>(data.size() - parentSizePos - 4);
+  std::memcpy(&data[parentSizePos], &parentSize, 4);
+
+  appendInt32(data, 200);
+
+  DataChunkReader reader;
+  reader.loadFromMemory(data);
+
+  auto parent = reader.openChunk();
+  ASSERT_TRUE(parent.has_value());
+
+  auto child = reader.openChunk();
+  ASSERT_TRUE(child.has_value());
+
+  auto val1 = reader.readInt();
+  ASSERT_TRUE(val1.has_value());
+  EXPECT_EQ(*val1, 100);
+
+  std::string error;
+  auto val2 = reader.readInt(&error);
+  EXPECT_FALSE(val2.has_value());
+  EXPECT_NE(error.find("chunk"), std::string::npos);
+
+  reader.closeChunk();
+  reader.closeChunk();
+
+  auto val3 = reader.readInt();
+  ASSERT_TRUE(val3.has_value());
+  EXPECT_EQ(*val3, 200);
+}

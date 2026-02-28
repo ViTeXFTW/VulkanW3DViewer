@@ -29,6 +29,14 @@ TriggersParser::parse(DataChunkReader &reader, uint16_t version, std::string *ou
     }
     trigger.name = *name;
 
+    if (version >= K_TRIGGERS_VERSION_4) {
+      auto layerName = reader.readAsciiString(outError);
+      if (!layerName) {
+        return std::nullopt;
+      }
+      trigger.layerName = *layerName;
+    }
+
     auto id = reader.readInt(outError);
     if (!id) {
       return std::nullopt;

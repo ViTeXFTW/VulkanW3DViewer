@@ -152,6 +152,7 @@ struct MapObject {
 
 struct PolygonTrigger {
   std::string name;
+  std::string layerName;
   int32_t id = 0;
   bool isWaterArea = false;
   bool isRiver = false;

@@ -1,6 +1,7 @@
 #include "data_chunk_reader.hpp"
 
 #include <cstring>
+#include <optional>
 
 namespace map {
 
@@ -150,7 +151,17 @@ void DataChunkReader::closeChunk() {
   }
 
   uint32_t remaining = dataLeftStack_.back();
-  pos_ += remaining;
+  if (remaining > 0) {
+    pos_ += remaining;
+    // Propagate the remaining bytes to parent chunks
+    for (size_t i = 0; i < dataLeftStack_.size() - 1; ++i) {
+      if (dataLeftStack_[i] >= remaining) {
+        dataLeftStack_[i] -= remaining;
+      } else {
+        dataLeftStack_[i] = 0;
+      }
+    }
+  }
 
   chunkStack_.pop_back();
   dataLeftStack_.pop_back();
@@ -182,6 +193,13 @@ void DataChunkReader::decrementDataLeft(uint32_t count) {
 }
 
 std::optional<int8_t> DataChunkReader::readByte(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 1) {
+    if (outError) {
+      *outError = "Not enough data in chunk for byte";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ >= data_.size()) {
     if (outError) {
       *outError = "End of file reading byte";
@@ -195,6 +213,13 @@ std::optional<int8_t> DataChunkReader::readByte(std::string *outError) {
 }
 
 std::optional<int32_t> DataChunkReader::readInt(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 4) {
+    if (outError) {
+      *outError = "Not enough data in chunk for int32";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + 4 > data_.size()) {
     if (outError) {
       *outError = "Not enough data for int32";
@@ -210,6 +235,13 @@ std::optional<int32_t> DataChunkReader::readInt(std::string *outError) {
 }
 
 std::optional<float> DataChunkReader::readReal(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 4) {
+    if (outError) {
+      *outError = "Not enough data in chunk for float";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + 4 > data_.size()) {
     if (outError) {
       *outError = "Not enough data for float";
@@ -225,6 +257,13 @@ std::optional<float> DataChunkReader::readReal(std::string *outError) {
 }
 
 std::optional<std::string> DataChunkReader::readAsciiString(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 2) {
+    if (outError) {
+      *outError = "Not enough data in chunk for string length";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + 2 > data_.size()) {
     if (outError) {
       *outError = "Not enough data for string length";
@@ -235,6 +274,14 @@ std::optional<std::string> DataChunkReader::readAsciiString(std::string *outErro
   uint16_t length;
   std::memcpy(&length, &data_[pos_], 2);
   pos_ += 2;
+  decrementDataLeft(2);
+
+  if (!dataLeftStack_.empty() && remainingInChunk() < length) {
+    if (outError) {
+      *outError = "String extends beyond chunk";
+    }
+    return std::nullopt;
+  }
 
   if (pos_ + length > data_.size()) {
     if (outError) {
@@ -248,11 +295,18 @@ std::optional<std::string> DataChunkReader::readAsciiString(std::string *outErro
     value.assign(reinterpret_cast<const char *>(&data_[pos_]), length);
     pos_ += length;
   }
-  decrementDataLeft(2 + length);
+  decrementDataLeft(length);
   return value;
 }
 
 std::optional<std::string> DataChunkReader::readUnicodeString(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 2) {
+    if (outError) {
+      *outError = "Not enough data in chunk for unicode string char count";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + 2 > data_.size()) {
     if (outError) {
       *outError = "Not enough data for unicode string char count";
@@ -263,8 +317,16 @@ std::optional<std::string> DataChunkReader::readUnicodeString(std::string *outEr
   uint16_t charCount;
   std::memcpy(&charCount, &data_[pos_], 2);
   pos_ += 2;
+  decrementDataLeft(2);
 
   size_t byteCount = static_cast<size_t>(charCount) * 2;
+  if (!dataLeftStack_.empty() && remainingInChunk() < byteCount) {
+    if (outError) {
+      *outError = "Unicode string extends beyond chunk";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + byteCount > data_.size()) {
     if (outError) {
       *outError = "Unicode string extends beyond file";
@@ -287,11 +349,18 @@ std::optional<std::string> DataChunkReader::readUnicodeString(std::string *outEr
   }
 
   pos_ += byteCount;
-  decrementDataLeft(static_cast<uint32_t>(2 + byteCount));
+  decrementDataLeft(static_cast<uint32_t>(byteCount));
   return result;
 }
 
 std::optional<Dict> DataChunkReader::readDict(std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < 2) {
+    if (outError) {
+      *outError = "Not enough data in chunk for dict pair count";
+    }
+    return std::nullopt;
+  }
+
   if (pos_ + 2 > data_.size()) {
     if (outError) {
       *outError = "Not enough data for dict pair count";
@@ -381,6 +450,13 @@ std::optional<Dict> DataChunkReader::readDict(std::string *outError) {
 }
 
 bool DataChunkReader::readBytes(uint8_t *dest, size_t count, std::string *outError) {
+  if (!dataLeftStack_.empty() && remainingInChunk() < count) {
+    if (outError) {
+      *outError = "Not enough data in chunk for byte array";
+    }
+    return false;
+  }
+
   if (pos_ + count > data_.size()) {
     if (outError) {
       *outError = "Not enough data for byte array";
