@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <cmath>
 
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/fwd.hpp"
+
 #include <imgui.h>
 
 namespace w3d::gfx {
@@ -113,12 +116,12 @@ void RTSCamera::onScroll(float yOffset) {
 glm::mat4 RTSCamera::viewMatrix() const {
   glm::vec3 cameraPos = position();
 
-  glm::vec3 forward(std::sin(yaw_), 0.0f, std::cos(yaw_));
-  glm::vec3 lookAt = position_ + forward;
+  glm::vec3 target = position_;
+  target.y = 0.0f;
 
   glm::vec3 up(0.0f, 1.0f, 0.0f);
 
-  return glm::lookAt(cameraPos, lookAt, up);
+  return glm::lookAt(cameraPos, target, up);
 }
 
 glm::vec3 RTSCamera::position() const {

@@ -47,7 +47,7 @@ private:
   float pitch_ = 1.047f;
   float height_ = 50.0f;
 
-  float movementSpeed_ = 50.0f;
+  float movementSpeed_ = 500.0f;
   float rotationSpeed_ = 1.5f;
   float zoomSpeed_ = 10.0f;
   float edgeScrollMargin_ = 10.0f;
