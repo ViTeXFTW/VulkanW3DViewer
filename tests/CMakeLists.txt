@@ -455,3 +455,18 @@ else()
 endif()
 
 add_test(NAME map_browser_tests COMMAND map_browser_tests)
+
+# Terrain resource manager tests (Phase 1.1 - loads Terrain.ini from BIG)
+add_executable(terrain_resource_manager_tests
+  terrain/test_terrain_resource_manager.cpp
+)
+
+target_link_libraries(terrain_resource_manager_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_resource_manager_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_resource_manager_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_resource_manager_tests COMMAND terrain_resource_manager_tests)

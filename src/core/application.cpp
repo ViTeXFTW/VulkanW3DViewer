@@ -596,6 +596,21 @@ void Application::initializeBigArchiveManager() {
             std::cerr << "Failed to scan asset registry: " << error << "\n";
           }
         }
+
+        // Load Terrain.ini from INIZH.big (Phase 1.1)
+        if (terrainResourceManager_.loadTerrainTypesFromBig(bigArchiveManager_, &error)) {
+          if (console_) {
+            console_->info("Terrain types loaded from INIZH.big");
+            console_->log("Terrain types found: " +
+                          std::to_string(terrainResourceManager_.getTerrainTypes().size()));
+          }
+        } else {
+          if (console_) {
+            console_->warning("Failed to load terrain types: " + error);
+          } else {
+            std::cerr << "Failed to load terrain types: " << error << "\n";
+          }
+        }
       } else {
         if (console_) {
           console_->error("Failed to initialize BIG archive manager: " + error);

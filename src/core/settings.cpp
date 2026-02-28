@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "app_paths.hpp"
+#include "../lib/platform/app_paths.hpp"
 
 #include <nlohmann/json.hpp>
 

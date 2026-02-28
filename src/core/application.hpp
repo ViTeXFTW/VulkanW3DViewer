@@ -28,6 +28,7 @@
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
 #include "render/terrain/terrain_renderable.hpp"
+#include "render/terrain/terrain_resource_manager.hpp"
 #include "render/water/water_renderable.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
@@ -146,6 +147,7 @@ private:
   // Map viewer state (Phase 7)
   std::unique_ptr<map::MapFile> loadedMap_;
   terrain::TerrainRenderable terrainRenderable_;
+  terrain::TerrainResourceManager terrainResourceManager_;
   water::WaterRenderable waterRenderable_;
   gfx::RTSCamera rtsCamera_;
   LightingState lightingState_;
