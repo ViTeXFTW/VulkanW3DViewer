@@ -212,10 +212,35 @@ std::vector<std::vector<uint8_t>> TerrainResourceManager::extractTilesForTexture
     return {};
   }
 
-  std::vector<std::vector<uint8_t>> allTiles;
+  // Compute the total number of source tile slots required.
+  // tileNdxes[] values index into a flat array where each TextureClass occupies
+  // slots [firstTile, firstTile + numTiles). We must honour firstTile exactly so
+  // that decoded tile indices land on the correct GPU texture array layer.
+  // This mirrors the original engine's m_sourceTiles[] layout (WorldHeightMap::readTexClass).
+  int32_t totalSlots = 0;
+  for (const auto &tc : textureClasses) {
+    int32_t end = tc.firstTile + tc.numTiles;
+    if (end > totalSlots) {
+      totalSlots = end;
+    }
+  }
+
+  if (totalSlots <= 0) {
+    return {};
+  }
+
+  // Pre-fill every slot with a checkerboard fallback. Texture classes that load
+  // successfully will overwrite their slots below; gaps (if any) stay as fallbacks.
+  auto fallbackTile = generateCheckerboardTile(map::TILE_PIXEL_EXTENT);
+  std::vector<std::vector<uint8_t>> allTiles(static_cast<size_t>(totalSlots), fallbackTile);
+
   std::string missingTextures;
 
   for (const auto &tc : textureClasses) {
+    if (tc.numTiles <= 0 || tc.firstTile < 0 || tc.firstTile >= totalSlots) {
+      continue;
+    }
+
     std::string extractError;
     bool loaded = false;
 
@@ -227,8 +252,16 @@ std::vector<std::vector<uint8_t>> TerrainResourceManager::extractTilesForTexture
         if (decodeTgaFromMemory(tgaData.value(), img, &extractError)) {
           auto tiles = splitImageIntoTiles(img, map::TILE_PIXEL_EXTENT);
           if (!tiles.empty()) {
-            for (auto &tile : tiles) {
-              allTiles.push_back(std::move(tile));
+            // Clamp to numTiles: the original engine (WorldHeightMap::readTexClass)
+            // explicitly limits tile count to texClass->numTiles, ensuring subsequent
+            // classes are never displaced by an oversized TGA.
+            int32_t tilesToPlace = std::min(static_cast<int32_t>(tiles.size()), tc.numTiles);
+
+            // Place tiles at their absolute firstTile positions so that
+            // tileNdxes[] decoded indices map to the correct allTiles[] layer.
+            for (int32_t i = 0; i < tilesToPlace; ++i) {
+              allTiles[static_cast<size_t>(tc.firstTile + i)] =
+                  std::move(tiles[static_cast<size_t>(i)]);
             }
             loaded = true;
           }
@@ -241,12 +274,7 @@ std::vector<std::vector<uint8_t>> TerrainResourceManager::extractTilesForTexture
         missingTextures += ", ";
       }
       missingTextures += tc.name;
-
-      int32_t tilesNeeded = tc.numTiles > 0 ? tc.numTiles : 1;
-      auto fallback = generateCheckerboardTile(map::TILE_PIXEL_EXTENT);
-      for (int32_t i = 0; i < tilesNeeded; ++i) {
-        allTiles.push_back(fallback);
-      }
+      // Slots already contain fallback tiles from the pre-fill above.
     }
   }
 

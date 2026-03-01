@@ -711,8 +711,8 @@ void Application::loadMapFile(const std::filesystem::path &path) {
                                            tileUVs, loadedMap_->lighting);
       terrainRenderable_.initPipelineWithTileArray(context_, textureManager_, tileArrayData, 2);
 
-      uint32_t mapWidth = static_cast<uint32_t>(loadedMap_->heightMap.width - 1);
-      uint32_t mapHeight = static_cast<uint32_t>(loadedMap_->heightMap.height - 1);
+      uint32_t mapWidth = static_cast<uint32_t>(loadedMap_->heightMap.width);
+      uint32_t mapHeight = static_cast<uint32_t>(loadedMap_->heightMap.height);
       terrainRenderable_.uploadBlendData(context_, loadedMap_->blendTiles, mapWidth, mapHeight, 2,
                                          edgeTileLayerBase);
 

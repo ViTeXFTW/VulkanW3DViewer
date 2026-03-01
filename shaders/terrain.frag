@@ -113,13 +113,18 @@ uint getCellFlags(uint cellIndex) {
 
 // ---------------------------------------------------------------------------
 // Compute UV within a 64x64 tile given the in-cell fraction [0,1] x [0,1]
-// and the 32x32 quadrant index (0 = TL, 1 = TR, 2 = BL, 3 = BR).
-// The texture array layer covers the full 64x64 tile in [0,1] UV space.
-// Each cell uses only half the tile in each axis (one quadrant).
+// and the 32x32 quadrant index encoded as (bit1 << 1 | bit0).
+//
+// Original engine encoding (WorldHeightMap::getUVForNdx):
+//   bit0 (& 1): 0 = left half,   1 = right half
+//   bit1 (& 2): 0 = bottom half, 1 = top half  (Y flipped due to TGA convention)
+//
+// Since the TGA decoder already flips the image vertically (V=0 is top),
+// bit1=1 maps to vOffset=0 (top) and bit1=0 maps to vOffset=0.5 (bottom).
 // ---------------------------------------------------------------------------
 vec2 quadrantUV(vec2 cellFrac, uint quadrant) {
   float uOffset = float(quadrant & 1u) * 0.5;
-  float vOffset = float((quadrant >> 1u) & 1u) * 0.5;
+  float vOffset = float(1u - ((quadrant >> 1u) & 1u)) * 0.5;
   return vec2(uOffset + cellFrac.x * 0.5, vOffset + cellFrac.y * 0.5);
 }
 
@@ -186,8 +191,8 @@ void main() {
     float cellX = fragWorldPos.x / material.mapXYFactor;
     float cellZ = fragWorldPos.z / material.mapXYFactor;
 
-    uint cX = uint(clamp(cellX, 0.0, float(material.mapWidth  - 1u)));
-    uint cZ = uint(clamp(cellZ, 0.0, float(material.mapHeight - 1u)));
+    uint cX = uint(clamp(cellX, 0.0, float(material.mapWidth  - 2u)));
+    uint cZ = uint(clamp(cellZ, 0.0, float(material.mapHeight - 2u)));
     uint cellIndex = cZ * material.mapWidth + cX;
 
     vec2 cellFrac = vec2(fract(cellX), fract(cellZ));

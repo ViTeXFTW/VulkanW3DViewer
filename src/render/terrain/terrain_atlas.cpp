@@ -18,10 +18,14 @@ TileUV computeQuadrantUV(const TileUV &tileUV, int32_t quadrant) {
   result.uSize = tileUV.uSize * 0.5f;
   result.vSize = tileUV.vSize * 0.5f;
 
-  if (quadrant == 1 || quadrant == 3) {
+  // bit0 (& 1): 0 = left half, 1 = right half
+  if (quadrant & 1) {
     result.u = tileUV.u + result.uSize;
   }
-  if (quadrant == 2 || quadrant == 3) {
+  // bit1 (& 2): 1 = top half (vOffset=0), 0 = bottom half (vOffset=0.5)
+  // Matches original engine WorldHeightMap::getUVForNdx where tileNdx&2 selects top half.
+  // TGA decoder already flips vertically so V=0 is top of the decoded image.
+  if (!(quadrant & 2)) {
     result.v = tileUV.v + result.vSize;
   }
   return result;
@@ -49,38 +53,46 @@ std::vector<TileUV> computeTileUVTable(const std::vector<map::TextureClass> &tex
     return {};
   }
 
-  int32_t totalTiles = 0;
+  // Compute total slots using firstTile + numTiles to match the m_sourceTiles[]
+  // flat array layout in the original engine. The decoded tile index from tileNdxes[]
+  // is an absolute offset into this array, so the UV table must be indexed the same way.
+  int32_t totalSlots = 0;
   for (const auto &tc : textureClasses) {
-    totalTiles += tc.numTiles;
+    int32_t end = tc.firstTile + tc.numTiles;
+    if (end > totalSlots) {
+      totalSlots = end;
+    }
   }
 
-  if (totalTiles <= 0) {
+  if (totalSlots <= 0) {
     return {};
   }
 
-  int32_t totalRows = (totalTiles + tilesPerRow - 1) / tilesPerRow;
+  int32_t totalRows = (totalSlots + tilesPerRow - 1) / tilesPerRow;
   int32_t atlasHeight = totalRows * tilePixelSize;
 
   float uStep = static_cast<float>(tilePixelSize) / static_cast<float>(atlasWidth);
   float vStep = static_cast<float>(tilePixelSize) / static_cast<float>(atlasHeight);
 
-  std::vector<TileUV> result;
-  result.reserve(static_cast<size_t>(totalTiles));
+  // Pre-fill all slots with zero UVs; gap slots (if any) remain zeroed.
+  std::vector<TileUV> result(static_cast<size_t>(totalSlots));
 
-  int32_t tileIdx = 0;
   for (const auto &tc : textureClasses) {
     for (int32_t i = 0; i < tc.numTiles; ++i) {
-      int32_t col = tileIdx % tilesPerRow;
-      int32_t row = tileIdx / tilesPerRow;
+      int32_t absIdx = tc.firstTile + i;
+      if (absIdx < 0 || absIdx >= totalSlots) {
+        continue;
+      }
+
+      int32_t col = absIdx % tilesPerRow;
+      int32_t row = absIdx / tilesPerRow;
 
       TileUV uv;
       uv.u = static_cast<float>(col) * uStep;
       uv.v = static_cast<float>(row) * vStep;
       uv.uSize = uStep;
       uv.vSize = vStep;
-      result.push_back(uv);
-
-      ++tileIdx;
+      result[static_cast<size_t>(absIdx)] = uv;
     }
   }
 

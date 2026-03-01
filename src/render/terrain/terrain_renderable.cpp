@@ -89,7 +89,14 @@ void TerrainRenderable::setLighting(const map::GlobalLighting &lighting) {
 }
 
 void TerrainRenderable::applyLightingState(const LightingState &lightingState) {
-  pushConstant_ = lightingState.makeTerrainPushConstant(hasAtlas());
+  auto pc = lightingState.makeTerrainPushConstant(hasAtlas());
+  // Preserve blend-data fields set by uploadBlendData() -- makeTerrainPushConstant
+  // only fills lighting/cloud fields and zero-initialises everything else.
+  pc.mapWidth = pushConstant_.mapWidth;
+  pc.mapHeight = pushConstant_.mapHeight;
+  pc.mapXYFactor = pushConstant_.mapXYFactor;
+  pc.useBlendData = pushConstant_.useBlendData;
+  pushConstant_ = pc;
 }
 
 void TerrainRenderable::initPipeline(gfx::VulkanContext &context,
