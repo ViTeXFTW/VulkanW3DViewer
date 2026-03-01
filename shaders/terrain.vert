@@ -22,6 +22,11 @@ layout(push_constant) uniform TerrainMaterial {
   float cloudScrollV;
   float cloudTime;
   float cloudStrength;
+  // Phase 2 – map dimensions for SSBO cell index computation.
+  uint mapWidth;
+  uint mapHeight;
+  float mapXYFactor;
+  uint useBlendData;
 } material;
 
 layout(location = 0) in vec3 inPosition;

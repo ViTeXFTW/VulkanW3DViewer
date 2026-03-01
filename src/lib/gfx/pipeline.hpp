@@ -89,6 +89,11 @@ struct TerrainPushConstant {
   alignas(4) float cloudScrollV;  // cloud UV vertical scroll speed (world units/sec)
   alignas(4) float cloudTime;     // accumulated time for cloud UV offset
   alignas(4) float cloudStrength; // 0 = no shadow, 1 = full shadow intensity
+  // Phase 2 – map dimensions for SSBO cell index computation in shader
+  alignas(4) uint32_t mapWidth;     // number of cells per row (heightmap width - 1)
+  alignas(4) uint32_t mapHeight;    // number of cells per column (heightmap height - 1)
+  alignas(4) float mapXYFactor;     // world units per cell (MAP_XY_FACTOR = 10.0)
+  alignas(4) uint32_t useBlendData; // 1 = SSBO blend data available, 0 = no blend
 };
 
 struct WaterPushConstant {
@@ -192,11 +197,14 @@ struct PipelineCreateInfo {
         vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eUniformBuffer,        1,
                                        vk::ShaderStageFlagBits::eVertex  },
         vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eCombinedImageSampler, 1,
+                                       vk::ShaderStageFlagBits::eFragment},
+        vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eStorageBuffer,        1,
                                        vk::ShaderStageFlagBits::eFragment}
     };
 
     info.pushConstants = {
-        vk::PushConstantRange{vk::ShaderStageFlagBits::eFragment, 0, sizeof(TerrainPushConstant)}
+        vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+                              0, sizeof(TerrainPushConstant)}
     };
 
     return info;
@@ -289,6 +297,8 @@ public:
   void updateUniformBuffer(uint32_t frameIndex, vk::Buffer buffer, vk::DeviceSize size);
 
   void updateTexture(uint32_t frameIndex, vk::ImageView imageView, vk::Sampler sampler);
+
+  void updateStorageBuffer(uint32_t frameIndex, vk::Buffer buffer, vk::DeviceSize size);
 
   vk::DescriptorSet getTextureDescriptorSet(uint32_t frameIndex, uint32_t textureIndex,
                                             vk::ImageView imageView, vk::Sampler sampler);

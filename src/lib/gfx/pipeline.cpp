@@ -192,9 +192,10 @@ void DescriptorManager::createWithTexture(VulkanContext &context, vk::Descriptor
 
   uint32_t totalSets = frameCount + frameCount * maxTextures;
 
-  std::array<vk::DescriptorPoolSize, 2> poolSizes = {
+  std::array<vk::DescriptorPoolSize, 3> poolSizes = {
       vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer,        totalSets},
-      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, totalSets}
+      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, totalSets},
+      vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer,        totalSets}
   };
 
   vk::DescriptorPoolCreateInfo poolInfo{{}, totalSets, poolSizes};
@@ -246,6 +247,16 @@ void DescriptorManager::updateTexture(uint32_t frameIndex, vk::ImageView imageVi
 
   vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex], 1, 0,
                                          vk::DescriptorType::eCombinedImageSampler, imageInfo};
+
+  device_.updateDescriptorSets(descriptorWrite, {});
+}
+
+void DescriptorManager::updateStorageBuffer(uint32_t frameIndex, vk::Buffer buffer,
+                                            vk::DeviceSize size) {
+  vk::DescriptorBufferInfo bufferInfo{buffer, 0, size};
+
+  vk::WriteDescriptorSet descriptorWrite{descriptorSets_[frameIndex],        2,  0,
+                                         vk::DescriptorType::eStorageBuffer, {}, bufferInfo};
 
   device_.updateDescriptorSets(descriptorWrite, {});
 }

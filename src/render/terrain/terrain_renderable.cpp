@@ -75,6 +75,9 @@ void TerrainRenderable::destroy() {
   visibleChunkCount_ = 0;
   atlasTextureIndex_ = ~0u;
 
+  blendDataBuffer_.destroy();
+  hasBlendData_ = false;
+
   descriptorManager_.destroy();
   pipeline_.destroy();
 }
@@ -151,6 +154,28 @@ void TerrainRenderable::initPipelineWithTileArray(gfx::VulkanContext &context,
   }
 }
 
+void TerrainRenderable::uploadBlendData(gfx::VulkanContext &context,
+                                        const map::BlendTileData &blendTileData, uint32_t mapWidth,
+                                        uint32_t mapHeight, uint32_t frameCount) {
+  auto cells = buildCellBlendBuffer(blendTileData);
+  if (cells.empty()) {
+    return;
+  }
+
+  blendDataBuffer_.create(context, cells.data(), sizeof(CellBlendInfo) * cells.size(),
+                          vk::BufferUsageFlagBits::eStorageBuffer);
+
+  for (uint32_t i = 0; i < frameCount; ++i) {
+    descriptorManager_.updateStorageBuffer(i, blendDataBuffer_.buffer(), blendDataBuffer_.size());
+  }
+
+  pushConstant_.mapWidth = mapWidth;
+  pushConstant_.mapHeight = mapHeight;
+  pushConstant_.mapXYFactor = map::MAP_XY_FACTOR;
+  pushConstant_.useBlendData = 1u;
+  hasBlendData_ = true;
+}
+
 void TerrainRenderable::updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer,
                                           vk::DeviceSize uboSize) {
   descriptorManager_.updateUniformBuffer(frameIndex, uniformBuffer, uboSize);
@@ -165,7 +190,8 @@ void TerrainRenderable::drawWithPipeline(vk::CommandBuffer cmd, uint32_t frameIn
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
                          descriptorManager_.descriptorSet(frameIndex), {});
 
-  cmd.pushConstants(pipeline_.layout(), vk::ShaderStageFlagBits::eFragment, 0,
+  cmd.pushConstants(pipeline_.layout(),
+                    vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                     sizeof(gfx::TerrainPushConstant), &pushConstant_);
 
   draw(cmd);

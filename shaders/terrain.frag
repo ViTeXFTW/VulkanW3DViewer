@@ -8,7 +8,9 @@ layout(location = 4) in vec2 fragCloudCoord; // Phase 6.3: scrolled cloud UV
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 1) uniform sampler2D texSampler;
+// Phase 1.4 – texture array: one layer per 64x64 terrain tile.
+// Falls back gracefully when useTexture == 0 (procedural gradient).
+layout(set = 0, binding = 1) uniform sampler2DArray tileTextures;
 
 layout(push_constant) uniform TerrainMaterial {
   vec4 ambientColor;
@@ -22,11 +24,127 @@ layout(push_constant) uniform TerrainMaterial {
   float cloudScrollV;
   float cloudTime;
   float cloudStrength; // 0 = disabled, 1 = full shadow
+  // Phase 2 – map dimensions for SSBO cell index computation
+  uint mapWidth;
+  uint mapHeight;
+  float mapXYFactor;
+  uint useBlendData;
 } material;
 
 // ---------------------------------------------------------------------------
+// Phase 2 – per-cell blend data SSBO.
+// One CellBlendInfo entry per terrain cell (row-major, Z increasing forward).
+// Each entry is 16 bytes = 4 x uint32 in std430 layout:
+//   word0: baseTileIndex(u16) | baseQuadrant(u16)
+//   word1: blendTileIndex(u16) | blendQuadrant(u16)
+//   word2: extraTileIndex(u16) | extraQuadrant(u16)
+//   word3: blendDir(u8) | extraDir(u8) | flags(u8) | padding(u8)
+// ---------------------------------------------------------------------------
+layout(std430, set = 0, binding = 2) readonly buffer CellBlendBuffer {
+  uint cellData[];
+};
+
+// Blend direction encoding must match BlendDirectionEncoding in terrain_blend_data.hpp
+const uint BLEND_NONE          = 0u;
+const uint BLEND_HORIZ         = 1u;
+const uint BLEND_HORIZ_INV     = 2u;
+const uint BLEND_VERT          = 3u;
+const uint BLEND_VERT_INV      = 4u;
+const uint BLEND_DIAG_R        = 5u;
+const uint BLEND_DIAG_R_INV    = 6u;
+const uint BLEND_DIAG_L        = 7u;
+const uint BLEND_DIAG_L_INV    = 8u;
+const uint BLEND_LONG_DIAG     = 9u;
+const uint BLEND_LONG_DIAG_INV = 10u;
+const uint BLEND_LONG_DIAG_ALT = 11u;
+const uint BLEND_LONG_DIAG_ALT_INV = 12u;
+
+const uint CELL_FLAG_IS_CLIFF = 0x01u;
+
+// Each CellBlendInfo occupies 4 uint32s in std430 layout:
+// word0: baseTileIndex (u16) | baseQuadrant (u16)
+// word1: blendTileIndex (u16) | blendQuadrant (u16)
+// word2: extraTileIndex (u16) | extraQuadrant (u16)
+// word3: blendDir (u8) | extraDir (u8) | flags (u8) | padding (u8)
+const uint WORDS_PER_CELL = 4u;
+
+uint getCellWord(uint cellIndex, uint wordOffset) {
+  return cellData[cellIndex * WORDS_PER_CELL + wordOffset];
+}
+
+uint getCellBaseTile(uint cellIndex) {
+  return getCellWord(cellIndex, 0u) & 0xFFFFu;
+}
+
+uint getCellBaseQuadrant(uint cellIndex) {
+  return (getCellWord(cellIndex, 0u) >> 16u) & 0xFFFFu;
+}
+
+uint getCellBlendTile(uint cellIndex) {
+  return getCellWord(cellIndex, 1u) & 0xFFFFu;
+}
+
+uint getCellBlendQuadrant(uint cellIndex) {
+  return (getCellWord(cellIndex, 1u) >> 16u) & 0xFFFFu;
+}
+
+uint getCellExtraTile(uint cellIndex) {
+  return getCellWord(cellIndex, 2u) & 0xFFFFu;
+}
+
+uint getCellExtraQuadrant(uint cellIndex) {
+  return (getCellWord(cellIndex, 2u) >> 16u) & 0xFFFFu;
+}
+
+uint getCellBlendDir(uint cellIndex) {
+  return getCellWord(cellIndex, 3u) & 0xFFu;
+}
+
+uint getCellExtraDir(uint cellIndex) {
+  return (getCellWord(cellIndex, 3u) >> 8u) & 0xFFu;
+}
+
+uint getCellFlags(uint cellIndex) {
+  return (getCellWord(cellIndex, 3u) >> 16u) & 0xFFu;
+}
+
+// ---------------------------------------------------------------------------
+// Compute UV within a 64x64 tile given the in-cell fraction [0,1] x [0,1]
+// and the 32x32 quadrant index (0 = TL, 1 = TR, 2 = BL, 3 = BR).
+// The texture array layer covers the full 64x64 tile in [0,1] UV space.
+// Each cell uses only half the tile in each axis (one quadrant).
+// ---------------------------------------------------------------------------
+vec2 quadrantUV(vec2 cellFrac, uint quadrant) {
+  float uOffset = float(quadrant & 1u) * 0.5;
+  float vOffset = float((quadrant >> 1u) & 1u) * 0.5;
+  return vec2(uOffset + cellFrac.x * 0.5, vOffset + cellFrac.y * 0.5);
+}
+
+// ---------------------------------------------------------------------------
+// Compute the blend alpha [0,1] for a given direction and in-cell UV.
+// ---------------------------------------------------------------------------
+float blendAlpha(uint direction, vec2 uv) {
+  float u = uv.x;
+  float v = uv.y;
+  switch (direction) {
+    case BLEND_HORIZ:         return u;
+    case BLEND_HORIZ_INV:     return 1.0 - u;
+    case BLEND_VERT:          return v;
+    case BLEND_VERT_INV:      return 1.0 - v;
+    case BLEND_DIAG_R:        return clamp((u + v) * 0.5, 0.0, 1.0);
+    case BLEND_DIAG_R_INV:    return clamp(1.0 - (u + v) * 0.5, 0.0, 1.0);
+    case BLEND_DIAG_L:        return clamp(((1.0 - u) + v) * 0.5, 0.0, 1.0);
+    case BLEND_DIAG_L_INV:    return clamp(1.0 - ((1.0 - u) + v) * 0.5, 0.0, 1.0);
+    case BLEND_LONG_DIAG:     return clamp((u + v) * 0.75, 0.0, 1.0);
+    case BLEND_LONG_DIAG_INV: return clamp(1.0 - (u + v) * 0.75, 0.0, 1.0);
+    case BLEND_LONG_DIAG_ALT: return clamp(((1.0 - u) + v) * 0.75, 0.0, 1.0);
+    case BLEND_LONG_DIAG_ALT_INV: return clamp(1.0 - ((1.0 - u) + v) * 0.75, 0.0, 1.0);
+    default: return 0.0;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Simple hash-based 2D noise for procedural cloud shadows.
-// Produces smooth values in [0, 1].
 // ---------------------------------------------------------------------------
 float hash21(vec2 p) {
   p = fract(p * vec2(127.1, 311.7));
@@ -37,7 +155,7 @@ float hash21(vec2 p) {
 float smoothNoise(vec2 uv) {
   vec2 i = floor(uv);
   vec2 f = fract(uv);
-  vec2 u = f * f * (3.0 - 2.0 * f); // smoothstep
+  vec2 u = f * f * (3.0 - 2.0 * f);
 
   float a = hash21(i);
   float b = hash21(i + vec2(1.0, 0.0));
@@ -47,53 +165,90 @@ float smoothNoise(vec2 uv) {
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// Two-octave FBM for a more cloud-like pattern.
 float cloudPattern(vec2 uv) {
-  float v = smoothNoise(uv) * 0.6 + smoothNoise(uv * 2.1 + 4.7) * 0.4;
-  return v;
+  return smoothNoise(uv) * 0.6 + smoothNoise(uv * 2.1 + 4.7) * 0.4;
 }
 
 void main() {
   vec3 normal = normalize(fragNormal);
 
   vec3 baseColor;
-  if (material.useTexture == 1u) {
-    baseColor = texture(texSampler, fragAtlasCoord).rgb;
+
+  if (material.useTexture == 1u && material.useBlendData == 1u) {
+    // ---------------------------------------------------------------------------
+    // Phase 2 – splatmap blending via SSBO + texture array.
+    // ---------------------------------------------------------------------------
+
+    // Compute which terrain cell this fragment falls in.
+    float cellX = fragWorldPos.x / material.mapXYFactor;
+    float cellZ = fragWorldPos.z / material.mapXYFactor;
+
+    uint cX = uint(clamp(cellX, 0.0, float(material.mapWidth  - 1u)));
+    uint cZ = uint(clamp(cellZ, 0.0, float(material.mapHeight - 1u)));
+    uint cellIndex = cZ * material.mapWidth + cX;
+
+    vec2 cellFrac = vec2(fract(cellX), fract(cellZ));
+
+    uint baseTile  = getCellBaseTile(cellIndex);
+    uint baseQuad  = getCellBaseQuadrant(cellIndex);
+    vec2 baseUV    = quadrantUV(cellFrac, baseQuad);
+    baseColor      = texture(tileTextures, vec3(baseUV, float(baseTile))).rgb;
+
+    uint blendTile = getCellBlendTile(cellIndex);
+    uint blendDir  = getCellBlendDir(cellIndex);
+    if (blendTile > 0u && blendDir != BLEND_NONE) {
+      uint blendQuad  = getCellBlendQuadrant(cellIndex);
+      vec2 blendUV    = quadrantUV(cellFrac, blendQuad);
+      vec3 blendColor = texture(tileTextures, vec3(blendUV, float(blendTile))).rgb;
+      float alpha     = blendAlpha(blendDir, cellFrac);
+      baseColor       = mix(baseColor, blendColor, alpha);
+    }
+
+    uint extraTile = getCellExtraTile(cellIndex);
+    uint extraDir  = getCellExtraDir(cellIndex);
+    if (extraTile > 0u && extraDir != BLEND_NONE) {
+      uint extraQuad  = getCellExtraQuadrant(cellIndex);
+      vec2 extraUV    = quadrantUV(cellFrac, extraQuad);
+      vec3 extraColor = texture(tileTextures, vec3(extraUV, float(extraTile))).rgb;
+      float alpha     = blendAlpha(extraDir, cellFrac);
+      baseColor       = mix(baseColor, extraColor, alpha);
+    }
+
+  } else if (material.useTexture == 1u) {
+    // Phase 1.4 – tile array without blend data: use baked atlas UV.
+    // fragAtlasCoord carries the base tile quadrant UV from mesh generation.
+    // Since we now have a texture array, we sample layer 0 as fallback.
+    baseColor = texture(tileTextures, vec3(fragAtlasCoord, 0.0)).rgb;
+
   } else {
+    // Fallback: procedural height-based gradient (green low, brown high).
     float height = fragWorldPos.y;
     float t = clamp(height / 100.0, 0.0, 1.0);
-    vec3 lowColor = vec3(0.35, 0.55, 0.25);
+    vec3 lowColor  = vec3(0.35, 0.55, 0.25);
     vec3 highColor = vec3(0.65, 0.55, 0.40);
     baseColor = mix(lowColor, highColor, t);
   }
 
   vec3 lightDir = normalize(-material.lightDirection);
 
-  // Ambient
   vec3 ambient = material.ambientColor.rgb * baseColor;
 
-  // Diffuse
   float diff = max(dot(normal, lightDir), 0.0);
   vec3 diffuse = material.diffuseColor.rgb * diff * baseColor;
 
   vec3 result = ambient + diffuse;
 
   // Phase 6.2 – shadow colour tint.
-  // Apply the shadow colour as a lerp based on its alpha when the surface is
-  // facing away from the light (diff == 0 → fully in shadow).
   if (material.shadowColor.a > 0.0) {
     float shadowFactor = (1.0 - diff) * material.shadowColor.a;
     result = mix(result, result * material.shadowColor.rgb, shadowFactor);
   }
 
   // Phase 6.3 – cloud shadow overlay.
-  // Sample a procedural cloud pattern using scrolled world-space UVs and
-  // darken the lit surface proportionally to cloudStrength.
   if (material.cloudStrength > 0.0) {
     float cloud = cloudPattern(fragCloudCoord);
-    // cloud ∈ [0, 1]; values > 0.5 are "under cloud", values ≤ 0.5 are "in sun".
     float shadow = smoothstep(0.45, 0.65, cloud) * material.cloudStrength;
-    result *= (1.0 - shadow * 0.6); // attenuate by up to 60 % (matches original look)
+    result *= (1.0 - shadow * 0.6);
   }
 
   outColor = vec4(result, 1.0);

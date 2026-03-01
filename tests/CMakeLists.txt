@@ -470,3 +470,18 @@ else()
 endif()
 
 add_test(NAME terrain_resource_manager_tests COMMAND terrain_resource_manager_tests)
+
+# Terrain blend data tests (Phase 2 - per-cell SSBO data builder)
+add_executable(terrain_blend_data_tests
+  terrain/test_terrain_blend_data.cpp
+)
+
+target_link_libraries(terrain_blend_data_tests PRIVATE w3d_lib gtest gtest_main)
+
+if(MSVC)
+  target_compile_options(terrain_blend_data_tests PRIVATE /W4 /permissive-)
+else()
+  target_compile_options(terrain_blend_data_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+add_test(NAME terrain_blend_data_tests COMMAND terrain_blend_data_tests)

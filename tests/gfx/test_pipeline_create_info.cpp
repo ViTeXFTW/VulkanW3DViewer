@@ -97,11 +97,13 @@ TEST(PipelineCreateInfoTest, TerrainPresetHasCorrectDefaults) {
   EXPECT_EQ(info.vertexInput.attributes[3].format, vk::Format::eR32G32Sfloat);
   EXPECT_EQ(info.vertexInput.attributes[3].offset, 32u);
 
-  EXPECT_EQ(info.descriptorBindings.size(), 2);
+  EXPECT_EQ(info.descriptorBindings.size(), 3u);
   EXPECT_EQ(info.descriptorBindings[0].binding, 0);
   EXPECT_EQ(info.descriptorBindings[0].descriptorType, vk::DescriptorType::eUniformBuffer);
   EXPECT_EQ(info.descriptorBindings[1].binding, 1);
   EXPECT_EQ(info.descriptorBindings[1].descriptorType, vk::DescriptorType::eCombinedImageSampler);
+  EXPECT_EQ(info.descriptorBindings[2].binding, 2);
+  EXPECT_EQ(info.descriptorBindings[2].descriptorType, vk::DescriptorType::eStorageBuffer);
 
   EXPECT_EQ(info.pushConstants.size(), 1);
   EXPECT_EQ(info.pushConstants[0].size, sizeof(TerrainPushConstant));

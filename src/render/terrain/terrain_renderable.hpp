@@ -17,6 +17,7 @@
 #include "lib/gfx/texture.hpp"
 #include "render/lighting_state.hpp"
 #include "render/terrain/terrain_atlas.hpp"
+#include "render/terrain/terrain_blend_data.hpp"
 #include "render/terrain/terrain_mesh.hpp"
 #include "render/terrain/terrain_resource_manager.hpp"
 
@@ -98,6 +99,12 @@ public:
   void initPipelineWithTileArray(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
                                  const TileArrayData &tileArrayData, uint32_t frameCount);
 
+  // Phase 2: Upload per-cell blend data as a GPU storage buffer (SSBO).
+  // Must be called after initPipeline* and before drawWithPipeline.
+  // Sets mapWidth/mapHeight/mapXYFactor in push constants.
+  void uploadBlendData(gfx::VulkanContext &context, const map::BlendTileData &blendTileData,
+                       uint32_t mapWidth, uint32_t mapHeight, uint32_t frameCount);
+
   void updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer, vk::DeviceSize uboSize);
 
   void drawWithPipeline(vk::CommandBuffer cmd, uint32_t frameIndex);
@@ -124,6 +131,8 @@ private:
   bool frustumValid_ = false;
 
   uint32_t atlasTextureIndex_ = ~0u;
+  gfx::StagedBuffer blendDataBuffer_;
+  bool hasBlendData_ = false;
 };
 
 } // namespace w3d::terrain

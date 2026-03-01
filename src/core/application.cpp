@@ -10,6 +10,7 @@
 
 #include "lib/formats/map/map_loader.hpp"
 #include "render/terrain/terrain_atlas.hpp"
+#include "render/terrain/terrain_resource_manager.hpp"
 #include "ui/hover_tooltip.hpp"
 #include "ui/map_browser.hpp"
 #include "ui/map_viewport_window.hpp"
@@ -679,10 +680,37 @@ void Application::loadMapFile(const std::filesystem::path &path) {
 
   // Load terrain
   if (loadedMap_->hasHeightMap()) {
-    terrainRenderable_.load(context_, loadedMap_->heightMap, loadedMap_->lighting);
-    terrainRenderable_.initPipeline(context_, textureManager_, 2);
+    const bool hasBlendData = loadedMap_->hasBlendTiles() &&
+                              terrainResourceManager_.isInitialized() &&
+                              bigArchiveManager_.isInitialized();
 
-    // Update descriptors for both frames
+    if (hasBlendData) {
+      std::string tileError;
+      auto tiles = terrainResourceManager_.extractTilesForTextureClasses(
+          loadedMap_->blendTiles.textureClasses, bigArchiveManager_, &tileError);
+
+      auto tileArrayData = terrainResourceManager_.buildTileArrayData(tiles);
+      auto tileUVs = terrain::computeTileUVTable(loadedMap_->blendTiles.textureClasses);
+
+      terrainRenderable_.loadWithBlendData(context_, loadedMap_->heightMap, loadedMap_->blendTiles,
+                                           tileUVs, loadedMap_->lighting);
+      terrainRenderable_.initPipelineWithTileArray(context_, textureManager_, tileArrayData, 2);
+
+      uint32_t mapWidth = static_cast<uint32_t>(loadedMap_->heightMap.width - 1);
+      uint32_t mapHeight = static_cast<uint32_t>(loadedMap_->heightMap.height - 1);
+      terrainRenderable_.uploadBlendData(context_, loadedMap_->blendTiles, mapWidth, mapHeight, 2);
+
+      if (!tileError.empty()) {
+        console_->warning("Some terrain textures missing: " + tileError);
+      } else {
+        console_->info("Terrain textures loaded from archive");
+      }
+    } else {
+      terrainRenderable_.load(context_, loadedMap_->heightMap, loadedMap_->lighting);
+      terrainRenderable_.initPipeline(context_, textureManager_, 2);
+    }
+
+    // Update UBO descriptors for both frames
     for (uint32_t i = 0; i < 2; ++i) {
       terrainRenderable_.updateDescriptors(i, renderer_.uniformBuffers().buffer(i),
                                            sizeof(gfx::UniformBufferObject));
