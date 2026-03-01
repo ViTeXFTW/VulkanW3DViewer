@@ -645,3 +645,153 @@ End
   EXPECT_TRUE(data.isValid());
   EXPECT_EQ(data.layerCount, 2u);
 }
+
+// ============================================================================
+// Phase 5.1 Tests: Checkerboard fallback tile generation
+// ============================================================================
+
+class CheckerboardFallbackTest : public ::testing::Test {
+protected:
+  TerrainResourceManager manager;
+};
+
+TEST_F(CheckerboardFallbackTest, GeneratesCorrectSize) {
+  auto tile = manager.generateCheckerboardTile(64);
+  EXPECT_EQ(tile.size(), 64u * 64u * 4u);
+}
+
+TEST_F(CheckerboardFallbackTest, GeneratesCorrectSizeForSmallTile) {
+  auto tile = manager.generateCheckerboardTile(8);
+  EXPECT_EQ(tile.size(), 8u * 8u * 4u);
+}
+
+TEST_F(CheckerboardFallbackTest, ReturnsEmptyForZeroTileSize) {
+  auto tile = manager.generateCheckerboardTile(0);
+  EXPECT_TRUE(tile.empty());
+}
+
+TEST_F(CheckerboardFallbackTest, ReturnsEmptyForNegativeTileSize) {
+  auto tile = manager.generateCheckerboardTile(-1);
+  EXPECT_TRUE(tile.empty());
+}
+
+TEST_F(CheckerboardFallbackTest, TopLeftPixelIsMagenta) {
+  auto tile = manager.generateCheckerboardTile(64);
+  ASSERT_GE(tile.size(), 4u);
+  EXPECT_EQ(tile[0], 255u); // R = 255 (magenta)
+  EXPECT_EQ(tile[1], 0u);   // G = 0
+  EXPECT_EQ(tile[2], 255u); // B = 255 (magenta)
+  EXPECT_EQ(tile[3], 255u); // A = opaque
+}
+
+TEST_F(CheckerboardFallbackTest, HasBothMagentaAndBlackPixels) {
+  auto tile = manager.generateCheckerboardTile(64);
+  bool hasMagenta = false;
+  bool hasBlack = false;
+  for (size_t i = 0; i < tile.size(); i += 4) {
+    bool isMagenta = tile[i] == 255 && tile[i + 1] == 0 && tile[i + 2] == 255;
+    bool isBlack = tile[i] == 0 && tile[i + 1] == 0 && tile[i + 2] == 0;
+    if (isMagenta)
+      hasMagenta = true;
+    if (isBlack)
+      hasBlack = true;
+  }
+  EXPECT_TRUE(hasMagenta) << "Expected at least one magenta pixel";
+  EXPECT_TRUE(hasBlack) << "Expected at least one black pixel";
+}
+
+TEST_F(CheckerboardFallbackTest, AllPixelsAreFullyOpaque) {
+  auto tile = manager.generateCheckerboardTile(64);
+  for (size_t i = 3; i < tile.size(); i += 4) {
+    EXPECT_EQ(tile[i], 255u) << "Alpha should be 255 at byte index " << i;
+  }
+}
+
+TEST_F(CheckerboardFallbackTest, FallbackUsedWhenTextureClassMissingInBigArchive) {
+  // Integration test: when a BIG archive is present but the TGA for a known terrain class
+  // cannot be found inside it, fallback checkerboard tiles should be generated.
+  // Requires an initialized BIG archive (skipped if no game data is available).
+  const char *ini = R"(
+Terrain NonExistentTextureForTest
+  Texture = NonExistentTextureForTest.tga
+  Class = DESERT_1
+End
+)";
+  std::string error;
+  bool loaded = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(loaded);
+
+  BigArchiveManager bigManager;
+  bool initialized = bigManager.initialize(".", &error);
+  if (!initialized) {
+    GTEST_SKIP() << "No BIG archives available to test fallback path. Skipping.";
+  }
+
+  map::TextureClass tc;
+  tc.name = "NonExistentTextureForTest";
+  tc.numTiles = 4;
+  tc.width = 2;
+  tc.firstTile = 0;
+
+  error.clear();
+  auto tiles = manager.extractTilesForTextureClasses({tc}, bigManager, &error);
+
+  // The TGA doesn't exist in the BIG archive, so we should get exactly numTiles fallback tiles.
+  EXPECT_EQ(tiles.size(), 4u) << "Expected 4 fallback tiles for missing texture";
+
+  for (const auto &tile : tiles) {
+    EXPECT_EQ(tile.size(), 64u * 64u * 4u);
+  }
+
+  EXPECT_FALSE(error.empty()) << "Expected warning about missing texture";
+}
+
+TEST_F(CheckerboardFallbackTest, FallbackCountMatchesNumTilesForLargeTextureClass) {
+  // Integration test: fallback tile count matches numTiles from the texture class.
+  // Requires an initialized BIG archive (skipped if no game data is available).
+  const char *ini = R"(
+Terrain NonExistentBigTexture
+  Texture = NonExistentBigTexture.tga
+  Class = GRASS
+End
+)";
+  std::string error;
+  bool loaded = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(loaded);
+
+  BigArchiveManager bigManager;
+  bool initialized = bigManager.initialize(".", &error);
+  if (!initialized) {
+    GTEST_SKIP() << "No BIG archives available to test fallback path. Skipping.";
+  }
+
+  // Texture class with 16 tiles (256x256 TGA)
+  map::TextureClass tc;
+  tc.name = "NonExistentBigTexture";
+  tc.numTiles = 16;
+  tc.width = 4;
+  tc.firstTile = 0;
+
+  error.clear();
+  auto tiles = manager.extractTilesForTextureClasses({tc}, bigManager, &error);
+
+  // Missing TGA -> 16 fallback tiles generated
+  EXPECT_EQ(tiles.size(), 16u);
+}
+
+TEST_F(CheckerboardFallbackTest, FallbackTileIsCheckerboard) {
+  // Verify the fallback tile has the correct checkerboard pattern
+  auto tile = manager.generateCheckerboardTile(16);
+
+  // Top-left 8x8 block should be magenta (checker_size=8, (0/8 + 0/8) % 2 == 0)
+  size_t topLeftIdx = 0;
+  EXPECT_EQ(tile[topLeftIdx + 0], 255u); // R
+  EXPECT_EQ(tile[topLeftIdx + 1], 0u);   // G
+  EXPECT_EQ(tile[topLeftIdx + 2], 255u); // B
+
+  // Pixel at (8, 0): second column of checkers, should be black
+  size_t secondBlockIdx = 8 * 4;
+  EXPECT_EQ(tile[secondBlockIdx + 0], 0u); // R
+  EXPECT_EQ(tile[secondBlockIdx + 1], 0u); // G
+  EXPECT_EQ(tile[secondBlockIdx + 2], 0u); // B
+}

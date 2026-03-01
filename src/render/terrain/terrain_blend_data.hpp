@@ -25,6 +25,9 @@ enum class BlendDirectionEncoding : uint8_t {
   LongDiagonalInv = 10,
   LongDiagonalAlt = 11,
   LongDiagonalAltInv = 12,
+  // Phase 5.5: custom blend edge texture -- when this value is set, blendQuadrant holds
+  // the GPU texture array layer index of the edge tile whose alpha channel drives blending.
+  CustomEdge = 13,
 };
 
 struct CellBlendInfo {
@@ -44,7 +47,12 @@ static_assert(sizeof(CellBlendInfo) == 16, "CellBlendInfo must be 16 bytes for G
 
 [[nodiscard]] BlendDirectionEncoding encodeBlendDirection(const map::BlendTileInfo &info);
 
+// Build the per-cell GPU blend buffer from parsed BlendTileData.
+// edgeTileLayerBase is the GPU texture array layer index at which edge tiles begin
+// (i.e., the total number of base tiles). When customBlendEdgeClass entries exist,
+// their tile layer index is computed as edgeTileLayerBase + (edge class tile index).
+// Pass 0 if no edge tiles are present.
 [[nodiscard]] std::vector<CellBlendInfo>
-buildCellBlendBuffer(const map::BlendTileData &blendTileData);
+buildCellBlendBuffer(const map::BlendTileData &blendTileData, uint32_t edgeTileLayerBase = 0);
 
 } // namespace w3d::terrain

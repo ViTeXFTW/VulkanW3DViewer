@@ -213,31 +213,77 @@ std::vector<std::vector<uint8_t>> TerrainResourceManager::extractTilesForTexture
   }
 
   std::vector<std::vector<uint8_t>> allTiles;
+  std::string missingTextures;
 
   for (const auto &tc : textureClasses) {
     std::string extractError;
+    bool loaded = false;
+
     auto tgaPath = resolveTexturePath(tc.name, &extractError);
-    if (!tgaPath.has_value()) {
-      continue;
+    if (tgaPath.has_value()) {
+      auto tgaData = bigManager.extractToMemory(tgaPath.value(), &extractError);
+      if (tgaData.has_value()) {
+        TgaImage img;
+        if (decodeTgaFromMemory(tgaData.value(), img, &extractError)) {
+          auto tiles = splitImageIntoTiles(img, map::TILE_PIXEL_EXTENT);
+          if (!tiles.empty()) {
+            for (auto &tile : tiles) {
+              allTiles.push_back(std::move(tile));
+            }
+            loaded = true;
+          }
+        }
+      }
     }
 
-    auto tgaData = bigManager.extractToMemory(tgaPath.value(), &extractError);
-    if (!tgaData.has_value()) {
-      continue;
-    }
+    if (!loaded) {
+      if (!missingTextures.empty()) {
+        missingTextures += ", ";
+      }
+      missingTextures += tc.name;
 
-    TgaImage img;
-    if (!decodeTgaFromMemory(tgaData.value(), img, &extractError)) {
-      continue;
-    }
-
-    auto tiles = splitImageIntoTiles(img, map::TILE_PIXEL_EXTENT);
-    for (auto &tile : tiles) {
-      allTiles.push_back(std::move(tile));
+      int32_t tilesNeeded = tc.numTiles > 0 ? tc.numTiles : 1;
+      auto fallback = generateCheckerboardTile(map::TILE_PIXEL_EXTENT);
+      for (int32_t i = 0; i < tilesNeeded; ++i) {
+        allTiles.push_back(fallback);
+      }
     }
   }
 
+  if (!missingTextures.empty() && outError) {
+    *outError = "Missing terrain textures (using fallback): " + missingTextures;
+  }
+
   return allTiles;
+}
+
+std::vector<uint8_t> TerrainResourceManager::generateCheckerboardTile(int32_t tileSize) const {
+  if (tileSize <= 0) {
+    return {};
+  }
+
+  std::vector<uint8_t> tile(static_cast<size_t>(tileSize) * tileSize * 4);
+  constexpr int32_t CHECKER_SIZE = 8;
+
+  for (int32_t y = 0; y < tileSize; ++y) {
+    for (int32_t x = 0; x < tileSize; ++x) {
+      bool isMagenta = ((x / CHECKER_SIZE) + (y / CHECKER_SIZE)) % 2 == 0;
+      size_t idx = (static_cast<size_t>(y) * tileSize + x) * 4;
+      if (isMagenta) {
+        tile[idx + 0] = 255; // R
+        tile[idx + 1] = 0;   // G
+        tile[idx + 2] = 255; // B
+        tile[idx + 3] = 255; // A
+      } else {
+        tile[idx + 0] = 0;   // R
+        tile[idx + 1] = 0;   // G
+        tile[idx + 2] = 0;   // B
+        tile[idx + 3] = 255; // A
+      }
+    }
+  }
+
+  return tile;
 }
 
 TileArrayData

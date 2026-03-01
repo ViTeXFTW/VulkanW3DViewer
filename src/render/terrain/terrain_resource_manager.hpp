@@ -76,6 +76,10 @@ public:
   [[nodiscard]] TileArrayData
   buildTileArrayData(const std::vector<std::vector<uint8_t>> &tiles) const;
 
+  // Phase 5.1: Generate a magenta/black checkerboard fallback tile for missing textures.
+  // The returned vector has tileSize * tileSize * 4 bytes (RGBA8).
+  [[nodiscard]] std::vector<uint8_t> generateCheckerboardTile(int32_t tileSize = 64) const;
+
 private:
   bool initialized_ = false;
   ini::TerrainTypeCollection terrainTypes_;

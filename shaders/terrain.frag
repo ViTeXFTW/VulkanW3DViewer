@@ -45,19 +45,22 @@ layout(std430, set = 0, binding = 2) readonly buffer CellBlendBuffer {
 };
 
 // Blend direction encoding must match BlendDirectionEncoding in terrain_blend_data.hpp
-const uint BLEND_NONE          = 0u;
-const uint BLEND_HORIZ         = 1u;
-const uint BLEND_HORIZ_INV     = 2u;
-const uint BLEND_VERT          = 3u;
-const uint BLEND_VERT_INV      = 4u;
-const uint BLEND_DIAG_R        = 5u;
-const uint BLEND_DIAG_R_INV    = 6u;
-const uint BLEND_DIAG_L        = 7u;
-const uint BLEND_DIAG_L_INV    = 8u;
-const uint BLEND_LONG_DIAG     = 9u;
-const uint BLEND_LONG_DIAG_INV = 10u;
-const uint BLEND_LONG_DIAG_ALT = 11u;
+const uint BLEND_NONE              = 0u;
+const uint BLEND_HORIZ             = 1u;
+const uint BLEND_HORIZ_INV         = 2u;
+const uint BLEND_VERT              = 3u;
+const uint BLEND_VERT_INV          = 4u;
+const uint BLEND_DIAG_R            = 5u;
+const uint BLEND_DIAG_R_INV        = 6u;
+const uint BLEND_DIAG_L            = 7u;
+const uint BLEND_DIAG_L_INV        = 8u;
+const uint BLEND_LONG_DIAG         = 9u;
+const uint BLEND_LONG_DIAG_INV     = 10u;
+const uint BLEND_LONG_DIAG_ALT     = 11u;
 const uint BLEND_LONG_DIAG_ALT_INV = 12u;
+// Phase 5.5: custom blend edge texture -- blendQuadrant holds the GPU layer index of the
+// edge tile whose alpha channel is sampled to drive the blend mask.
+const uint BLEND_CUSTOM_EDGE       = 13u;
 
 const uint CELL_FLAG_IS_CLIFF = 0x01u;
 
@@ -204,9 +207,17 @@ void main() {
     uint blendDir  = getCellBlendDir(cellIndex);
     if (blendTile > 0u && blendDir != BLEND_NONE) {
       uint blendQuad  = getCellBlendQuadrant(cellIndex);
-      vec2 blendUV    = quadrantUV(cellFrac, blendQuad);
+      float alpha;
+      if (blendDir == BLEND_CUSTOM_EDGE) {
+        // Phase 5.5: blendQuad holds the GPU layer index of the edge tile.
+        // Sample its alpha channel to drive the blend mask.
+        vec2 edgeUV = quadrantUV(cellFrac, 0u);
+        alpha = texture(tileTextures, vec3(edgeUV, float(blendQuad))).a;
+      } else {
+        alpha = blendAlpha(blendDir, cellFrac);
+      }
+      vec2 blendUV    = quadrantUV(cellFrac, blendDir == BLEND_CUSTOM_EDGE ? 0u : blendQuad);
       vec3 blendColor = texture(tileTextures, vec3(blendUV, float(blendTile))).rgb;
-      float alpha     = blendAlpha(blendDir, cellFrac);
       baseColor       = mix(baseColor, blendColor, alpha);
     }
 
@@ -214,9 +225,16 @@ void main() {
     uint extraDir  = getCellExtraDir(cellIndex);
     if (extraTile > 0u && extraDir != BLEND_NONE) {
       uint extraQuad  = getCellExtraQuadrant(cellIndex);
-      vec2 extraUV    = quadrantUV(cellFrac, extraQuad);
+      float alpha;
+      if (extraDir == BLEND_CUSTOM_EDGE) {
+        // Phase 5.5: extraQuad holds the GPU layer index of the edge tile.
+        vec2 edgeUV = quadrantUV(cellFrac, 0u);
+        alpha = texture(tileTextures, vec3(edgeUV, float(extraQuad))).a;
+      } else {
+        alpha = blendAlpha(extraDir, cellFrac);
+      }
+      vec2 extraUV    = quadrantUV(cellFrac, extraDir == BLEND_CUSTOM_EDGE ? 0u : extraQuad);
       vec3 extraColor = texture(tileTextures, vec3(extraUV, float(extraTile))).rgb;
-      float alpha     = blendAlpha(extraDir, cellFrac);
       baseColor       = mix(baseColor, extraColor, alpha);
     }
 

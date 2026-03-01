@@ -156,8 +156,9 @@ void TerrainRenderable::initPipelineWithTileArray(gfx::VulkanContext &context,
 
 void TerrainRenderable::uploadBlendData(gfx::VulkanContext &context,
                                         const map::BlendTileData &blendTileData, uint32_t mapWidth,
-                                        uint32_t mapHeight, uint32_t frameCount) {
-  auto cells = buildCellBlendBuffer(blendTileData);
+                                        uint32_t mapHeight, uint32_t frameCount,
+                                        uint32_t edgeTileLayerBase) {
+  auto cells = buildCellBlendBuffer(blendTileData, edgeTileLayerBase);
   if (cells.empty()) {
     return;
   }

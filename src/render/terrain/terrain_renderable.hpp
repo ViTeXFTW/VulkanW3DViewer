@@ -102,8 +102,11 @@ public:
   // Phase 2: Upload per-cell blend data as a GPU storage buffer (SSBO).
   // Must be called after initPipeline* and before drawWithPipeline.
   // Sets mapWidth/mapHeight/mapXYFactor in push constants.
+  // edgeTileLayerBase: the GPU texture array layer at which edge tiles begin
+  // (i.e., the total number of base tiles extracted). Pass 0 if no edge tiles.
   void uploadBlendData(gfx::VulkanContext &context, const map::BlendTileData &blendTileData,
-                       uint32_t mapWidth, uint32_t mapHeight, uint32_t frameCount);
+                       uint32_t mapWidth, uint32_t mapHeight, uint32_t frameCount,
+                       uint32_t edgeTileLayerBase = 0);
 
   void updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer, vk::DeviceSize uboSize);
 

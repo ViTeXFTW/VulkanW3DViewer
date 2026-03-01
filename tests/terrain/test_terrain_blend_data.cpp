@@ -191,6 +191,152 @@ TEST_F(TerrainBlendDataTest, ZeroBlendTileNdxMeansNoBlend) {
   EXPECT_EQ(cells[0].blendQuadrant, 0u);
 }
 
+TEST_F(TerrainBlendDataTest, CustomEdgeDirectionEncodedWhenCustomBlendEdgeClassSet) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::TextureClass edgeClass;
+  edgeClass.name = "EdgeTex";
+  edgeClass.firstTile = 5;
+  edgeClass.numTiles = 1;
+  edgeClass.width = 1;
+  btd.edgeTextureClasses.push_back(edgeClass);
+
+  map::BlendTileInfo info;
+  info.blendNdx = static_cast<int32_t>(2 << 2);
+  info.horiz = 1;
+  info.customBlendEdgeClass = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  constexpr uint32_t edgeLayerBase = 10;
+  auto cells = buildCellBlendBuffer(btd, edgeLayerBase);
+  ASSERT_EQ(cells.size(), 1u);
+
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::CustomEdge));
+  EXPECT_EQ(cells[0].blendQuadrant, edgeLayerBase + 5u);
+}
+
+TEST_F(TerrainBlendDataTest, CustomEdgeLayerIndexComputedFromEdgeClassFirstTile) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::TextureClass edgeClass0;
+  edgeClass0.name = "EdgeA";
+  edgeClass0.firstTile = 0;
+  edgeClass0.numTiles = 2;
+  edgeClass0.width = 1;
+  btd.edgeTextureClasses.push_back(edgeClass0);
+
+  map::TextureClass edgeClass1;
+  edgeClass1.name = "EdgeB";
+  edgeClass1.firstTile = 2;
+  edgeClass1.numTiles = 1;
+  edgeClass1.width = 1;
+  btd.edgeTextureClasses.push_back(edgeClass1);
+
+  map::BlendTileInfo info;
+  info.blendNdx = 0;
+  info.horiz = 1;
+  info.customBlendEdgeClass = 1;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  constexpr uint32_t edgeLayerBase = 20;
+  auto cells = buildCellBlendBuffer(btd, edgeLayerBase);
+  ASSERT_EQ(cells.size(), 1u);
+
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::CustomEdge));
+  EXPECT_EQ(cells[0].blendQuadrant, edgeLayerBase + 2u);
+}
+
+TEST_F(TerrainBlendDataTest, CustomEdgeNotSetWhenEdgeClassIndexOutOfBounds) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::BlendTileInfo info;
+  info.blendNdx = static_cast<int32_t>(3 << 2);
+  info.horiz = 1;
+  info.customBlendEdgeClass = 99;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd, 0);
+  ASSERT_EQ(cells.size(), 1u);
+
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Horizontal));
+}
+
+TEST_F(TerrainBlendDataTest, NoCustomEdgeWhenEdgeClassIsMinusOne) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::BlendTileInfo info;
+  info.blendNdx = static_cast<int32_t>(2 << 2);
+  info.vert = 1;
+  info.customBlendEdgeClass = -1;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd, 0);
+  ASSERT_EQ(cells.size(), 1u);
+
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Vertical));
+}
+
+TEST_F(TerrainBlendDataTest, ExtraBlendAlsoSupportsCustomEdge) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::TextureClass edgeClass;
+  edgeClass.name = "EdgeTex";
+  edgeClass.firstTile = 3;
+  edgeClass.numTiles = 1;
+  edgeClass.width = 1;
+  btd.edgeTextureClasses.push_back(edgeClass);
+
+  map::BlendTileInfo blendInfo;
+  blendInfo.blendNdx = 0;
+  blendInfo.horiz = 1;
+  blendInfo.customBlendEdgeClass = -1;
+  btd.blendTileInfos.push_back(blendInfo);
+
+  map::BlendTileInfo extraInfo;
+  extraInfo.blendNdx = 0;
+  extraInfo.vert = 1;
+  extraInfo.customBlendEdgeClass = 0;
+  btd.blendTileInfos.push_back(extraInfo);
+
+  btd.blendTileNdxes[0] = 1;
+  btd.extraBlendTileNdxes[0] = 2;
+
+  constexpr uint32_t edgeLayerBase = 15;
+  auto cells = buildCellBlendBuffer(btd, edgeLayerBase);
+  ASSERT_EQ(cells.size(), 1u);
+
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Horizontal));
+  EXPECT_EQ(cells[0].extraDirection, static_cast<uint8_t>(BlendDirectionEncoding::CustomEdge));
+  EXPECT_EQ(cells[0].extraQuadrant, edgeLayerBase + 3u);
+}
+
+TEST_F(TerrainBlendDataTest, DefaultEdgeTileLayerBaseIsZero) {
+  auto btd = makeSimpleBlendTileData(1);
+
+  map::TextureClass edgeClass;
+  edgeClass.name = "EdgeTex";
+  edgeClass.firstTile = 7;
+  edgeClass.numTiles = 1;
+  edgeClass.width = 1;
+  btd.edgeTextureClasses.push_back(edgeClass);
+
+  map::BlendTileInfo info;
+  info.blendNdx = 0;
+  info.horiz = 1;
+  info.customBlendEdgeClass = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::CustomEdge));
+  EXPECT_EQ(cells[0].blendQuadrant, 0u + 7u);
+}
+
 TEST_F(TerrainBlendDataTest, AllDirectionsEncodedDistinctly) {
   auto btd = makeSimpleBlendTileData(12);
 

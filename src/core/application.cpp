@@ -689,6 +689,21 @@ void Application::loadMapFile(const std::filesystem::path &path) {
       auto tiles = terrainResourceManager_.extractTilesForTextureClasses(
           loadedMap_->blendTiles.textureClasses, bigArchiveManager_, &tileError);
 
+      // Phase 5.5: extract edge tiles and append after base tiles.
+      // edgeTileLayerBase records where in the combined GPU array edge tiles begin.
+      uint32_t edgeTileLayerBase = static_cast<uint32_t>(tiles.size());
+      if (!loadedMap_->blendTiles.edgeTextureClasses.empty()) {
+        std::string edgeError;
+        auto edgeTiles = terrainResourceManager_.extractTilesForTextureClasses(
+            loadedMap_->blendTiles.edgeTextureClasses, bigArchiveManager_, &edgeError);
+        for (auto &t : edgeTiles) {
+          tiles.push_back(std::move(t));
+        }
+        if (!edgeError.empty() && tileError.empty()) {
+          tileError = edgeError;
+        }
+      }
+
       auto tileArrayData = terrainResourceManager_.buildTileArrayData(tiles);
       auto tileUVs = terrain::computeTileUVTable(loadedMap_->blendTiles.textureClasses);
 
@@ -698,7 +713,8 @@ void Application::loadMapFile(const std::filesystem::path &path) {
 
       uint32_t mapWidth = static_cast<uint32_t>(loadedMap_->heightMap.width - 1);
       uint32_t mapHeight = static_cast<uint32_t>(loadedMap_->heightMap.height - 1);
-      terrainRenderable_.uploadBlendData(context_, loadedMap_->blendTiles, mapWidth, mapHeight, 2);
+      terrainRenderable_.uploadBlendData(context_, loadedMap_->blendTiles, mapWidth, mapHeight, 2,
+                                         edgeTileLayerBase);
 
       if (!tileError.empty()) {
         console_->warning("Some terrain textures missing: " + tileError);
