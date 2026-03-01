@@ -18,6 +18,7 @@
 #include "render/lighting_state.hpp"
 #include "render/terrain/terrain_atlas.hpp"
 #include "render/terrain/terrain_mesh.hpp"
+#include "render/terrain/terrain_resource_manager.hpp"
 
 namespace w3d::gfx {
 class VulkanContext;
@@ -91,6 +92,11 @@ public:
 
   void initPipelineWithAtlas(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
                              const TerrainAtlasData &atlasData, uint32_t frameCount);
+
+  // Phase 1.4: Initialize pipeline with a real GPU texture array built from extracted tiles.
+  // Creates a VkImage array with one layer per 64x64 tile, with mipmaps.
+  void initPipelineWithTileArray(gfx::VulkanContext &context, gfx::TextureManager &textureManager,
+                                 const TileArrayData &tileArrayData, uint32_t frameCount);
 
   void updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer, vk::DeviceSize uboSize);
 

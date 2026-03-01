@@ -126,6 +126,31 @@ void TerrainRenderable::initPipelineWithAtlas(gfx::VulkanContext &context,
   }
 }
 
+void TerrainRenderable::initPipelineWithTileArray(gfx::VulkanContext &context,
+                                                  gfx::TextureManager &textureManager,
+                                                  const TileArrayData &tileArrayData,
+                                                  uint32_t frameCount) {
+  pipeline_.create(context, gfx::PipelineCreateInfo::terrain());
+  descriptorManager_.create(context, pipeline_.descriptorSetLayout(), frameCount);
+
+  if (tileArrayData.isValid()) {
+    atlasTextureIndex_ = textureManager.createTextureArray(
+        "terrain_tile_array", tileArrayData.tileSize, tileArrayData.tileSize,
+        tileArrayData.layerCount, tileArrayData.layers);
+
+    const auto &arrayTex = textureManager.texture(atlasTextureIndex_);
+    for (uint32_t i = 0; i < frameCount; ++i) {
+      descriptorManager_.updateTexture(i, arrayTex.view, arrayTex.sampler);
+    }
+    pushConstant_.useTexture = 1u;
+  } else {
+    const auto &defaultTex = textureManager.texture(0);
+    for (uint32_t i = 0; i < frameCount; ++i) {
+      descriptorManager_.updateTexture(i, defaultTex.view, defaultTex.sampler);
+    }
+  }
+}
+
 void TerrainRenderable::updateDescriptors(uint32_t frameIndex, vk::Buffer uniformBuffer,
                                           vk::DeviceSize uboSize) {
   descriptorManager_.updateUniformBuffer(frameIndex, uniformBuffer, uboSize);
