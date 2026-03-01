@@ -141,37 +141,18 @@ TerrainMeshData generateTerrainMesh(const map::HeightMap &heightMap, int32_t chu
 
 namespace {
 
-glm::vec2 cliffAtlasUV(const map::CliffInfo &cliff, int32_t cornerIdx,
-                       const std::vector<TileUV> &tileUVs) {
-  if (cliff.tileIndex < 0 || static_cast<size_t>(cliff.tileIndex) >= tileUVs.size()) {
-    return {0.0f, 0.0f};
-  }
-
-  const TileUV &tile = tileUVs[static_cast<size_t>(cliff.tileIndex)];
-
-  float localU = 0.0f;
-  float localV = 0.0f;
+glm::vec2 cliffTileUV(const map::CliffInfo &cliff, int32_t cornerIdx) {
   switch (cornerIdx) {
   case 0:
-    localU = cliff.u0;
-    localV = cliff.v0;
-    break;
+    return {cliff.u0, cliff.v0};
   case 1:
-    localU = cliff.u1;
-    localV = cliff.v1;
-    break;
+    return {cliff.u1, cliff.v1};
   case 2:
-    localU = cliff.u2;
-    localV = cliff.v2;
-    break;
+    return {cliff.u2, cliff.v2};
   case 3:
   default:
-    localU = cliff.u3;
-    localV = cliff.v3;
-    break;
+    return {cliff.u3, cliff.v3};
   }
-
-  return {tile.u + localU * tile.uSize, tile.v + localV * tile.vSize};
 }
 
 } // namespace
@@ -229,7 +210,7 @@ TerrainChunk generateChunkFromBlendData(const map::HeightMap &heightMap,
 
         if (isCliff) {
           const auto &cliff = blendTileData.cliffInfos[static_cast<size_t>(cliffNdx - 1)];
-          vert.atlasCoord = cliffAtlasUV(cliff, corner, tileUVs);
+          vert.atlasCoord = cliffTileUV(cliff, corner);
         } else {
           float localU = static_cast<float>(vx - cx) * cellTileUV.uSize;
           float localV = static_cast<float>(vy - cy) * cellTileUV.vSize;

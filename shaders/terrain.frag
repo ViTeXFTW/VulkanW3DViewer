@@ -190,9 +190,15 @@ void main() {
     vec2 cellFrac = vec2(fract(cellX), fract(cellZ));
 
     uint baseTile  = getCellBaseTile(cellIndex);
-    uint baseQuad  = getCellBaseQuadrant(cellIndex);
-    vec2 baseUV    = quadrantUV(cellFrac, baseQuad);
-    baseColor      = texture(tileTextures, vec3(baseUV, float(baseTile))).rgb;
+    uint cellFlags = getCellFlags(cellIndex);
+    vec2 baseUV;
+    if ((cellFlags & CELL_FLAG_IS_CLIFF) != 0u) {
+      baseUV = fragAtlasCoord;
+    } else {
+      uint baseQuad = getCellBaseQuadrant(cellIndex);
+      baseUV = quadrantUV(cellFrac, baseQuad);
+    }
+    baseColor = texture(tileTextures, vec3(baseUV, float(baseTile))).rgb;
 
     uint blendTile = getCellBlendTile(cellIndex);
     uint blendDir  = getCellBlendDir(cellIndex);

@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "render/terrain/terrain_mesh.hpp"
 
 #include <gtest/gtest.h>
@@ -268,5 +270,168 @@ TEST_F(TerrainMeshTest, TotalBoundsContainAllChunkBounds) {
     EXPECT_LE(chunk.bounds.max.x, meshData.totalBounds.max.x);
     EXPECT_LE(chunk.bounds.max.y, meshData.totalBounds.max.y);
     EXPECT_LE(chunk.bounds.max.z, meshData.totalBounds.max.z);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3.5 – Cliff UV override tests
+// Verify that cliff cells store raw tile-local UV in atlasCoord (not atlas-
+// scaled), so the splatmap shader can use fragAtlasCoord directly with the
+// texture array layer index from the SSBO.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+map::BlendTileData makeBlendTileDataWithCliff(int32_t width, int32_t height, int32_t cliffCellX,
+                                              int32_t cliffCellY, float u0, float v0, float u1,
+                                              float v1, float u2, float v2, float u3, float v3) {
+  int32_t cellCount = width * height;
+  map::BlendTileData btd;
+  btd.dataSize = cellCount;
+  btd.tileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.blendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.extraBlendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cliffInfoNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cellCliffState.resize(static_cast<size_t>(cellCount), 0);
+
+  map::CliffInfo cliff;
+  cliff.tileIndex = 0;
+  cliff.u0 = u0;
+  cliff.v0 = v0;
+  cliff.u1 = u1;
+  cliff.v1 = v1;
+  cliff.u2 = u2;
+  cliff.v2 = v2;
+  cliff.u3 = u3;
+  cliff.v3 = v3;
+  btd.cliffInfos.push_back(cliff);
+
+  int32_t cellIdx = cliffCellY * width + cliffCellX;
+  btd.cliffInfoNdxes[static_cast<size_t>(cellIdx)] = 1;
+
+  return btd;
+}
+
+} // namespace
+
+TEST_F(TerrainMeshTest, CliffCellAtlasCoordsAreRawTileLocalUV) {
+  auto hm = createFlatHeightMap(3, 3, 100);
+
+  const float cu0 = 0.1f, cv0 = 0.2f;
+  const float cu1 = 0.9f, cv1 = 0.2f;
+  const float cu2 = 0.1f, cv2 = 0.8f;
+  const float cu3 = 0.9f, cv3 = 0.8f;
+
+  auto btd = makeBlendTileDataWithCliff(2, 2, 0, 0, cu0, cv0, cu1, cv1, cu2, cv2, cu3, cv3);
+
+  std::vector<TileUV> tileUVs;
+  tileUVs.push_back({0.5f, 0.25f, 0.0625f, 0.0625f});
+
+  auto meshData = generateTerrainMeshFromBlendData(hm, btd, tileUVs, 32);
+  ASSERT_FALSE(meshData.chunks.empty());
+
+  const auto &chunk = meshData.chunks[0];
+  ASSERT_GE(chunk.vertices.size(), 4u);
+
+  EXPECT_NEAR(chunk.vertices[0].atlasCoord.x, cu0, 1e-5f);
+  EXPECT_NEAR(chunk.vertices[0].atlasCoord.y, cv0, 1e-5f);
+
+  EXPECT_NEAR(chunk.vertices[1].atlasCoord.x, cu1, 1e-5f);
+  EXPECT_NEAR(chunk.vertices[1].atlasCoord.y, cv1, 1e-5f);
+
+  EXPECT_NEAR(chunk.vertices[2].atlasCoord.x, cu2, 1e-5f);
+  EXPECT_NEAR(chunk.vertices[2].atlasCoord.y, cv2, 1e-5f);
+
+  EXPECT_NEAR(chunk.vertices[3].atlasCoord.x, cu3, 1e-5f);
+  EXPECT_NEAR(chunk.vertices[3].atlasCoord.y, cv3, 1e-5f);
+}
+
+TEST_F(TerrainMeshTest, CliffCellAtlasCoordsAreNotAtlasScaled) {
+  auto hm = createFlatHeightMap(3, 3, 100);
+
+  const float cu0 = 0.3f, cv0 = 0.4f;
+  auto btd = makeBlendTileDataWithCliff(2, 2, 0, 0, cu0, cv0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+  std::vector<TileUV> tileUVs;
+  tileUVs.push_back({0.5f, 0.25f, 0.0625f, 0.0625f});
+
+  auto meshData = generateTerrainMeshFromBlendData(hm, btd, tileUVs, 32);
+  ASSERT_FALSE(meshData.chunks.empty());
+
+  const auto &chunk = meshData.chunks[0];
+  ASSERT_GE(chunk.vertices.size(), 1u);
+
+  EXPECT_NEAR(chunk.vertices[0].atlasCoord.x, cu0, 1e-5f);
+  EXPECT_NEAR(chunk.vertices[0].atlasCoord.y, cv0, 1e-5f);
+
+  float atlasScaledU = 0.5f + cu0 * 0.0625f;
+  float atlasScaledV = 0.25f + cv0 * 0.0625f;
+  EXPECT_GT(std::abs(chunk.vertices[0].atlasCoord.x - atlasScaledU), 1e-5f);
+  EXPECT_GT(std::abs(chunk.vertices[0].atlasCoord.y - atlasScaledV), 1e-5f);
+}
+
+TEST_F(TerrainMeshTest, NonCliffCellAtlasCoordsAreNotRawCliffUV) {
+  auto hm = createFlatHeightMap(3, 3, 100);
+
+  int32_t cellCount = 2 * 2;
+  map::BlendTileData btd;
+  btd.dataSize = cellCount;
+  btd.tileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.blendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.extraBlendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cliffInfoNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cellCliffState.resize(static_cast<size_t>(cellCount), 0);
+
+  std::vector<TileUV> tileUVs;
+  tileUVs.push_back({0.0f, 0.0f, 0.5f, 0.5f});
+
+  auto meshData = generateTerrainMeshFromBlendData(hm, btd, tileUVs, 32);
+  ASSERT_FALSE(meshData.chunks.empty());
+
+  const auto &chunk = meshData.chunks[0];
+  ASSERT_GE(chunk.vertices.size(), 4u);
+
+  EXPECT_FLOAT_EQ(chunk.vertices[0].atlasCoord.x, 0.0f);
+  EXPECT_FLOAT_EQ(chunk.vertices[0].atlasCoord.y, 0.0f);
+}
+
+TEST_F(TerrainMeshTest, CliffCellDoesNotAffectNeighbouringCells) {
+  auto hm = createFlatHeightMap(4, 4, 100);
+
+  int32_t cellCount = 3 * 3;
+  map::BlendTileData btd;
+  btd.dataSize = cellCount;
+  btd.tileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.blendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.extraBlendTileNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cliffInfoNdxes.resize(static_cast<size_t>(cellCount), 0);
+  btd.cellCliffState.resize(static_cast<size_t>(cellCount), 0);
+
+  map::CliffInfo cliff;
+  cliff.tileIndex = 0;
+  cliff.u0 = 0.7f;
+  cliff.v0 = 0.8f;
+  cliff.u1 = 0.7f;
+  cliff.v1 = 0.8f;
+  cliff.u2 = 0.7f;
+  cliff.v2 = 0.8f;
+  cliff.u3 = 0.7f;
+  cliff.v3 = 0.8f;
+  btd.cliffInfos.push_back(cliff);
+  btd.cliffInfoNdxes[0] = 1;
+
+  std::vector<TileUV> tileUVs;
+  tileUVs.push_back({0.0f, 0.0f, 1.0f, 1.0f});
+
+  auto meshData = generateTerrainMeshFromBlendData(hm, btd, tileUVs, 32);
+  ASSERT_FALSE(meshData.chunks.empty());
+
+  const auto &chunk = meshData.chunks[0];
+  ASSERT_GE(chunk.vertices.size(), 16u);
+
+  for (size_t i = 4; i < chunk.vertices.size(); ++i) {
+    bool isCliffUV = (std::abs(chunk.vertices[i].atlasCoord.x - 0.7f) < 1e-5f &&
+                      std::abs(chunk.vertices[i].atlasCoord.y - 0.8f) < 1e-5f);
+    EXPECT_FALSE(isCliffUV) << "Vertex " << i << " should not have cliff UV";
   }
 }

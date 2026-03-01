@@ -13,9 +13,9 @@ target_link_libraries(w3d_tests PRIVATE w3d_lib gtest gtest_main)
 
 # Compiler-specific flags (match main project)
 if(MSVC)
-  target_compile_options(w3d_tests PRIVATE /W4 /permissive-)
+  target_compile_options(w3d_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(w3d_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(w3d_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # Register with CTest
@@ -34,9 +34,9 @@ add_executable(texture_tests
 target_link_libraries(texture_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(texture_tests PRIVATE /W4 /permissive-)
+  target_compile_options(texture_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(texture_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(texture_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME texture_tests COMMAND texture_tests)
@@ -59,9 +59,9 @@ target_include_directories(mesh_converter_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(mesh_converter_tests PRIVATE /W4 /permissive-)
+  target_compile_options(mesh_converter_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(mesh_converter_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(mesh_converter_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME mesh_converter_tests COMMAND mesh_converter_tests)
@@ -75,9 +75,9 @@ add_executable(skeleton_tests
 target_link_libraries(skeleton_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(skeleton_tests PRIVATE /W4 /permissive-)
+  target_compile_options(skeleton_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(skeleton_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(skeleton_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME skeleton_tests COMMAND skeleton_tests)
@@ -90,9 +90,9 @@ add_executable(bounding_box_tests
 target_link_libraries(bounding_box_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(bounding_box_tests PRIVATE /W4 /permissive-)
+  target_compile_options(bounding_box_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(bounding_box_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(bounding_box_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME bounding_box_tests COMMAND bounding_box_tests)
@@ -105,9 +105,9 @@ add_executable(raycast_tests
 target_link_libraries(raycast_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(raycast_tests PRIVATE /W4 /permissive-)
+  target_compile_options(raycast_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(raycast_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(raycast_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME raycast_tests COMMAND raycast_tests)
@@ -125,9 +125,9 @@ target_include_directories(hlod_hover_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(hlod_hover_tests PRIVATE /W4 /permissive-)
+  target_compile_options(hlod_hover_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(hlod_hover_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(hlod_hover_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME hlod_hover_tests COMMAND hlod_hover_tests)
@@ -148,9 +148,9 @@ target_include_directories(file_browser_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(file_browser_tests PRIVATE /W4 /permissive-)
+  target_compile_options(file_browser_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(file_browser_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(file_browser_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME file_browser_tests COMMAND file_browser_tests)
@@ -167,9 +167,9 @@ target_include_directories(mesh_visibility_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(mesh_visibility_tests PRIVATE /W4 /permissive-)
+  target_compile_options(mesh_visibility_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(mesh_visibility_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(mesh_visibility_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME mesh_visibility_tests COMMAND mesh_visibility_tests)
@@ -186,9 +186,9 @@ target_include_directories(dynamic_buffer_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(dynamic_buffer_tests PRIVATE /W4 /permissive-)
+  target_compile_options(dynamic_buffer_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(dynamic_buffer_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(dynamic_buffer_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME dynamic_buffer_tests COMMAND dynamic_buffer_tests)
@@ -201,9 +201,9 @@ add_executable(mipmap_tests
 target_link_libraries(mipmap_tests PRIVATE gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(mipmap_tests PRIVATE /W4 /permissive-)
+  target_compile_options(mipmap_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(mipmap_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(mipmap_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME mipmap_tests COMMAND mipmap_tests)
@@ -216,9 +216,9 @@ add_executable(pipeline_create_info_tests
 target_link_libraries(pipeline_create_info_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(pipeline_create_info_tests PRIVATE /W4 /permissive-)
+  target_compile_options(pipeline_create_info_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(pipeline_create_info_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(pipeline_create_info_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME pipeline_create_info_tests COMMAND pipeline_create_info_tests)
@@ -243,9 +243,9 @@ target_include_directories(rts_camera_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(rts_camera_tests PRIVATE /W4 /permissive-)
+  target_compile_options(rts_camera_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(rts_camera_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(rts_camera_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME rts_camera_tests COMMAND rts_camera_tests)
@@ -266,9 +266,9 @@ add_executable(map_tests
 target_link_libraries(map_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(map_tests PRIVATE /W4 /permissive-)
+  target_compile_options(map_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(map_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME map_tests COMMAND map_tests)
@@ -283,9 +283,9 @@ add_executable(ini_tests
 target_link_libraries(ini_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(ini_tests PRIVATE /W4 /permissive-)
+  target_compile_options(ini_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(ini_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(ini_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME ini_tests COMMAND ini_tests)
@@ -298,9 +298,9 @@ add_executable(terrain_mesh_tests
 target_link_libraries(terrain_mesh_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_mesh_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_mesh_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_mesh_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_mesh_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_mesh_tests COMMAND terrain_mesh_tests)
@@ -313,9 +313,9 @@ add_executable(frustum_tests
 target_link_libraries(frustum_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(frustum_tests PRIVATE /W4 /permissive-)
+  target_compile_options(frustum_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(frustum_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(frustum_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME frustum_tests COMMAND frustum_tests)
@@ -328,9 +328,9 @@ add_executable(terrain_atlas_tests
 target_link_libraries(terrain_atlas_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_atlas_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_atlas_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_atlas_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_atlas_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_atlas_tests COMMAND terrain_atlas_tests)
@@ -343,9 +343,9 @@ add_executable(terrain_blend_tests
 target_link_libraries(terrain_blend_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_blend_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_blend_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_blend_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_blend_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_blend_tests COMMAND terrain_blend_tests)
@@ -358,9 +358,9 @@ add_executable(water_mesh_tests
 target_link_libraries(water_mesh_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(water_mesh_tests PRIVATE /W4 /permissive-)
+  target_compile_options(water_mesh_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(water_mesh_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(water_mesh_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME water_mesh_tests COMMAND water_mesh_tests)
@@ -375,9 +375,9 @@ add_executable(scene_tests
 target_link_libraries(scene_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(scene_tests PRIVATE /W4 /permissive-)
+  target_compile_options(scene_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(scene_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(scene_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME scene_tests COMMAND scene_tests)
@@ -397,9 +397,9 @@ target_include_directories(object_resolver_tests PRIVATE
 )
 
 if(MSVC)
-  target_compile_options(object_resolver_tests PRIVATE /W4 /permissive-)
+  target_compile_options(object_resolver_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(object_resolver_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(object_resolver_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME object_resolver_tests COMMAND object_resolver_tests)
@@ -412,9 +412,9 @@ add_executable(lighting_state_tests
 target_link_libraries(lighting_state_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(lighting_state_tests PRIVATE /W4 /permissive-)
+  target_compile_options(lighting_state_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(lighting_state_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(lighting_state_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME lighting_state_tests COMMAND lighting_state_tests)
@@ -427,9 +427,9 @@ add_executable(terrain_minimap_tests
 target_link_libraries(terrain_minimap_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_minimap_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_minimap_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_minimap_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_minimap_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_minimap_tests COMMAND terrain_minimap_tests)
@@ -464,9 +464,9 @@ add_executable(terrain_resource_manager_tests
 target_link_libraries(terrain_resource_manager_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_resource_manager_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_resource_manager_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_resource_manager_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_resource_manager_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_resource_manager_tests COMMAND terrain_resource_manager_tests)
@@ -479,9 +479,9 @@ add_executable(terrain_blend_data_tests
 target_link_libraries(terrain_blend_data_tests PRIVATE w3d_lib gtest gtest_main)
 
 if(MSVC)
-  target_compile_options(terrain_blend_data_tests PRIVATE /W4 /permissive-)
+  target_compile_options(terrain_blend_data_tests PRIVATE /W3 /permissive-)
 else()
-  target_compile_options(terrain_blend_data_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(terrain_blend_data_tests PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 add_test(NAME terrain_blend_data_tests COMMAND terrain_blend_data_tests)

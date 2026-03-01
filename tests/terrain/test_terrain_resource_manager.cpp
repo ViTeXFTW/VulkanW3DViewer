@@ -83,10 +83,12 @@ End
 )";
 
   std::string error;
-  manager->loadTerrainTypesFromINI(ini1, &error);
+  bool success = manager->loadTerrainTypesFromINI(ini1, &error);
+  EXPECT_TRUE(success);
   EXPECT_EQ(manager->getTerrainTypes().size(), 1u);
 
-  manager->loadTerrainTypesFromINI(ini2, &error);
+  success = manager->loadTerrainTypesFromINI(ini2, &error);
+  EXPECT_TRUE(success);
   EXPECT_EQ(manager->getTerrainTypes().size(), 1u);
 
   auto *terrain = manager->getTerrainTypes().findByName("TEDesert2");
@@ -117,7 +119,8 @@ End
 )";
 
   std::string error;
-  manager->loadTerrainTypesFromINI(ini, &error);
+  bool success = manager->loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
   EXPECT_TRUE(manager->isInitialized());
   EXPECT_EQ(manager->getTerrainTypes().size(), 1u);
 
@@ -168,7 +171,8 @@ End
 )";
 
   std::string error;
-  manager->loadTerrainTypesFromINI(ini, &error);
+  bool success = manager->loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   auto path = manager->resolveTexturePath("TEDesert1", &error);
 
@@ -185,7 +189,8 @@ End
 )";
 
   std::string error;
-  manager->loadTerrainTypesFromINI(ini, &error);
+  bool success = manager->loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   auto path = manager->resolveTexturePath("NonExistent", &error);
 
@@ -314,7 +319,8 @@ TEST_F(TgaTileSplitTest, SplitTgaIntoTilesProducesCorrectCount) {
 
   TgaImage img;
   std::string error;
-  manager.decodeTgaFromMemory(tga, img, &error);
+  bool success = manager.decodeTgaFromMemory(tga, img, &error);
+  EXPECT_TRUE(success);
 
   auto tiles = manager.splitImageIntoTiles(img, 64);
 
@@ -331,7 +337,8 @@ TEST_F(TgaTileSplitTest, SplitTgaIntoTilesProducesCorrectCountFor64x64) {
 
   TgaImage img;
   std::string error;
-  manager.decodeTgaFromMemory(tga, img, &error);
+  bool success = manager.decodeTgaFromMemory(tga, img, &error);
+  EXPECT_TRUE(success);
 
   auto tiles = manager.splitImageIntoTiles(img, 64);
 
@@ -345,7 +352,8 @@ TEST_F(TgaTileSplitTest, SplitTgaIntoTilesProducesCorrectCountFor256x256) {
 
   TgaImage img;
   std::string error;
-  manager.decodeTgaFromMemory(tga, img, &error);
+  bool success = manager.decodeTgaFromMemory(tga, img, &error);
+  EXPECT_TRUE(success);
 
   auto tiles = manager.splitImageIntoTiles(img, 64);
 
@@ -376,7 +384,8 @@ TEST_F(TgaTileSplitTest, SplitTgaTilesContainCorrectPixels) {
 
   TgaImage img;
   std::string error;
-  manager.decodeTgaFromMemory(tga, img, &error);
+  bool success = manager.decodeTgaFromMemory(tga, img, &error);
+  EXPECT_TRUE(success);
 
   auto tiles = manager.splitImageIntoTiles(img, 64);
   ASSERT_EQ(tiles.size(), 2u);
@@ -416,7 +425,8 @@ TEST_F(TgaTileSplitTest, SplitReturnsEmptyForZeroTileSize) {
 
 TEST_F(TgaTileSplitTest, ExtractTilesForTextureClassesReturnsEmptyWhenNoTypes) {
   std::string error;
-  manager.loadTerrainTypesFromINI("", &error);
+  bool success = manager.loadTerrainTypesFromINI("", &error);
+  EXPECT_TRUE(success);
 
   std::vector<map::TextureClass> textureClasses;
   BigArchiveManager bigManager;
@@ -434,7 +444,8 @@ Terrain TEDesert1
 End
 )";
   std::string error;
-  manager.loadTerrainTypesFromINI(ini, &error);
+  bool success = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   map::TextureClass tc;
   tc.name = "NonExistentTexture";
@@ -458,7 +469,8 @@ Terrain TEDesert1
 End
 )";
   std::string error;
-  manager.loadTerrainTypesFromINI(ini, &error);
+  bool success = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   map::TextureClass tc;
   tc.name = "TEDesert1";
@@ -480,7 +492,8 @@ Terrain TEDesert1
 End
 )";
   std::string error;
-  manager.loadTerrainTypesFromINI(ini, &error);
+  bool success = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   map::TextureClass tc;
   tc.name = "TEDesert1";
@@ -620,7 +633,8 @@ Terrain RockA
 End
 )";
   std::string error;
-  manager.loadTerrainTypesFromINI(ini, &error);
+  bool success = manager.loadTerrainTypesFromINI(ini, &error);
+  EXPECT_TRUE(success);
 
   // Manually synthesise the tiles that extraction would produce (64x64 RGBA each)
   std::vector<std::vector<uint8_t>> extractedTiles;
