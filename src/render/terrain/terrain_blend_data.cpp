@@ -6,7 +6,6 @@ namespace w3d::terrain {
 
 BlendDirectionEncoding encodeBlendDirection(const map::BlendTileInfo &info) {
   bool inverted = (info.inverted & map::INVERTED_MASK) != 0;
-  bool flipped = (info.inverted & map::FLIPPED_MASK) != 0;
 
   if (info.horiz) {
     return inverted ? BlendDirectionEncoding::HorizontalInv : BlendDirectionEncoding::Horizontal;
@@ -15,20 +14,20 @@ BlendDirectionEncoding encodeBlendDirection(const map::BlendTileInfo &info) {
     return inverted ? BlendDirectionEncoding::VerticalInv : BlendDirectionEncoding::Vertical;
   }
   if (info.rightDiagonal) {
+    if (info.longDiagonal) {
+      return inverted ? BlendDirectionEncoding::LongDiagonalRightInv
+                      : BlendDirectionEncoding::LongDiagonalRight;
+    }
     return inverted ? BlendDirectionEncoding::DiagonalRightInv
                     : BlendDirectionEncoding::DiagonalRight;
   }
   if (info.leftDiagonal) {
+    if (info.longDiagonal) {
+      return inverted ? BlendDirectionEncoding::LongDiagonalLeftInv
+                      : BlendDirectionEncoding::LongDiagonalLeft;
+    }
     return inverted ? BlendDirectionEncoding::DiagonalLeftInv
                     : BlendDirectionEncoding::DiagonalLeft;
-  }
-  if (info.longDiagonal) {
-    if (flipped) {
-      return inverted ? BlendDirectionEncoding::LongDiagonalAltInv
-                      : BlendDirectionEncoding::LongDiagonalAlt;
-    }
-    return inverted ? BlendDirectionEncoding::LongDiagonalInv
-                    : BlendDirectionEncoding::LongDiagonal;
   }
 
   return BlendDirectionEncoding::None;

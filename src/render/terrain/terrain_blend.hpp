@@ -19,10 +19,11 @@ enum class BlendDirection : int32_t {
   DiagonalRightInv = 5,
   DiagonalLeft = 6,
   DiagonalLeftInv = 7,
-  LongDiagonal = 8,
-  LongDiagonalInv = 9,
-  LongDiagonalAlt = 10,
-  LongDiagonalAltInv = 11,
+  // "Long" diagonals: rightDiagonal+longDiagonal or leftDiagonal+longDiagonal combos
+  LongDiagonalRight = 8,
+  LongDiagonalRightInv = 9,
+  LongDiagonalLeft = 10,
+  LongDiagonalLeftInv = 11,
 };
 
 struct BlendPattern {

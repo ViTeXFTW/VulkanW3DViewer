@@ -30,28 +30,28 @@ BlendPattern generateBlendPattern(BlendDirection direction) {
         value = 1.0f - ny;
         break;
       case BlendDirection::DiagonalRight:
-        value = std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
+        value = std::clamp(nx + ny - 1.0f, 0.0f, 1.0f);
         break;
       case BlendDirection::DiagonalRightInv:
-        value = 1.0f - std::clamp((nx + ny) * 0.5f, 0.0f, 1.0f);
+        value = std::clamp(nx - ny, 0.0f, 1.0f);
         break;
       case BlendDirection::DiagonalLeft:
-        value = std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
+        value = std::clamp(ny - nx, 0.0f, 1.0f);
         break;
       case BlendDirection::DiagonalLeftInv:
-        value = 1.0f - std::clamp(((1.0f - nx) + ny) * 0.5f, 0.0f, 1.0f);
+        value = std::clamp(1.0f - nx - ny, 0.0f, 1.0f);
         break;
-      case BlendDirection::LongDiagonal:
-        value = std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
+      case BlendDirection::LongDiagonalRight:
+        value = std::clamp(nx + ny, 0.0f, 1.0f);
         break;
-      case BlendDirection::LongDiagonalInv:
-        value = 1.0f - std::clamp((2.0f * nx + ny) / 3.0f, 0.0f, 1.0f);
+      case BlendDirection::LongDiagonalRightInv:
+        value = std::clamp(1.0f + nx - ny, 0.0f, 1.0f);
         break;
-      case BlendDirection::LongDiagonalAlt:
-        value = std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
+      case BlendDirection::LongDiagonalLeft:
+        value = std::clamp(1.0f - nx + ny, 0.0f, 1.0f);
         break;
-      case BlendDirection::LongDiagonalAltInv:
-        value = 1.0f - std::clamp((nx + 2.0f * ny) / 3.0f, 0.0f, 1.0f);
+      case BlendDirection::LongDiagonalLeftInv:
+        value = std::clamp(2.0f - nx - ny, 0.0f, 1.0f);
         break;
       }
 
@@ -75,32 +75,25 @@ std::vector<BlendPattern> generateAllBlendPatterns() {
 }
 
 BlendDirection blendDirectionFromInfo(const map::BlendTileInfo &info) {
+  bool inverted = (info.inverted & map::INVERTED_MASK) != 0;
+
   if (info.horiz != 0) {
-    return (info.inverted & map::INVERTED_MASK) ? BlendDirection::HorizontalInv
-                                                : BlendDirection::Horizontal;
+    return inverted ? BlendDirection::HorizontalInv : BlendDirection::Horizontal;
   }
   if (info.vert != 0) {
-    return (info.inverted & map::INVERTED_MASK) ? BlendDirection::VerticalInv
-                                                : BlendDirection::Vertical;
+    return inverted ? BlendDirection::VerticalInv : BlendDirection::Vertical;
   }
   if (info.rightDiagonal != 0) {
-    return (info.inverted & map::INVERTED_MASK) ? BlendDirection::DiagonalRightInv
-                                                : BlendDirection::DiagonalRight;
+    if (info.longDiagonal != 0) {
+      return inverted ? BlendDirection::LongDiagonalRightInv : BlendDirection::LongDiagonalRight;
+    }
+    return inverted ? BlendDirection::DiagonalRightInv : BlendDirection::DiagonalRight;
   }
   if (info.leftDiagonal != 0) {
-    return (info.inverted & map::INVERTED_MASK) ? BlendDirection::DiagonalLeftInv
-                                                : BlendDirection::DiagonalLeft;
-  }
-  if (info.longDiagonal != 0) {
-    bool alt = (info.inverted & map::FLIPPED_MASK) != 0;
-    bool inv = (info.inverted & map::INVERTED_MASK) != 0;
-    if (alt && inv)
-      return BlendDirection::LongDiagonalAltInv;
-    if (alt)
-      return BlendDirection::LongDiagonalAlt;
-    if (inv)
-      return BlendDirection::LongDiagonalInv;
-    return BlendDirection::LongDiagonal;
+    if (info.longDiagonal != 0) {
+      return inverted ? BlendDirection::LongDiagonalLeftInv : BlendDirection::LongDiagonalLeft;
+    }
+    return inverted ? BlendDirection::DiagonalLeftInv : BlendDirection::DiagonalLeft;
   }
   return BlendDirection::Horizontal;
 }

@@ -45,22 +45,23 @@ layout(std430, set = 0, binding = 2) readonly buffer CellBlendBuffer {
 };
 
 // Blend direction encoding must match BlendDirectionEncoding in terrain_blend_data.hpp
-const uint BLEND_NONE              = 0u;
-const uint BLEND_HORIZ             = 1u;
-const uint BLEND_HORIZ_INV         = 2u;
-const uint BLEND_VERT              = 3u;
-const uint BLEND_VERT_INV          = 4u;
-const uint BLEND_DIAG_R            = 5u;
-const uint BLEND_DIAG_R_INV        = 6u;
-const uint BLEND_DIAG_L            = 7u;
-const uint BLEND_DIAG_L_INV        = 8u;
-const uint BLEND_LONG_DIAG         = 9u;
-const uint BLEND_LONG_DIAG_INV     = 10u;
-const uint BLEND_LONG_DIAG_ALT     = 11u;
-const uint BLEND_LONG_DIAG_ALT_INV = 12u;
+const uint BLEND_NONE                  = 0u;
+const uint BLEND_HORIZ                 = 1u;
+const uint BLEND_HORIZ_INV             = 2u;
+const uint BLEND_VERT                  = 3u;
+const uint BLEND_VERT_INV              = 4u;
+const uint BLEND_DIAG_R                = 5u;
+const uint BLEND_DIAG_R_INV            = 6u;
+const uint BLEND_DIAG_L                = 7u;
+const uint BLEND_DIAG_L_INV            = 8u;
+// Long diagonals: rightDiagonal+longDiagonal or leftDiagonal+longDiagonal
+const uint BLEND_LONG_DIAG_R           = 9u;
+const uint BLEND_LONG_DIAG_R_INV       = 10u;
+const uint BLEND_LONG_DIAG_L           = 11u;
+const uint BLEND_LONG_DIAG_L_INV       = 12u;
 // Phase 5.5: custom blend edge texture -- blendQuadrant holds the GPU layer index of the
 // edge tile whose alpha channel is sampled to drive the blend mask.
-const uint BLEND_CUSTOM_EDGE       = 13u;
+const uint BLEND_CUSTOM_EDGE           = 13u;
 
 const uint CELL_FLAG_IS_CLIFF = 0x01u;
 
@@ -135,18 +136,18 @@ float blendAlpha(uint direction, vec2 uv) {
   float u = uv.x;
   float v = uv.y;
   switch (direction) {
-    case BLEND_HORIZ:         return u;
-    case BLEND_HORIZ_INV:     return 1.0 - u;
-    case BLEND_VERT:          return v;
-    case BLEND_VERT_INV:      return 1.0 - v;
-    case BLEND_DIAG_R:        return clamp((u + v) * 0.5, 0.0, 1.0);
-    case BLEND_DIAG_R_INV:    return clamp(1.0 - (u + v) * 0.5, 0.0, 1.0);
-    case BLEND_DIAG_L:        return clamp(((1.0 - u) + v) * 0.5, 0.0, 1.0);
-    case BLEND_DIAG_L_INV:    return clamp(1.0 - ((1.0 - u) + v) * 0.5, 0.0, 1.0);
-    case BLEND_LONG_DIAG:     return clamp((u + v) * 0.75, 0.0, 1.0);
-    case BLEND_LONG_DIAG_INV: return clamp(1.0 - (u + v) * 0.75, 0.0, 1.0);
-    case BLEND_LONG_DIAG_ALT: return clamp(((1.0 - u) + v) * 0.75, 0.0, 1.0);
-    case BLEND_LONG_DIAG_ALT_INV: return clamp(1.0 - ((1.0 - u) + v) * 0.75, 0.0, 1.0);
+    case BLEND_HORIZ:                 return u;
+    case BLEND_HORIZ_INV:             return 1.0 - u;
+    case BLEND_VERT:                  return v;
+    case BLEND_VERT_INV:              return 1.0 - v;
+    case BLEND_DIAG_R:                return clamp(u + v - 1.0, 0.0, 1.0);
+    case BLEND_DIAG_R_INV:            return clamp(u - v, 0.0, 1.0);
+    case BLEND_DIAG_L:                return clamp(v - u, 0.0, 1.0);
+    case BLEND_DIAG_L_INV:            return clamp(1.0 - u - v, 0.0, 1.0);
+    case BLEND_LONG_DIAG_R:           return clamp(u + v, 0.0, 1.0);
+    case BLEND_LONG_DIAG_R_INV:       return clamp(1.0 + u - v, 0.0, 1.0);
+    case BLEND_LONG_DIAG_L:           return clamp(1.0 - u + v, 0.0, 1.0);
+    case BLEND_LONG_DIAG_L_INV:       return clamp(2.0 - u - v, 0.0, 1.0);
     default: return 0.0;
   }
 }

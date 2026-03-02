@@ -21,10 +21,12 @@ enum class BlendDirectionEncoding : uint8_t {
   DiagonalRightInv = 6,
   DiagonalLeft = 7,
   DiagonalLeftInv = 8,
-  LongDiagonal = 9,
-  LongDiagonalInv = 10,
-  LongDiagonalAlt = 11,
-  LongDiagonalAltInv = 12,
+  // Original engine has 12 alpha tiles: 6 directions x 2 (normal + inverted).
+  // "Long" diagonals are rightDiagonal+longDiagonal or leftDiagonal+longDiagonal combos.
+  LongDiagonalRight = 9,
+  LongDiagonalRightInv = 10,
+  LongDiagonalLeft = 11,
+  LongDiagonalLeftInv = 12,
   // Phase 5.5: custom blend edge texture -- when this value is set, blendQuadrant holds
   // the GPU texture array layer index of the edge tile whose alpha channel drives blending.
   CustomEdge = 13,
