@@ -38,7 +38,7 @@ TEST_F(TerrainAtlasTest, DecodeTileIndexAndQuadrantCombined) {
 
 TEST_F(TerrainAtlasTest, ComputeQuadrantUVTopLeft) {
   TileUV tile{0.0f, 0.0f, 0.5f, 0.5f};
-  auto uv = computeQuadrantUV(tile, 0);
+  auto uv = computeQuadrantUV(tile, 2);
   EXPECT_FLOAT_EQ(uv.u, 0.0f);
   EXPECT_FLOAT_EQ(uv.v, 0.0f);
   EXPECT_FLOAT_EQ(uv.uSize, 0.25f);
@@ -47,7 +47,7 @@ TEST_F(TerrainAtlasTest, ComputeQuadrantUVTopLeft) {
 
 TEST_F(TerrainAtlasTest, ComputeQuadrantUVTopRight) {
   TileUV tile{0.0f, 0.0f, 0.5f, 0.5f};
-  auto uv = computeQuadrantUV(tile, 1);
+  auto uv = computeQuadrantUV(tile, 3);
   EXPECT_FLOAT_EQ(uv.u, 0.25f);
   EXPECT_FLOAT_EQ(uv.v, 0.0f);
   EXPECT_FLOAT_EQ(uv.uSize, 0.25f);
@@ -56,14 +56,14 @@ TEST_F(TerrainAtlasTest, ComputeQuadrantUVTopRight) {
 
 TEST_F(TerrainAtlasTest, ComputeQuadrantUVBottomLeft) {
   TileUV tile{0.0f, 0.0f, 0.5f, 0.5f};
-  auto uv = computeQuadrantUV(tile, 2);
+  auto uv = computeQuadrantUV(tile, 0);
   EXPECT_FLOAT_EQ(uv.u, 0.0f);
   EXPECT_FLOAT_EQ(uv.v, 0.25f);
 }
 
 TEST_F(TerrainAtlasTest, ComputeQuadrantUVBottomRight) {
   TileUV tile{0.0f, 0.0f, 0.5f, 0.5f};
-  auto uv = computeQuadrantUV(tile, 3);
+  auto uv = computeQuadrantUV(tile, 1);
   EXPECT_FLOAT_EQ(uv.u, 0.25f);
   EXPECT_FLOAT_EQ(uv.v, 0.25f);
 }
@@ -127,6 +127,7 @@ TEST_F(TerrainAtlasTest, ComputeTileUVTableMultipleClasses) {
   tc1.numTiles = 3;
 
   map::TextureClass tc2;
+  tc2.firstTile = 3;
   tc2.numTiles = 5;
 
   auto uvs = computeTileUVTable({tc1, tc2}, 2048, 64);
