@@ -3,7 +3,7 @@
 #include <iostream>
 #include <system_error>
 
-#include "core/app_paths.hpp"
+#include "../../platform/app_paths.hpp"
 #include "core/debug.hpp"
 
 #include <bigx/archive.hpp>

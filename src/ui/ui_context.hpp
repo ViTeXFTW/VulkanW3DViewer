@@ -10,17 +10,34 @@
 // Forward declarations to avoid header dependencies
 struct GLFWwindow;
 
+namespace map {
+struct MapFile;
+} // namespace map
+
 namespace w3d {
 
 // Forward declarations
 using gfx::Camera;
 class AnimationPlayer;
 class HLodModel;
+class LightingState;
 class RenderableMesh;
 class SkeletonPose;
 struct HoverState;
 struct Settings;
 struct W3DFile;
+
+namespace gfx {
+class RTSCamera;
+} // namespace gfx
+
+namespace terrain {
+class TerrainRenderable;
+} // namespace terrain
+
+namespace water {
+class WaterRenderable;
+} // namespace water
 
 /// Shared UI context passed to all windows and panels.
 /// Contains references to application state that UI components need to read/modify.
@@ -82,6 +99,12 @@ struct UIContext {
   /// Callback to request model browser (for BIG archive models)
   std::function<void()> onOpenModelBrowser;
 
+  /// Callback to open a map file
+  std::function<void()> onOpenMapFile;
+
+  /// Callback to open the map browser
+  std::function<void()> onOpenMapBrowser;
+
   /// Callback to clear cache and rescan BIG archives
   std::function<void()> onClearAndRescanCache;
 
@@ -98,10 +121,38 @@ struct UIContext {
   /// Number of models found in archives
   size_t availableModelCount = 0;
 
+  /// Number of maps found in archives
+  size_t availableMapCount = 0;
+
+  // === Map Viewer State (Phase 7) ===
+  /// Currently loaded map file (null if no map loaded)
+  const map::MapFile *loadedMap = nullptr;
+
+  /// Path to the loaded map file
+  std::string loadedMapPath;
+
+  /// Terrain renderable (null if no terrain loaded)
+  terrain::TerrainRenderable *terrainRenderable = nullptr;
+
+  /// Water renderable (null if no water loaded)
+  water::WaterRenderable *waterRenderable = nullptr;
+
+  /// RTS camera for map viewer mode
+  gfx::RTSCamera *rtsCamera = nullptr;
+
+  /// Lighting state for map viewer mode
+  LightingState *lightingState = nullptr;
+
   // === Convenience Methods ===
 
   /// Check if a model is currently loaded
   bool hasModel() const { return loadedFile != nullptr; }
+
+  /// Check if a map is currently loaded
+  bool hasMap() const { return loadedMap != nullptr; }
+
+  /// Check if currently in map viewer mode
+  bool isMapMode() const { return renderState && renderState->mode == ViewerMode::MapViewer; }
 
   /// Check if model has mesh data to render
   bool hasMeshData() const;

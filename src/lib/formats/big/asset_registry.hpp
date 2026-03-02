@@ -51,6 +51,15 @@ public:
   /// @return Vector of INI file names
   const std::vector<std::string> &availableIniFiles() const { return availableIniFiles_; }
 
+  /// Get map file paths found in archives (for UI display)
+  /// @return Vector of map archive paths (e.g., "maps/alpine assault/alpine assault.map")
+  const std::vector<std::string> &availableMaps() const { return availableMaps_; }
+
+  /// Get archive path for a map asset
+  /// @param mapName Name of the map (lowercase archive path without .map)
+  /// @return Archive path if found, empty otherwise
+  std::string getMapArchivePath(const std::string &mapName) const;
+
   /// Clear the registry
   void clear();
 
@@ -84,9 +93,11 @@ private:
   std::vector<std::string> availableModels_;
   std::vector<std::string> availableTextures_;
   std::vector<std::string> availableIniFiles_;
+  std::vector<std::string> availableMaps_;
   std::unordered_map<std::string, std::string> modelArchivePaths_;     // name -> archive path
   std::unordered_map<std::string, std::string> textureArchivePaths_;   // name -> archive path
   std::unordered_map<std::string, std::string> textureBaseNameToPath_; // base name -> full path
+  std::unordered_map<std::string, std::string> mapArchivePaths_;       // name -> archive path
 
   /// Scan a single archive file
   /// @param archivePath Path to the BIG archive file

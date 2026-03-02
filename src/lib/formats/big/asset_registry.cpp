@@ -6,7 +6,7 @@
 #include <iostream>
 #include <system_error>
 
-#include "core/app_paths.hpp"
+#include "../../platform/app_paths.hpp"
 #include "core/debug.hpp"
 
 #include <bigx/archive.hpp>
@@ -28,6 +28,7 @@ constexpr const char *kBigArchives[] = {
 constexpr const char *kModelExtension = ".w3d";
 constexpr const char *kTextureExtensions[] = {".dds", ".tga"};
 constexpr const char *kIniExtension = ".ini";
+constexpr const char *kMapExtension = ".map";
 } // namespace
 
 bool AssetRegistry::setupCacheDirectory(std::string *outError) {
@@ -221,6 +222,16 @@ bool AssetRegistry::scanArchive(const std::filesystem::path &archivePath,
         iniFilesFound++;
       }
     }
+
+    // Check for map files
+    if (path.length() > 4 && path.substr(path.length() - 4) == kMapExtension) {
+      std::string originalPath = file.path;
+      std::string mapName = path.substr(0, path.length() - 4); // Remove .map
+      if (mapArchivePaths_.find(mapName) == mapArchivePaths_.end()) {
+        mapArchivePaths_[mapName] = originalPath;
+        availableMaps_.push_back(mapName);
+      }
+    }
   }
 
   // Debug output
@@ -252,9 +263,11 @@ void AssetRegistry::clear() {
   availableModels_.clear();
   availableTextures_.clear();
   availableIniFiles_.clear();
+  availableMaps_.clear();
   modelArchivePaths_.clear();
   textureArchivePaths_.clear();
   textureBaseNameToPath_.clear();
+  mapArchivePaths_.clear();
 }
 
 std::string AssetRegistry::getModelArchivePath(const std::string &modelName) const {
@@ -281,6 +294,15 @@ std::string AssetRegistry::getTextureArchivePath(const std::string &textureName)
     return baseIt->second;
   }
 
+  return "";
+}
+
+std::string AssetRegistry::getMapArchivePath(const std::string &mapName) const {
+  std::string normalizedName = normalizeAssetName(mapName);
+  auto it = mapArchivePaths_.find(normalizedName);
+  if (it != mapArchivePaths_.end()) {
+    return it->second;
+  }
   return "";
 }
 

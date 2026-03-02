@@ -2,7 +2,7 @@
 
 #include "lib/gfx/vulkan_context.hpp"
 
-#include "core/app_paths.hpp"
+#include "../lib/platform/app_paths.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>

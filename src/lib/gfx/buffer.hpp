@@ -1,5 +1,7 @@
 #pragma once
 
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
@@ -7,6 +9,8 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+
+#include <vk_mem_alloc.h>
 
 namespace w3d::gfx {
 
@@ -33,13 +37,12 @@ public:
   void upload(const void *data, vk::DeviceSize size);
 
   vk::Buffer buffer() const { return buffer_; }
-  vk::DeviceMemory memory() const { return memory_; }
   vk::DeviceSize size() const { return size_; }
 
 private:
-  vk::Device device_;
+  VmaAllocator allocator_ = nullptr;
   vk::Buffer buffer_;
-  vk::DeviceMemory memory_;
+  VmaAllocation allocation_ = nullptr;
   vk::DeviceSize size_ = 0;
   void *mappedData_ = nullptr;
 };
@@ -119,6 +122,64 @@ public:
 
 private:
   std::vector<Buffer> buffers_;
+};
+
+template <typename T>
+class DynamicBuffer {
+public:
+  void create(VulkanContext &context, uint32_t frameCount, vk::DeviceSize capacity,
+              vk::BufferUsageFlags usage) {
+    buffers_.resize(frameCount);
+    capacity_ = capacity;
+    for (auto &buffer : buffers_) {
+      buffer.create(context, capacity, usage,
+                    vk::MemoryPropertyFlagBits::eHostVisible |
+                        vk::MemoryPropertyFlagBits::eHostCoherent);
+    }
+  }
+
+  void destroy() {
+    for (auto &buffer : buffers_) {
+      buffer.destroy();
+    }
+    buffers_.clear();
+    capacity_ = 0;
+  }
+
+  void update(uint32_t frameIndex, const std::vector<T> &data) {
+    vk::DeviceSize dataSize = sizeof(T) * data.size();
+    if (dataSize > capacity_) {
+      throw std::runtime_error("DynamicBuffer update exceeds capacity");
+    }
+    buffers_[frameIndex].upload(data.data(), dataSize);
+  }
+
+  void update(uint32_t frameIndex, const T *data, size_t count) {
+    vk::DeviceSize dataSize = sizeof(T) * count;
+    if (dataSize > capacity_) {
+      throw std::runtime_error("DynamicBuffer update exceeds capacity");
+    }
+    buffers_[frameIndex].upload(data, dataSize);
+  }
+
+  void update(uint32_t frameIndex, const T *data, size_t count, vk::DeviceSize offset) {
+    vk::DeviceSize dataSize = sizeof(T) * count;
+    if (offset + dataSize > capacity_) {
+      throw std::runtime_error("DynamicBuffer update exceeds capacity");
+    }
+    void *mapped = buffers_[frameIndex].map();
+    std::memcpy(static_cast<uint8_t *>(mapped) + offset, data, static_cast<size_t>(dataSize));
+    buffers_[frameIndex].unmap();
+  }
+
+  vk::Buffer buffer(uint32_t frameIndex) const { return buffers_[frameIndex].buffer(); }
+
+  vk::DeviceSize capacity() const { return capacity_; }
+  size_t frameCount() const { return buffers_.size(); }
+
+private:
+  std::vector<Buffer> buffers_;
+  vk::DeviceSize capacity_ = 0;
 };
 
 } // namespace w3d::gfx
