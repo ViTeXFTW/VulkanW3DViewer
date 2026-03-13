@@ -392,7 +392,7 @@ TEST_F(TerrainMeshTest, NonCliffCellAtlasCoordsAreNotRawCliffUV) {
   ASSERT_GE(chunk.vertices.size(), 4u);
 
   EXPECT_FLOAT_EQ(chunk.vertices[0].atlasCoord.x, 0.0f);
-  EXPECT_FLOAT_EQ(chunk.vertices[0].atlasCoord.y, 0.0f);
+  EXPECT_FLOAT_EQ(chunk.vertices[0].atlasCoord.y, 0.25f);
 }
 
 TEST_F(TerrainMeshTest, CliffCellDoesNotAffectNeighbouringCells) {

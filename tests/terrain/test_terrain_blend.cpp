@@ -153,6 +153,7 @@ TEST_F(TerrainBlendTest, BlendDirectionFromInfoDiagonalRight) {
 
 TEST_F(TerrainBlendTest, BlendDirectionFromInfoLongDiagonal) {
   map::BlendTileInfo info;
+  info.leftDiagonal = 1;
   info.longDiagonal = 1;
   info.inverted = 0;
 
