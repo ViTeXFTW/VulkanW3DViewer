@@ -342,30 +342,40 @@ TEST_F(TerrainBlendDataTest, AllDirectionsEncodedDistinctly) {
 
   map::BlendTileInfo infos[12];
 
+  // Horizontal / HorizontalInv
   infos[0].horiz = 1;
   infos[0].inverted = 0;
   infos[1].horiz = 1;
   infos[1].inverted = map::INVERTED_MASK;
+  // Vertical / VerticalInv
   infos[2].vert = 1;
   infos[2].inverted = 0;
   infos[3].vert = 1;
   infos[3].inverted = map::INVERTED_MASK;
+  // DiagonalRight / DiagonalRightInv  (rightDiagonal=1, longDiagonal=0)
   infos[4].rightDiagonal = 1;
   infos[4].inverted = 0;
   infos[5].rightDiagonal = 1;
   infos[5].inverted = map::INVERTED_MASK;
+  // DiagonalLeft / DiagonalLeftInv  (leftDiagonal=1, longDiagonal=0)
   infos[6].leftDiagonal = 1;
   infos[6].inverted = 0;
   infos[7].leftDiagonal = 1;
   infos[7].inverted = map::INVERTED_MASK;
+  // LongDiagonalRight / LongDiagonalRightInv  (rightDiagonal=1, longDiagonal=1)
+  infos[8].rightDiagonal = 1;
   infos[8].longDiagonal = 1;
   infos[8].inverted = 0;
+  infos[9].rightDiagonal = 1;
   infos[9].longDiagonal = 1;
   infos[9].inverted = map::INVERTED_MASK;
+  // LongDiagonalLeft / LongDiagonalLeftInv  (leftDiagonal=1, longDiagonal=1)
+  infos[10].leftDiagonal = 1;
   infos[10].longDiagonal = 1;
-  infos[10].inverted = map::FLIPPED_MASK;
+  infos[10].inverted = 0;
+  infos[11].leftDiagonal = 1;
   infos[11].longDiagonal = 1;
-  infos[11].inverted = (map::INVERTED_MASK | map::FLIPPED_MASK);
+  infos[11].inverted = map::INVERTED_MASK;
 
   for (int32_t i = 0; i < 12; ++i) {
     infos[i].blendNdx = 0;
@@ -386,4 +396,174 @@ TEST_F(TerrainBlendDataTest, AllDirectionsEncodedDistinctly) {
       EXPECT_NE(dirs[i], dirs[j]) << "Directions " << i << " and " << j << " are the same";
     }
   }
+}
+
+// --- encodeBlendDirection edge cases ---
+
+TEST_F(TerrainBlendDataTest, LongDiagonalRightEncoded) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.rightDiagonal = 1;
+  info.longDiagonal = 1;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection,
+            static_cast<uint8_t>(BlendDirectionEncoding::LongDiagonalRight));
+}
+
+TEST_F(TerrainBlendDataTest, LongDiagonalRightInvEncoded) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.rightDiagonal = 1;
+  info.longDiagonal = 1;
+  info.inverted = map::INVERTED_MASK;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection,
+            static_cast<uint8_t>(BlendDirectionEncoding::LongDiagonalRightInv));
+}
+
+TEST_F(TerrainBlendDataTest, LongDiagonalLeftEncoded) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.leftDiagonal = 1;
+  info.longDiagonal = 1;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection,
+            static_cast<uint8_t>(BlendDirectionEncoding::LongDiagonalLeft));
+}
+
+TEST_F(TerrainBlendDataTest, LongDiagonalLeftInvEncoded) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.leftDiagonal = 1;
+  info.longDiagonal = 1;
+  info.inverted = map::INVERTED_MASK;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection,
+            static_cast<uint8_t>(BlendDirectionEncoding::LongDiagonalLeftInv));
+}
+
+// longDiagonal alone (no rightDiagonal/leftDiagonal) is meaningless in the original engine
+// and must fall through to None, matching getRGBAlphaDataForWidth() behaviour.
+TEST_F(TerrainBlendDataTest, LongDiagonalAloneProducesNone) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.longDiagonal = 1;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::None));
+}
+
+// FLIPPED_MASK (bit 1 of inverted) is a 3-way blend marker; it is not read by
+// encodeBlendDirection, which only tests INVERTED_MASK (bit 0).  Setting FLIPPED_MASK
+// alone must therefore produce the non-inverted encoding.
+TEST_F(TerrainBlendDataTest, FlippedMaskAloneNotTreatedAsInverted) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.horiz = 1;
+  info.inverted = map::FLIPPED_MASK;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Horizontal));
+}
+
+// FLIPPED_MASK | INVERTED_MASK: the INVERTED_MASK bit is set, so encoding must be inverted.
+TEST_F(TerrainBlendDataTest, FlippedMaskPlusInvertedMaskTreatedAsInverted) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.horiz = 1;
+  info.inverted = static_cast<int8_t>(map::INVERTED_MASK | map::FLIPPED_MASK);
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::HorizontalInv));
+}
+
+// longDiagonal set alongside horiz must not change the direction: the original engine
+// stores longDiagonal in the struct for horiz cells but never reads it in that path.
+TEST_F(TerrainBlendDataTest, LongDiagonalWithHorizIgnored) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.horiz = 1;
+  info.longDiagonal = 1;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Horizontal));
+}
+
+// longDiagonal set alongside vert must also be ignored.
+TEST_F(TerrainBlendDataTest, LongDiagonalWithVertIgnored) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.vert = 1;
+  info.longDiagonal = 1;
+  info.inverted = map::INVERTED_MASK;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::VerticalInv));
+}
+
+// horiz takes priority over vert when both are set (mirrors if/else if chain in
+// getRGBAlphaDataForWidth).
+TEST_F(TerrainBlendDataTest, HorizTakesPriorityOverVert) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.horiz = 1;
+  info.vert = 1;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::Horizontal));
+}
+
+// rightDiagonal takes priority over leftDiagonal when both are set (mirrors if/else if chain).
+TEST_F(TerrainBlendDataTest, RightDiagonalTakesPriorityOverLeft) {
+  auto btd = makeSimpleBlendTileData(1);
+  map::BlendTileInfo info;
+  info.rightDiagonal = 1;
+  info.leftDiagonal = 1;
+  info.longDiagonal = 0;
+  info.inverted = 0;
+  btd.blendTileInfos.push_back(info);
+  btd.blendTileNdxes[0] = 1;
+
+  auto cells = buildCellBlendBuffer(btd);
+  ASSERT_EQ(cells.size(), 1u);
+  EXPECT_EQ(cells[0].blendDirection, static_cast<uint8_t>(BlendDirectionEncoding::DiagonalRight));
 }

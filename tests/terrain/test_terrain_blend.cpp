@@ -157,7 +157,7 @@ TEST_F(TerrainBlendTest, BlendDirectionFromInfoLongDiagonal) {
   info.inverted = 0;
 
   auto dir = blendDirectionFromInfo(info);
-  EXPECT_EQ(dir, BlendDirection::LongDiagonal);
+  EXPECT_EQ(dir, BlendDirection::LongDiagonalLeft);
 }
 
 TEST_F(TerrainBlendTest, CellHasBlendReturnsTrueForHoriz) {
