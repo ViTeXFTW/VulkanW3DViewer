@@ -38,6 +38,15 @@ public:
   template <typename T, typename... Args>
   T *addWindow(Args &&...args);
 
+  /// Add a pre-constructed window without type-map registration.
+  /// Use this when you need multiple instances of the same window type
+  /// (e.g. two FileBrowser windows — one for models, one for maps).
+  UIWindow *addWindowInstance(std::unique_ptr<UIWindow> window) {
+    UIWindow *ptr = window.get();
+    windows_.push_back(std::move(window));
+    return ptr;
+  }
+
   /// Get a window by type (returns nullptr if not found)
   template <typename T>
   T *getWindow();

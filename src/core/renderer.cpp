@@ -24,8 +24,8 @@ void Renderer::init(GLFWwindow *window, VulkanContext &context, ImGuiBackend &im
   boneMatrixBuffer_ = &boneMatrixBuffer;
 
   // Create pipelines
-  pipeline_.create(context, "shaders/basic.vert.spv", "shaders/basic.frag.spv");
-  skinnedPipeline_.createSkinned(context, "shaders/skinned.vert.spv", "shaders/basic.frag.spv");
+  pipeline_.create(context, gfx::PipelineCreateInfo::standard());
+  skinnedPipeline_.create(context, gfx::PipelineCreateInfo::skinned());
 
   // Create uniform buffers
   uniformBuffers_.create(context, MAX_FRAMES_IN_FLIGHT);
@@ -96,18 +96,32 @@ void Renderer::createSyncObjects() {
   }
 }
 
-void Renderer::updateUniformBuffer(uint32_t frameIndex, const Camera &camera) {
+void Renderer::updateUniformBuffer(uint32_t frameIndex, const FrameContext &ctx) {
   UniformBufferObject ubo{};
 
-  // Always use camera-based view
   ubo.model = glm::mat4(1.0f);
-  ubo.view = camera.viewMatrix();
+
+  if (ctx.renderState.mode == ViewerMode::MapViewer) {
+    ubo.view = ctx.rtsCamera.viewMatrix();
+  } else {
+    ubo.view = ctx.camera.viewMatrix();
+  }
 
   auto extent = context_->swapchainExtent();
   ubo.proj = glm::perspective(glm::radians(45.0f),
                               static_cast<float>(extent.width) / static_cast<float>(extent.height),
                               0.01f, 10000.0f);
   ubo.proj[1][1] *= -1; // Flip Y for Vulkan
+
+  if (lightingState_ != nullptr) {
+    ubo.lightDirection = glm::vec4(lightingState_->objectLightDirection(), 0.0f);
+    ubo.ambientColor = glm::vec4(lightingState_->objectAmbient(), 1.0f);
+    ubo.diffuseColor = glm::vec4(lightingState_->objectDiffuse(), 1.0f);
+  } else {
+    ubo.lightDirection = glm::vec4(LightingState::kDefaultLightDirection, 0.0f);
+    ubo.ambientColor = glm::vec4(LightingState::kDefaultAmbient, 1.0f);
+    ubo.diffuseColor = glm::vec4(LightingState::kDefaultDiffuse, 1.0f);
+  }
 
   uniformBuffers_.update(frameIndex, ubo);
 }
@@ -151,9 +165,6 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
 
   cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
-  // Draw 3D content
-  cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
-
   vk::Viewport viewport{
       0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f};
   cmd.setViewport(0, viewport);
@@ -164,11 +175,27 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
   };
   cmd.setScissor(0, scissor);
 
+  // Map viewer mode: draw terrain and water
+  if (ctx.renderState.mode == ViewerMode::MapViewer) {
+    if (ctx.renderState.showTerrain && ctx.terrainRenderable.hasData()) {
+      ctx.terrainRenderable.drawWithPipeline(cmd, currentFrame_);
+    }
+
+    if (ctx.renderState.showWater && ctx.waterRenderable.hasData()) {
+      ctx.waterRenderable.drawWithPipeline(cmd, currentFrame_);
+    }
+  }
+
+  // Model viewer mode: draw 3D content
+  cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.pipeline());
+  cmd.setViewport(0, viewport);
+  cmd.setScissor(0, scissor);
+
   cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_.layout(), 0,
                          descriptorManager_.descriptorSet(currentFrame_), {});
 
   // Draw loaded mesh (either HLod model or simple renderable mesh)
-  if (ctx.renderState.showMesh) {
+  if (ctx.renderState.mode == ViewerMode::ModelViewer && ctx.renderState.showMesh) {
     if (ctx.renderState.useHLodModel && ctx.hlodModel.hasData()) {
       if (ctx.renderState.useSkinnedRendering && ctx.hlodModel.hasSkinning()) {
         // Draw with skinned pipeline (GPU skinning) with hover support
@@ -290,8 +317,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer cmd, uint32_t imageIndex,
     }
   }
 
-  // Draw skeleton overlay
-  if (ctx.renderState.showSkeleton && ctx.skeletonRenderer.hasData()) {
+  // Draw skeleton overlay (model viewer mode only)
+  if (ctx.renderState.mode == ViewerMode::ModelViewer && ctx.renderState.showSkeleton &&
+      ctx.skeletonRenderer.hasData()) {
     // Skeleton uses same descriptor set layout, so we can reuse the bound descriptor
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, ctx.skeletonRenderer.pipelineLayout(),
                            0, descriptorManager_.descriptorSet(currentFrame_), {});
@@ -353,7 +381,7 @@ void Renderer::drawFrame(const FrameContext &ctx) {
   device.resetFences(inFlightFences_[currentFrame_]);
 
   // Update uniform buffer
-  updateUniformBuffer(currentFrame_, ctx.camera);
+  updateUniformBuffer(currentFrame_, ctx);
 
   // Record command buffer
   commandBuffers_[currentFrame_].reset();

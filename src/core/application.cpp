@@ -8,7 +8,12 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "lib/formats/map/map_loader.hpp"
+#include "render/terrain/terrain_atlas.hpp"
+#include "render/terrain/terrain_resource_manager.hpp"
 #include "ui/hover_tooltip.hpp"
+#include "ui/map_browser.hpp"
+#include "ui/map_viewport_window.hpp"
 #include "ui/model_browser.hpp"
 #include "ui/settings_window.hpp"
 #include "ui/ui_context.hpp"
@@ -39,7 +44,11 @@ void Application::framebufferResizeCallback(GLFWwindow *window, int /*width*/, i
 
 void Application::scrollCallback(GLFWwindow *window, double /*xoffset*/, double yoffset) {
   auto *app = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
-  app->camera_.onScroll(static_cast<float>(yoffset));
+  if (app->renderState_.mode == ViewerMode::MapViewer) {
+    app->rtsCamera_.onScroll(static_cast<float>(yoffset));
+  } else {
+    app->camera_.onScroll(static_cast<float>(yoffset));
+  }
 }
 
 void Application::initWindow() {
@@ -143,11 +152,32 @@ void Application::initUI() {
     throw std::runtime_error("Failed to create SettingsWindow");
   }
 
+  // Map viewer windows (Phase 7)
+  auto *mapViewport = uiManager_.addWindow<MapViewportWindow>();
+  if (!mapViewport) {
+    throw std::runtime_error("Failed to create MapViewportWindow");
+  }
+
+  mapBrowser_ = uiManager_.addWindow<MapBrowser>();
+  if (!mapBrowser_) {
+    throw std::runtime_error("Failed to create MapBrowser");
+  }
+
+  auto mapFileBrowserPtr = std::make_unique<FileBrowser>();
+  mapFileBrowser_ =
+      static_cast<FileBrowser *>(uiManager_.addWindowInstance(std::move(mapFileBrowserPtr)));
+  if (!mapFileBrowser_) {
+    throw std::runtime_error("Failed to create map FileBrowser");
+  }
+
   // Set initial visibility
   viewport->setVisible(true);
+  mapViewport->setVisible(false);
   console_->setVisible(true);
   fileBrowser_->setVisible(false);
   modelBrowser_->setVisible(false);
+  mapBrowser_->setVisible(false);
+  mapFileBrowser_->setVisible(false);
 
   // Configure file browser
   fileBrowser_->setFilter(".w3d");
@@ -181,9 +211,27 @@ void Application::initUI() {
     modelBrowser_->setBigArchiveMode(true);
   }
 
+  // Configure map browser
+  mapBrowser_->setMapSelectedCallback([this](const std::string &mapName) {
+    loadMapByName(mapName);
+    mapBrowser_->setVisible(false);
+  });
+
+  if (assetRegistry_.isScanned()) {
+    mapBrowser_->setAvailableMaps(assetRegistry_.availableMaps());
+    mapBrowser_->setBigArchiveMode(true);
+  }
+
+  // Configure map file browser
+  mapFileBrowser_->setFilter(".map");
+  mapFileBrowser_->setPathSelectedCallback([this](const std::filesystem::path &path) {
+    loadMapFile(path);
+    mapFileBrowser_->setVisible(false);
+  });
+
   // Welcome message
   console_->info("W3D Viewer initialized");
-  console_->log("Use File > Open to load a W3D model");
+  console_->log("Use File > Open to load a W3D model or File > Open Map to load a map");
 }
 
 void Application::loadW3DFile(const std::filesystem::path &path) {
@@ -313,8 +361,25 @@ void Application::drawUI() {
   ctx.cacheSize = bigArchiveManager_.getCacheSize();
   ctx.availableModelCount = assetRegistry_.availableModels().size();
 
+  // Map viewer state
+  ctx.loadedMap = loadedMap_.get();
+  ctx.loadedMapPath = loadedMapPath_;
+  ctx.terrainRenderable = &terrainRenderable_;
+  ctx.waterRenderable = &waterRenderable_;
+  ctx.rtsCamera = &rtsCamera_;
+  ctx.lightingState = &lightingState_;
+  ctx.availableMapCount = assetRegistry_.availableMaps().size();
+
   // Set up callbacks
   ctx.onOpenFile = [this]() { fileBrowser_->setVisible(true); };
+  ctx.onOpenMapFile = [this]() { mapFileBrowser_->setVisible(true); };
+  ctx.onOpenMapBrowser = [this]() {
+    if (assetRegistry_.isScanned()) {
+      mapBrowser_->setAvailableMaps(assetRegistry_.availableMaps());
+      mapBrowser_->setBigArchiveMode(true);
+    }
+    mapBrowser_->setVisible(true);
+  };
   ctx.onOpenModelBrowser = [this]() {
     // Update available models before opening
     if (assetRegistry_.isScanned()) {
@@ -360,47 +425,74 @@ void Application::mainLoop() {
     float deltaTime = currentTime - lastFrameTime_;
     lastFrameTime_ = currentTime;
 
-    // Update camera
-    camera_.update(window_);
+    if (renderState_.mode == ViewerMode::MapViewer) {
+      // Map viewer mode
+      rtsCamera_.update(window_, deltaTime);
 
-    // Update hover detection
-    updateHover();
+      // Update lighting animation (cloud shadows)
+      lightingState_.update(deltaTime);
 
-    // Update animation
-    animationPlayer_.update(deltaTime);
+      // Update terrain lighting push constants
+      if (terrainRenderable_.hasData()) {
+        terrainRenderable_.applyLightingState(lightingState_);
 
-    // Apply animation to pose only when frame changes
-    if (modelLoader_.loadedFile() && animationPlayer_.animationCount() > 0 &&
-        !modelLoader_.loadedFile()->hierarchies.empty()) {
-      float currentFrame = animationPlayer_.currentFrame();
-      if (currentFrame != renderState_.lastAppliedFrame || !animationPlayer_.isPlaying()) {
-        animationPlayer_.applyToPose(skeletonPose_, modelLoader_.loadedFile()->hierarchies[0]);
-
-        // Wait for current frame fence before updating any per-frame GPU resources
-        renderer_.waitForCurrentFrame();
-        uint32_t frameIndex = renderer_.currentFrame();
-
-        // Update skeleton debug visualization (double-buffered)
-        skeletonRenderer_.updateFromPose(context_, frameIndex, skeletonPose_);
-
-        // Update bone matrix buffer for GPU skinning (double-buffered)
-        if (renderState_.useSkinnedRendering && skeletonPose_.isValid()) {
-          auto skinningMatrices = skeletonPose_.getSkinningMatrices();
-          boneMatrixBuffer_.update(frameIndex, skinningMatrices);
-        }
-
-        renderState_.lastAppliedFrame = currentFrame;
+        auto extent = context_.swapchainExtent();
+        auto proj = glm::perspective(
+            glm::radians(45.0f),
+            static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.01f, 10000.0f);
+        proj[1][1] *= -1;
+        auto viewProj = proj * rtsCamera_.viewMatrix();
+        terrainRenderable_.updateFrustum(viewProj);
       }
-    }
 
-    // Update LOD selection based on camera distance
-    if (renderState_.useHLodModel && hlodModel_.hasData()) {
-      auto extent = context_.swapchainExtent();
-      float screenHeight = static_cast<float>(extent.height);
-      float fovY = glm::radians(45.0f); // Must match projection FOV
-      float cameraDistance = camera_.distance();
+      // Update water animation
+      if (waterRenderable_.hasData()) {
+        waterRenderable_.update(deltaTime);
+      }
 
-      hlodModel_.updateLOD(screenHeight, fovY, cameraDistance);
+    } else {
+      // Model viewer mode
+      camera_.update(window_);
+
+      // Update hover detection
+      updateHover();
+
+      // Update animation
+      animationPlayer_.update(deltaTime);
+
+      // Apply animation to pose only when frame changes
+      if (modelLoader_.loadedFile() && animationPlayer_.animationCount() > 0 &&
+          !modelLoader_.loadedFile()->hierarchies.empty()) {
+        float currentFrame = animationPlayer_.currentFrame();
+        if (currentFrame != renderState_.lastAppliedFrame || !animationPlayer_.isPlaying()) {
+          animationPlayer_.applyToPose(skeletonPose_, modelLoader_.loadedFile()->hierarchies[0]);
+
+          // Wait for current frame fence before updating any per-frame GPU resources
+          renderer_.waitForCurrentFrame();
+          uint32_t frameIndex = renderer_.currentFrame();
+
+          // Update skeleton debug visualization (double-buffered)
+          skeletonRenderer_.updateFromPose(context_, frameIndex, skeletonPose_);
+
+          // Update bone matrix buffer for GPU skinning (double-buffered)
+          if (renderState_.useSkinnedRendering && skeletonPose_.isValid()) {
+            auto skinningMatrices = skeletonPose_.getSkinningMatrices();
+            boneMatrixBuffer_.update(frameIndex, skinningMatrices);
+          }
+
+          renderState_.lastAppliedFrame = currentFrame;
+        }
+      }
+
+      // Update LOD selection based on camera distance
+      if (renderState_.useHLodModel && hlodModel_.hasData()) {
+        auto extent = context_.swapchainExtent();
+        float screenHeight = static_cast<float>(extent.height);
+        float fovY = glm::radians(45.0f);
+        float cameraDistance = camera_.distance();
+
+        hlodModel_.updateLOD(screenHeight, fovY, cameraDistance);
+      }
     }
 
     // Start ImGui frame
@@ -408,8 +500,9 @@ void Application::mainLoop() {
     drawUI();
 
     // Draw frame
-    FrameContext frameCtx{camera_,           renderableMesh_, hlodModel_,
-                          skeletonRenderer_, hoverDetector_,  renderState_};
+    FrameContext frameCtx{camera_,        renderableMesh_, hlodModel_,         skeletonRenderer_,
+                          hoverDetector_, renderState_,    terrainRenderable_, waterRenderable_,
+                          rtsCamera_};
     renderer_.drawFrame(frameCtx);
   }
 
@@ -428,6 +521,8 @@ void Application::cleanup() {
   imguiBackend_.cleanup();
   renderer_.cleanup();
 
+  terrainRenderable_.destroy();
+  waterRenderable_.destroy();
   skeletonRenderer_.destroy();
   hlodModel_.destroy();
   renderableMesh_.destroy();
@@ -502,6 +597,21 @@ void Application::initializeBigArchiveManager() {
             std::cerr << "Failed to scan asset registry: " << error << "\n";
           }
         }
+
+        // Load Terrain.ini from INIZH.big (Phase 1.1)
+        if (terrainResourceManager_.loadTerrainTypesFromBig(bigArchiveManager_, &error)) {
+          if (console_) {
+            console_->info("Terrain types loaded from INIZH.big");
+            console_->log("Terrain types found: " +
+                          std::to_string(terrainResourceManager_.getTerrainTypes().size()));
+          }
+        } else {
+          if (console_) {
+            console_->warning("Failed to load terrain types: " + error);
+          } else {
+            std::cerr << "Failed to load terrain types: " << error << "\n";
+          }
+        }
       } else {
         if (console_) {
           console_->error("Failed to initialize BIG archive manager: " + error);
@@ -539,8 +649,170 @@ void Application::rescanAssetRegistry() {
     console_->log("Models found: " + std::to_string(assetRegistry_.availableModels().size()));
     console_->log("Textures found: " + std::to_string(assetRegistry_.availableTextures().size()));
     console_->log("INI files found: " + std::to_string(assetRegistry_.availableIniFiles().size()));
+    console_->log("Maps found: " + std::to_string(assetRegistry_.availableMaps().size()));
   } else {
     console_->error("Failed to rescan asset registry: " + error);
+  }
+}
+
+void Application::loadMapFile(const std::filesystem::path &path) {
+  console_->info("Loading map: " + path.string());
+
+  std::string error;
+  auto mapFile = map::MapLoader::load(path, &error);
+  if (!mapFile) {
+    console_->error("Failed to load map: " + error);
+    return;
+  }
+
+  // Store the parsed map
+  loadedMap_ = std::make_unique<map::MapFile>(std::move(*mapFile));
+  loadedMapPath_ = path.string();
+
+  console_->info(map::MapLoader::describe(*loadedMap_));
+
+  // Wait for GPU idle before modifying resources
+  context_.device().waitIdle();
+
+  // Destroy old terrain/water data
+  terrainRenderable_.destroy();
+  waterRenderable_.destroy();
+
+  // Load terrain
+  if (loadedMap_->hasHeightMap()) {
+    const bool hasBlendData = loadedMap_->hasBlendTiles() &&
+                              terrainResourceManager_.isInitialized() &&
+                              bigArchiveManager_.isInitialized();
+
+    if (hasBlendData) {
+      std::string tileError;
+      auto tiles = terrainResourceManager_.extractTilesForTextureClasses(
+          loadedMap_->blendTiles.textureClasses, bigArchiveManager_, &tileError);
+
+      // Phase 5.5: extract edge tiles and append after base tiles.
+      // edgeTileLayerBase records where in the combined GPU array edge tiles begin.
+      uint32_t edgeTileLayerBase = static_cast<uint32_t>(tiles.size());
+      if (!loadedMap_->blendTiles.edgeTextureClasses.empty()) {
+        std::string edgeError;
+        auto edgeTiles = terrainResourceManager_.extractTilesForTextureClasses(
+            loadedMap_->blendTiles.edgeTextureClasses, bigArchiveManager_, &edgeError);
+        for (auto &t : edgeTiles) {
+          tiles.push_back(std::move(t));
+        }
+        if (!edgeError.empty() && tileError.empty()) {
+          tileError = edgeError;
+        }
+      }
+
+      auto tileArrayData = terrainResourceManager_.buildTileArrayData(tiles);
+      auto tileUVs = terrain::computeTileUVTable(loadedMap_->blendTiles.textureClasses);
+
+      terrainRenderable_.loadWithBlendData(context_, loadedMap_->heightMap, loadedMap_->blendTiles,
+                                           tileUVs, loadedMap_->lighting);
+      terrainRenderable_.initPipelineWithTileArray(context_, textureManager_, tileArrayData, 2);
+
+      uint32_t mapWidth = static_cast<uint32_t>(loadedMap_->heightMap.width);
+      uint32_t mapHeight = static_cast<uint32_t>(loadedMap_->heightMap.height);
+      terrainRenderable_.uploadBlendData(context_, loadedMap_->blendTiles, mapWidth, mapHeight, 2,
+                                         edgeTileLayerBase);
+
+      if (!tileError.empty()) {
+        console_->warning("Some terrain textures missing: " + tileError);
+      } else {
+        console_->info("Terrain textures loaded from archive");
+      }
+    } else {
+      terrainRenderable_.load(context_, loadedMap_->heightMap, loadedMap_->lighting);
+      terrainRenderable_.initPipeline(context_, textureManager_, 2);
+    }
+
+    // Update UBO descriptors for both frames
+    for (uint32_t i = 0; i < 2; ++i) {
+      terrainRenderable_.updateDescriptors(i, renderer_.uniformBuffers().buffer(i),
+                                           sizeof(gfx::UniformBufferObject));
+    }
+
+    console_->info("Terrain loaded: " + std::to_string(terrainRenderable_.totalChunkCount()) +
+                   " chunks");
+  }
+
+  // Load water
+  if (!loadedMap_->triggers.empty()) {
+    waterRenderable_.load(context_, loadedMap_->triggers);
+    if (waterRenderable_.hasData()) {
+      waterRenderable_.initPipeline(context_, textureManager_, 2);
+
+      for (uint32_t i = 0; i < 2; ++i) {
+        waterRenderable_.updateDescriptors(i, renderer_.uniformBuffers().buffer(i),
+                                           sizeof(gfx::UniformBufferObject));
+      }
+
+      console_->info("Water loaded: " + std::to_string(waterRenderable_.polygonCount()) +
+                     " polygons");
+    }
+  }
+
+  // Set up lighting
+  if (loadedMap_->hasLighting()) {
+    lightingState_.setGlobalLighting(loadedMap_->lighting);
+    lightingState_.setCloudShadow(0.02f, 0.01f, 0.3f);
+    renderer_.setLighting(&lightingState_);
+  }
+
+  // Position RTS camera at map center
+  float centerX = static_cast<float>(loadedMap_->heightMap.width) * map::MAP_XY_FACTOR * 0.5f;
+  float centerY = static_cast<float>(loadedMap_->heightMap.height) * map::MAP_XY_FACTOR * 0.5f;
+  rtsCamera_.setPosition(glm::vec3(centerX, centerY, 0.0f));
+  rtsCamera_.setHeight(100.0f);
+
+  // Switch to map viewer mode
+  switchToMapMode();
+}
+
+void Application::loadMapByName(const std::string &mapName) {
+  console_->info("Loading map from BIG archive: " + mapName);
+
+  std::string archivePath;
+  if (assetRegistry_.isScanned()) {
+    archivePath = assetRegistry_.getMapArchivePath(mapName);
+  }
+
+  if (archivePath.empty()) {
+    archivePath = mapName + ".map";
+  }
+
+  std::string error;
+  auto cachedPath = bigArchiveManager_.extractToCache(archivePath, &error);
+  if (!cachedPath) {
+    console_->error("Failed to extract map: " + error);
+    return;
+  }
+
+  console_->log("Extracted to: " + cachedPath->string());
+  loadMapFile(*cachedPath);
+}
+
+void Application::switchToMapMode() {
+  renderState_.mode = ViewerMode::MapViewer;
+
+  // Toggle window visibility
+  if (auto *viewport = uiManager_.getWindow<ViewportWindow>()) {
+    viewport->setVisible(false);
+  }
+  if (auto *mapViewport = uiManager_.getWindow<MapViewportWindow>()) {
+    mapViewport->setVisible(true);
+  }
+}
+
+void Application::switchToModelMode() {
+  renderState_.mode = ViewerMode::ModelViewer;
+
+  // Toggle window visibility
+  if (auto *viewport = uiManager_.getWindow<ViewportWindow>()) {
+    viewport->setVisible(true);
+  }
+  if (auto *mapViewport = uiManager_.getWindow<MapViewportWindow>()) {
+    mapViewport->setVisible(false);
   }
 }
 

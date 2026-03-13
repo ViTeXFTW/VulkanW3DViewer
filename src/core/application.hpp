@@ -4,6 +4,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -12,23 +13,32 @@
 #include "core/settings.hpp"
 #include "lib/formats/big/asset_registry.hpp"
 #include "lib/formats/big/big_archive_manager.hpp"
+#include "lib/formats/map/types.hpp"
 #include "lib/formats/w3d/hlod_model.hpp"
 #include "lib/formats/w3d/loader.hpp"
 #include "lib/formats/w3d/model_loader.hpp"
 #include "lib/gfx/camera.hpp"
+#include "lib/gfx/rts_camera.hpp"
 #include "lib/gfx/texture.hpp"
 #include "render/animation_player.hpp"
 #include "render/bone_buffer.hpp"
 #include "render/hover_detector.hpp"
+#include "render/lighting_state.hpp"
 #include "render/renderable_mesh.hpp"
 #include "render/skeleton.hpp"
 #include "render/skeleton_renderer.hpp"
+#include "render/terrain/terrain_renderable.hpp"
+#include "render/terrain/terrain_resource_manager.hpp"
+#include "render/water/water_renderable.hpp"
 #include "ui/console_window.hpp"
 #include "ui/file_browser.hpp"
 #include "ui/imgui_backend.hpp"
 #include "ui/ui_manager.hpp"
 
 namespace w3d {
+
+class MapBrowser;
+class ModelBrowser;
 
 /**
  * Main application class managing the window, Vulkan context,
@@ -88,6 +98,12 @@ private:
   void loadW3DFile(const std::filesystem::path &path);
   void loadModelByName(const std::string &modelName);
 
+  // Map loading (Phase 7)
+  void loadMapFile(const std::filesystem::path &path);
+  void loadMapByName(const std::string &mapName);
+  void switchToMapMode();
+  void switchToModelMode();
+
   // BIG archive management
   void initializeBigArchiveManager();
   void rescanAssetRegistry();
@@ -128,12 +144,23 @@ private:
   // Hover detection
   HoverDetector hoverDetector_;
 
+  // Map viewer state (Phase 7)
+  std::unique_ptr<map::MapFile> loadedMap_;
+  terrain::TerrainRenderable terrainRenderable_;
+  terrain::TerrainResourceManager terrainResourceManager_;
+  water::WaterRenderable waterRenderable_;
+  gfx::RTSCamera rtsCamera_;
+  LightingState lightingState_;
+  std::string loadedMapPath_;
+  FileBrowser *mapFileBrowser_ = nullptr; // Owned by uiManager_
+
   // UI components
   ImGuiBackend imguiBackend_;
   UIManager uiManager_;
-  ConsoleWindow *console_ = nullptr;           // Owned by uiManager_
-  FileBrowser *fileBrowser_ = nullptr;         // Owned by uiManager_
-  class ModelBrowser *modelBrowser_ = nullptr; // Owned by uiManager_
+  ConsoleWindow *console_ = nullptr;     // Owned by uiManager_
+  FileBrowser *fileBrowser_ = nullptr;   // Owned by uiManager_
+  ModelBrowser *modelBrowser_ = nullptr; // Owned by uiManager_
+  MapBrowser *mapBrowser_ = nullptr;     // Owned by uiManager_
 
   // Setting Management
   Settings appSettings_;
