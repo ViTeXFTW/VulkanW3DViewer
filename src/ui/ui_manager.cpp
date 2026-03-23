@@ -89,6 +89,17 @@ void UIManager::drawMenuBar(UIContext &ctx) {
       }
     }
     ImGui::Separator();
+    if (ImGui::MenuItem("Open Map...")) {
+      if (ctx.onOpenMapFile) {
+        ctx.onOpenMapFile();
+      }
+    }
+    if (ImGui::MenuItem("Browse Maps...")) {
+      if (ctx.onOpenMapBrowser) {
+        ctx.onOpenMapBrowser();
+      }
+    }
+    ImGui::Separator();
     if (ImGui::MenuItem("Settings...", "Ctrl+,")) {
       if (auto *settingsWindow = getWindow<SettingsWindow>()) {
         settingsWindow->open();

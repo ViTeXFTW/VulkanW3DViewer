@@ -4,6 +4,8 @@
 
 namespace w3d {
 
+enum class ViewerMode { ModelViewer, MapViewer };
+
 /**
  * Centralized rendering state and display options.
  *
@@ -12,9 +14,18 @@ namespace w3d {
  * rendering decisions from the Application class.
  */
 struct RenderState {
+  // Active viewer mode
+  ViewerMode mode = ViewerMode::ModelViewer;
+
   // Display toggles
   bool showMesh = true;
   bool showSkeleton = true;
+
+  // Map viewer layer toggles
+  bool showTerrain = true;
+  bool showWater = true;
+  bool showObjects = true;
+  bool showTriggers = false;
 
   // Rendering mode flags
   bool useHLodModel = false;
