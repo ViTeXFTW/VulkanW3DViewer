@@ -28,6 +28,7 @@ logs/
 
 # CMake generated
 CMakeCache.txt
+CMakeUserPresets.json
 CMakeFiles/
 cmake_install.cmake
 compile_commands.json
