@@ -54,7 +54,7 @@ private:
   float edgeScrollSpeed_ = 30.0f;
 
   static constexpr float kMinHeight = 5.0f;
-  static constexpr float kMaxHeight = 500.0f;
+  static constexpr float kMaxHeight = 1000.0f;
   static constexpr float kMinPitch = 0.1f;
   static constexpr float kMaxPitch = 1.4f;
   static constexpr float kDefaultPitch = 1.047f;
